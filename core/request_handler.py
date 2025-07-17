@@ -1,0 +1,297 @@
+import json
+import os
+import re
+from datetime import datetime
+from typing import Dict, List, Optional
+import traceback
+import logging
+
+from core.settings import openai_client, gcs_client
+from agents.information_collector import InformationCollectorAgent
+from agents.recommendation_agent import RecommendationAgent
+from data.insurance_products import recommend_insurance_product
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load system prompts
+with open('data/system_prompts.json', 'r') as f:
+    system_prompts = json.load(f)
+
+# Initialize agents
+info_collector = InformationCollectorAgent(system_prompts['information_collector']['content'])
+recommendation_agent = RecommendationAgent(system_prompts['recommendation_agent']['content'])
+
+# Configuration
+bucket_name = os.getenv('GCS_BUCKET_NAME', 'insurance-chatbot-logs')
+enable_storage = os.getenv('ENABLE_CONVERSATION_STORAGE', 'false').lower() == 'true'
+
+# In-memory conversation storage
+conversation_histories = {}
+
+def store_conversation_log(session_id: str, qualtrics_response_id: str, conversation_history: List[Dict], chatbot_id: str):
+    """Store conversation log in Google Cloud Storage (optional)"""
+    if not enable_storage or not gcs_client:
+        return
+    
+    try:
+        clean_qualtrics_id = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", qualtrics_response_id)
+        
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+            "qualtrics_response_id": qualtrics_response_id,
+            "conversation_history": conversation_history
+        }
+        
+        bucket = gcs_client.bucket(bucket_name)
+        blob = bucket.blob(f"chat_logs_{chatbot_id}_{clean_qualtrics_id}_{session_id}.json")
+        blob.upload_from_string(json.dumps(log_entry))
+        
+        logger.info(f"Stored conversation log for session: {session_id}")
+    except Exception as e:
+        logger.error(f"Error storing conversation log: {str(e)}")
+
+def store_error_log(session_id: str, qualtrics_response_id: str, error: str, request_data: Dict, chatbot_id: str):
+    """Store error log in Google Cloud Storage (optional)"""
+    if not enable_storage or not gcs_client:
+        return
+    
+    try:
+        clean_qualtrics_id = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", qualtrics_response_id)
+        
+        error_log = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+            "qualtrics_response_id": qualtrics_response_id,
+            "error": error,
+            "traceback": traceback.format_exc(),
+            "request_data": request_data
+        }
+        
+        bucket = gcs_client.bucket(bucket_name)
+        blob = bucket.blob(f"error_logs_{chatbot_id}_{clean_qualtrics_id}_{session_id}.json")
+        blob.upload_from_string(json.dumps(error_log))
+        
+        logger.info(f"Stored error log for session: {session_id}")
+    except Exception as e:
+        logger.error(f"Error storing error log: {str(e)}")
+
+def process_with_information_collector(conversation_history: List[Dict], gpt_model: str) -> Dict:
+    """Process conversation with Information Collector Agent"""
+    try:
+        messages = info_collector.get_conversation_messages(conversation_history)
+        
+        response = openai_client.chat.completions.create(
+            model=gpt_model,
+            messages=messages
+        )
+        
+        response_content = response.choices[0].message.content.strip()
+        
+        # Debug logging
+        logger.info(f"OpenAI response: {response_content}")
+        
+        # Check if agent wants to handoff
+        if info_collector.should_handoff(response_content):
+            customer_data = info_collector.extract_collected_data(response_content)
+            
+            if customer_data:
+                is_valid, missing_fields = info_collector.validate_collected_data(customer_data)
+                if is_valid:
+                    # Clean the response for display (remove handoff signal)
+                    display_response = response_content.split('HANDOFF_TO_RECOMMENDATION_AGENT')[0].strip()
+                    if not display_response:
+                        display_response = "Thank you for providing all the information. Let me find the best insurance recommendation for you."
+                    
+                    return {
+                        'success': True,
+                        'response': display_response,
+                        'handoff': True,
+                        'customer_data': customer_data
+                    }
+                else:
+                    logger.warning(f"Invalid customer data, missing fields: {missing_fields}")
+                    return {
+                        'success': True,
+                        'response': f"I need some additional information: {', '.join(missing_fields)}. Could you please provide these details?",
+                        'handoff': False
+                    }
+            else:
+                logger.warning("Failed to extract customer data from handoff response")
+                return {
+                    'success': True,
+                    'response': "I'm having trouble processing your information. Could you please provide your details again?",
+                    'handoff': False
+                }
+        
+        return {
+            'success': True,
+            'response': response_content,
+            'handoff': False
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in information collector: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Dict:
+    """Process recommendation with Recommendation Agent"""
+    try:
+        # Generate recommendation using existing logic
+        recommendation_result = recommendation_agent.process_customer_data(customer_data)
+        
+        # Create OpenAI function call for recommendation
+        response = openai_client.chat.completions.create(
+            model=gpt_model,
+            messages=[{"role": "user", "content": "Generate insurance recommendation"}],
+            tools=[{
+                "type": "function",
+                "function": {
+                    "name": "recommend_insurance_package",
+                    "description": "Recommends insurance package based on deductible and coverage estimation and returns a html text with a link to the recommended insurance package",
+                    "strict": True,
+                    "parameters": {
+                        "type": "object",
+                        "required": ["deductible_preference", "coverage_estimation"],
+                        "properties": {
+                            "deductible_preference": {
+                                "type": "string",
+                                "description": "The general preference to the amount that must be paid out of pocket before insurance coverage begins. High or low",
+                                "enum": ["high", "low"]
+                            },
+                            "coverage_estimation": {
+                                "type": "number",
+                                "description": "An estimate of the total dollar value of the belongings"
+                            }
+                        },
+                        "additionalProperties": False
+                    }
+                }
+            }]
+        )
+        
+        if response.choices[0].finish_reason == 'tool_calls':
+            # Execute function call
+            args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+            result = recommend_insurance_product(args["deductible_preference"], args["coverage_estimation"])
+            
+            # Generate final response
+            final_response = openai_client.chat.completions.create(
+                model=gpt_model,
+                messages=recommendation_agent.get_conversation_messages(customer_data, {'recommendation_link': result})
+            )
+            
+            response_content = final_response.choices[0].message.content.strip()
+            
+            # Ensure the response includes the recommendation link
+            if result not in response_content:
+                response_content += f"\n\n{result}"
+            
+            return {
+                'success': True,
+                'response': response_content
+            }
+        else:
+            # Fallback if no tool call
+            messages = recommendation_agent.get_conversation_messages(customer_data, recommendation_result)
+            fallback_response = openai_client.chat.completions.create(
+                model=gpt_model,
+                messages=messages
+            )
+            
+            response_content = fallback_response.choices[0].message.content.strip()
+            
+            return {
+                'success': True,
+                'response': response_content
+            }
+        
+    except Exception as e:
+        logger.error(f"Error in recommendation agent: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str):
+    """
+    Main request processing function that orchestrates the 2-agent workflow
+    """
+    user_input = request_data.get('message')
+    session_id = request_data.get('session_id')
+    chatbot_id = endpoint.lstrip("/")
+    qualtrics_response_id = request_data.get('qualtrics_response_id')
+    
+    if not user_input or not session_id or not qualtrics_response_id:
+        logger.warning("Missing required parameters in request")
+        return {'error': 'Missing required parameters', 'status_code': 400}
+    
+    logger.info(f"Processing chat for chatbot: {chatbot_id}, session: {session_id}")
+    
+    # Get or create conversation history
+    conversation_key = f"{chatbot_id}_{session_id}"
+    conversation_history = conversation_histories.get(conversation_key, [])
+    
+    # Add user input to conversation history
+    conversation_history.extend(user_input)
+    
+    try:
+        # Check if we need to process with recommendation agent
+        # This happens when the last assistant message was a handoff
+        last_assistant_msg = None
+        for msg in reversed(conversation_history):
+            if msg.get('role') == 'assistant':
+                last_assistant_msg = msg
+                break
+        
+        should_use_recommendation = False
+        customer_data = None
+        
+        if last_assistant_msg and 'customer_data' in last_assistant_msg:
+            should_use_recommendation = True
+            customer_data = last_assistant_msg['customer_data']
+        
+        if should_use_recommendation and customer_data:
+            # Process with Recommendation Agent
+            result = process_with_recommendation_agent(customer_data, gpt_model)
+        else:
+            # Process with Information Collector Agent
+            result = process_with_information_collector(conversation_history, gpt_model)
+        
+        if not result['success']:
+            raise Exception(result['error'])
+        
+        response_content = result['response']
+        
+        # Add assistant response to conversation history
+        assistant_msg = {
+            "role": "assistant",
+            "content": response_content,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Add customer data if handoff occurred
+        if result.get('handoff') and result.get('customer_data'):
+            assistant_msg['customer_data'] = result['customer_data']
+        
+        conversation_history.append(assistant_msg)
+        conversation_histories[conversation_key] = conversation_history
+        
+        # Store conversation log (optional)
+        store_conversation_log(session_id, qualtrics_response_id, conversation_history, chatbot_id)
+        
+        logger.info(f"Successfully processed chat request for session: {session_id}")
+        return {'response': response_content, 'status_code': 200}
+        
+    except Exception as e:
+        logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
+        
+        # Store error log (optional)
+        store_error_log(session_id, qualtrics_response_id, str(e), request_data, chatbot_id)
+        
+        return {'error': 'An error occurred while processing the request', 'status_code': 500}

@@ -1,0 +1,27 @@
+# Ignore node_modules
+node_modules/
+
+# Ignore environment variables file
+.env
+
+# Ignore Python cache files and build artifacts
+*.py[cod]
+__pycache__/
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Ignore virtual environment directories
+.env/
+.venv/
+env/
+venv/
+
+# Ignore Docker-related files
+Dockerfile*
+docker-compose.override.yml
+*.log
+
+# Ignore FastAPI log files
+logs/
