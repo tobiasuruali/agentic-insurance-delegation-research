@@ -7,7 +7,8 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
@@ -55,7 +56,7 @@ class ChatRequest(BaseModel):
     qualtrics_response_id: str
 
 class ChatResponse(BaseModel):
-    response: str
+    response: List[str]
 
 class HealthResponse(BaseModel):
     status: str
@@ -93,6 +94,11 @@ async def root():
 async def insurance_recommendation(request: ChatRequest):
     """Main endpoint for insurance recommendation with 2-agent workflow"""
     logger.info(f"Received chat request for session: {request.session_id}")
+    logger.info(f"Request message count: {len(request.message)}")
+    
+    # Log the request structure for debugging
+    for i, msg in enumerate(request.message):
+        logger.info(f"Message {i}: role={msg.role}, content_length={len(msg.content)}, timestamp={msg.timestamp}")
     
     # Convert request to the format expected by request_handler
     request_data = {
@@ -108,8 +114,17 @@ async def insurance_recommendation(request: ChatRequest):
     
     # Handle the response
     if result.get('status_code') == 200:
-        return ChatResponse(response=result['response'])
+        # Support both single response and multiple responses
+        response_data = result['response']
+        logger.info(f"Response data type: {type(response_data)}")
+        if isinstance(response_data, list):
+            logger.info(f"Returning {len(response_data)} messages")
+            return ChatResponse(response=response_data)
+        else:
+            logger.info(f"Returning single message: {response_data[:100]}...")
+            return ChatResponse(response=[response_data])
     else:
+        logger.error(f"Error response: status_code={result.get('status_code')}, error={result.get('error')}")
         raise HTTPException(
             status_code=result.get('status_code', 500),
             detail=result.get('error', 'Unknown error')
@@ -143,6 +158,26 @@ async def local_ui():
     return HTMLResponse(content=html_content)
 
 # Exception handlers
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logger.error(f"Request validation error: {exc}")
+    logger.error(f"Request body: {body.decode()}")
+    logger.error(f"Request headers: {request.headers}")
+    
+    # Parse the request body to see the actual structure
+    try:
+        import json
+        parsed_body = json.loads(body.decode())
+        logger.error(f"Parsed request body: {json.dumps(parsed_body, indent=2)}")
+    except:
+        logger.error("Could not parse request body as JSON")
+        
+    return JSONResponse(
+        status_code=422,
+        content={"error": "Request validation failed", "details": exc.errors()}
+    )
+
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
     return JSONResponse(

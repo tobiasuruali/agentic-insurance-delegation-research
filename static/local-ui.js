@@ -136,16 +136,20 @@ async function sendMessage() {
     chatWindow.appendChild(loadingMessageDiv);
 
     try {
+        const requestData = {
+            message: chatHistoryJson,
+            session_id: sessionId,
+            qualtrics_response_id: "LOCAL_DEBUG"
+        };
+        
+        console.log("Sending request:", JSON.stringify(requestData, null, 2));
+        
         const response = await fetch(chatbotURL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: chatHistoryJson,
-                session_id: sessionId,
-                qualtrics_response_id: "LOCAL_DEBUG"
-            })
+            body: JSON.stringify(requestData)
         });
 
         const loadingDiv = document.getElementById('loading-message');
@@ -155,26 +159,53 @@ async function sendMessage() {
             const data = await response.json();
             const botTimestamp = new Date().toISOString();
             
-            chatHistory += "Agent: " + data.response + "\n";
-            chatHistoryJson.push({ 
-                role: "assistant", 
-                content: data.response,
-                timestamp: botTimestamp 
-            });
+            // Handle multiple messages
+            const responses = Array.isArray(data.response) ? data.response : [data.response];
+            
+            console.log("Received response:", data.response);
+            console.log("Processed responses:", responses);
+            
+            // Display each message with a delay
+            for (let i = 0; i < responses.length; i++) {
+                const messageContent = responses[i];
+                
+                console.log(`Message ${i}:`, messageContent, "Type:", typeof messageContent);
+                
+                // Add delay between messages (except for the first one)
+                if (i > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                chatHistory += "Agent: " + messageContent + "\n";
+                chatHistoryJson.push({ 
+                    role: "assistant", 
+                    content: messageContent,
+                    timestamp: botTimestamp 
+                });
 
-            // Bot message styling
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.style.fontSize = '14pt';
-            botMessageDiv.style.color = botMessageFontColor;
-            botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
-            botMessageDiv.style.padding = "10px";
-            botMessageDiv.style.borderRadius = "10px";
-            botMessageDiv.style.marginBottom = "10px";
-            botMessageDiv.style.maxWidth = "70%";
-            botMessageDiv.style.alignSelf = "flex-start";
-            botMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-            botMessageDiv.innerHTML = '<strong>' + botName + ':</strong> ' + data.response;
-            chatWindow.appendChild(botMessageDiv);
+                console.log("Added to chatHistoryJson:", {
+                    role: "assistant", 
+                    content: messageContent,
+                    timestamp: botTimestamp 
+                });
+
+                // Bot message styling
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.style.fontSize = '14pt';
+                botMessageDiv.style.color = botMessageFontColor;
+                botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
+                botMessageDiv.style.padding = "10px";
+                botMessageDiv.style.borderRadius = "10px";
+                botMessageDiv.style.marginBottom = "10px";
+                botMessageDiv.style.maxWidth = "70%";
+                botMessageDiv.style.alignSelf = "flex-start";
+                botMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
+                botMessageDiv.innerHTML = '<strong>' + botName + ':</strong> ' + messageContent;
+                chatWindow.appendChild(botMessageDiv);
+                
+                // Scroll to bottom after each message
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
         } else {
             showErrorMessage("Error from server.<br>Status code: " + response.status);
             console.error("Error from server: " + response.status);

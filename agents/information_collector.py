@@ -1,6 +1,9 @@
 import json
 import re
+import logging
 from typing import Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 class InformationCollectorAgent:
     """
@@ -82,5 +85,10 @@ class InformationCollectorAgent:
                     "role": msg['role'],
                     "content": msg['content']
                 })
+        
+        # Add logging to debug the message format
+        logger.info(f"Formatted {len(messages)} messages for OpenAI API")
+        for i, msg in enumerate(messages):
+            logger.info(f"OpenAI Message {i}: role={msg['role']}, content_length={len(msg['content'])}")
         
         return messages

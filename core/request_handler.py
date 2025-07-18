@@ -103,32 +103,48 @@ def process_with_information_collector(conversation_history: List[Dict], gpt_mod
                     # Clean the response for display (remove handoff signal)
                     display_response = response_content.split('HANDOFF_TO_RECOMMENDATION_AGENT')[0].strip()
                     if not display_response:
-                        display_response = "Thank you for providing all the information. Let me find the best insurance recommendation for you."
+                        display_response = "Thank you for providing all the information."
                     
-                    return {
-                        'success': True,
-                        'response': display_response,
-                        'handoff': True,
-                        'customer_data': customer_data
-                    }
+                    # Process recommendation immediately and return multiple messages
+                    first_message = f"{display_response}\n\nLet me find the best insurance recommendation for you..."
+                    
+                    # Get recommendation from Agent 2
+                    recommendation_result = process_with_recommendation_agent(customer_data, gpt_model)
+                    
+                    if recommendation_result['success']:
+                        # Return both messages
+                        return {
+                            'success': True,
+                            'response': [first_message, recommendation_result['response']],
+                            'handoff': True,
+                            'customer_data': customer_data
+                        }
+                    else:
+                        # If recommendation fails, return error message
+                        return {
+                            'success': True,
+                            'response': [first_message, f"I'm sorry, I encountered an error generating your recommendation. Please try again."],
+                            'handoff': True,
+                            'customer_data': customer_data
+                        }
                 else:
                     logger.warning(f"Invalid customer data, missing fields: {missing_fields}")
                     return {
                         'success': True,
-                        'response': f"I need some additional information: {', '.join(missing_fields)}. Could you please provide these details?",
+                        'response': [f"I need some additional information: {', '.join(missing_fields)}. Could you please provide these details?"],
                         'handoff': False
                     }
             else:
                 logger.warning("Failed to extract customer data from handoff response")
                 return {
                     'success': True,
-                    'response': "I'm having trouble processing your information. Could you please provide your details again?",
+                    'response': ["I'm having trouble processing your information. Could you please provide your details again?"],
                     'handoff': False
                 }
         
         return {
             'success': True,
-            'response': response_content,
+            'response': [response_content],
             'handoff': False
         }
         
@@ -142,10 +158,15 @@ def process_with_information_collector(conversation_history: List[Dict], gpt_mod
 def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Dict:
     """Process recommendation with Recommendation Agent"""
     try:
+        logger.info(f"Processing recommendation for customer: {customer_data.get('customer_name', 'Unknown')}")
+        logger.info(f"Customer preferences: deductible={customer_data.get('deductible_preference')}, belongings_value={customer_data.get('belongings_value')}")
+        
         # Generate recommendation using existing logic
         recommendation_result = recommendation_agent.process_customer_data(customer_data)
+        logger.info(f"Recommendation result: {recommendation_result}")
         
         # Create OpenAI function call for recommendation
+        logger.info("Creating OpenAI function call for recommendation")
         response = openai_client.chat.completions.create(
             model=gpt_model,
             messages=[{"role": "user", "content": "Generate insurance recommendation"}],
@@ -178,15 +199,19 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
         if response.choices[0].finish_reason == 'tool_calls':
             # Execute function call
             args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+            logger.info(f"Function call arguments: {args}")
             result = recommend_insurance_product(args["deductible_preference"], args["coverage_estimation"])
+            logger.info(f"Insurance product recommendation: {result}")
             
             # Generate final response
+            logger.info("Generating final recommendation response")
             final_response = openai_client.chat.completions.create(
                 model=gpt_model,
                 messages=recommendation_agent.get_conversation_messages(customer_data, {'recommendation_link': result})
             )
             
             response_content = final_response.choices[0].message.content.strip()
+            logger.info(f"Final recommendation response: {response_content}")
             
             # Ensure the response includes the recommendation link
             if result not in response_content:
@@ -268,18 +293,31 @@ def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str):
         
         response_content = result['response']
         
-        # Add assistant response to conversation history
-        assistant_msg = {
-            "role": "assistant",
-            "content": response_content,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-        # Add customer data if handoff occurred
-        if result.get('handoff') and result.get('customer_data'):
-            assistant_msg['customer_data'] = result['customer_data']
-        
-        conversation_history.append(assistant_msg)
+        # Add assistant response(s) to conversation history
+        # Handle both single response and multiple responses
+        if isinstance(response_content, list):
+            # For multiple responses, add each as a separate message
+            for msg_content in response_content:
+                assistant_msg = {
+                    "role": "assistant",
+                    "content": msg_content,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+                # Add customer data only to the first message if handoff occurred
+                if result.get('handoff') and result.get('customer_data') and msg_content == response_content[0]:
+                    assistant_msg['customer_data'] = result['customer_data']
+                conversation_history.append(assistant_msg)
+        else:
+            # Single response (backward compatibility)
+            assistant_msg = {
+                "role": "assistant",
+                "content": response_content,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            # Add customer data if handoff occurred
+            if result.get('handoff') and result.get('customer_data'):
+                assistant_msg['customer_data'] = result['customer_data']
+            conversation_history.append(assistant_msg)
         conversation_histories[conversation_key] = conversation_history
         
         # Store conversation log (optional)
