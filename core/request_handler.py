@@ -211,15 +211,15 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
             )
             
             response_content = final_response.choices[0].message.content.strip()
-            logger.info(f"Final recommendation response: {response_content}")
+            logger.info(f"AI response: {response_content}")
             
-            # Ensure the response includes the recommendation link
-            if result not in response_content:
-                response_content += f"\n\n{result}"
+            # Always append the actual HTML link
+            final_message = f"{response_content} {result}"
+            logger.info(f"Final message with link: {final_message}")
             
             return {
                 'success': True,
-                'response': response_content
+                'response': final_message
             }
         else:
             # Fallback if no tool call
@@ -231,9 +231,12 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
             
             response_content = fallback_response.choices[0].message.content.strip()
             
+            # Always append the actual HTML link (same as tool_calls path)
+            final_message = f"{response_content} {recommendation_result['recommendation_link']}"
+            
             return {
                 'success': True,
-                'response': response_content
+                'response': final_message
             }
         
     except Exception as e:

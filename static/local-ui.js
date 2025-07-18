@@ -4,7 +4,7 @@ console.log("Local UI script loaded");
 const chatbotURL = '/InsuranceRecommendation';
 const botName = 'Comparabot';
 const chatTitle = 'Agentic Insurance Chatbot';
-const avatarImageURL = 'https://via.placeholder.com/120x120/970000/ffffff?text=CB'; // Placeholder avatar
+const avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Placeholder avatar
 
 // Product image data (same as original)
 const productImageData = [
@@ -161,17 +161,21 @@ async function sendMessage() {
             
             // Handle multiple messages
             const responses = Array.isArray(data.response) ? data.response : [data.response];
+            const isHandoff = responses.length > 1; // Multi-message response indicates handoff
             
             console.log("Received response:", data.response);
             console.log("Processed responses:", responses);
+            console.log("Is handoff:", isHandoff);
             
             // Display each message with a delay
             for (let i = 0; i < responses.length; i++) {
                 const messageContent = responses[i];
+                // For handoff: first message is Information Agent, second is Recommendation Agent
+                const agentType = isHandoff && i === 1 ? 'recommendation' : 'collector';
                 
-                console.log(`Message ${i}:`, messageContent, "Type:", typeof messageContent);
+                console.log(`Message ${i}:`, messageContent, "Type:", typeof messageContent, "Agent:", agentType);
                 
-                // Add delay between messages (except for the first one)
+                // Add delay for non-first messages
                 if (i > 0) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
@@ -189,22 +193,18 @@ async function sendMessage() {
                     timestamp: botTimestamp 
                 });
 
-                // Bot message styling
-                const botMessageDiv = document.createElement('div');
-                botMessageDiv.style.fontSize = '14pt';
-                botMessageDiv.style.color = botMessageFontColor;
-                botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
-                botMessageDiv.style.padding = "10px";
-                botMessageDiv.style.borderRadius = "10px";
-                botMessageDiv.style.marginBottom = "10px";
-                botMessageDiv.style.maxWidth = "70%";
-                botMessageDiv.style.alignSelf = "flex-start";
-                botMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-                botMessageDiv.innerHTML = '<strong>' + botName + ':</strong> ' + messageContent;
+                // Create bot message with agent-specific styling
+                const botMessageDiv = createBotMessage(messageContent, agentType);
                 chatWindow.appendChild(botMessageDiv);
                 
                 // Scroll to bottom after each message
                 chatWindow.scrollTop = chatWindow.scrollHeight;
+                
+                // Add system message AFTER the first message in handoff scenario
+                if (isHandoff && i === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
+                }
             }
         } else {
             showErrorMessage("Error from server.<br>Status code: " + response.status);
@@ -219,6 +219,55 @@ async function sendMessage() {
 
     document.getElementById('user-input').value = '';
     chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function addSystemMessage(message) {
+    const chatWindow = document.getElementById('chat-window');
+    const systemMessageDiv = document.createElement('div');
+    
+    systemMessageDiv.style.fontSize = '12pt';
+    systemMessageDiv.style.fontStyle = 'italic';
+    systemMessageDiv.style.color = '#666';
+    systemMessageDiv.style.backgroundColor = '#f8f9fa';
+    systemMessageDiv.style.padding = '8px 12px';
+    systemMessageDiv.style.borderRadius = '15px';
+    systemMessageDiv.style.marginBottom = '10px';
+    systemMessageDiv.style.maxWidth = '60%';
+    systemMessageDiv.style.alignSelf = 'center';
+    systemMessageDiv.style.border = '1px solid #dee2e6';
+    systemMessageDiv.style.textAlign = 'center';
+    
+    systemMessageDiv.innerHTML = `<em>${message}</em>`;
+    chatWindow.appendChild(systemMessageDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function createBotMessage(content, agentType = 'collector') {
+    const botMessageDiv = document.createElement('div');
+    
+    // Base styling
+    botMessageDiv.style.fontSize = '14pt';
+    botMessageDiv.style.padding = '10px';
+    botMessageDiv.style.borderRadius = '10px';
+    botMessageDiv.style.marginBottom = '10px';
+    botMessageDiv.style.maxWidth = '70%';
+    botMessageDiv.style.alignSelf = 'flex-start';
+    botMessageDiv.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+    
+    // Agent-specific styling
+    if (agentType === 'collector') {
+        botMessageDiv.style.backgroundColor = '#EFEFEF';
+        botMessageDiv.style.color = '#333';
+        botMessageDiv.style.borderLeft = '4px solid #970000';
+        botMessageDiv.innerHTML = `<strong>Information Agent:</strong> ${content}`;
+    } else if (agentType === 'recommendation') {
+        botMessageDiv.style.backgroundColor = '#e8f4f8';
+        botMessageDiv.style.color = '#333';
+        botMessageDiv.style.borderLeft = '4px solid #0066cc';
+        botMessageDiv.innerHTML = `<strong>Recommendation Agent:</strong> ${content}`;
+    }
+    
+    return botMessageDiv;
 }
 
 function showErrorMessage(message) {

@@ -19,7 +19,7 @@ env/
 venv/
 
 # Ignore Docker-related files
-Dockerfile*
+# Dockerfile*
 docker-compose.override.yml
 *.log
 
