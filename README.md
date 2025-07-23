@@ -98,7 +98,7 @@ docker-compose up --build
 ### 3. Run with Python
 ```bash
 pip install -r requirements.txt
-uvicorn core.application:app --host 0.0.0.0 --port 8000 --reload
+uvicorn core.application:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 ### 4. Access the System
@@ -148,26 +148,46 @@ This system is designed for seamless Qualtrics integration:
 - Configure embedded data fields for conversation storage
 - Update `chatbotURL` with your deployment endpoint
 
+### Google Cloud Authentication & Setup
+```bash
+# Login to Google Cloud (no browser mode)
+gcloud auth login --no-browser
+
+# Configure Docker for Artifact Registry
+gcloud auth configure-docker GCLOUD_AREA
+```
+
 ### Google Cloud Run Deployment
 ```bash
-# Build and deploy
-docker build -t gcr.io/YOUR_PROJECT_ID/agentic-insurance-chatbot .
-docker push gcr.io/YOUR_PROJECT_ID/agentic-insurance-chatbot
+# Build image locally
+docker build -t agentic-insurance-chatbot .
 
+# Tag for Artifact Registry
+docker tag agentic-insurance-chatbot GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest
+
+# Push to Artifact Registry
+docker push GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest
+
+# Deploy to Cloud Run
 gcloud run deploy agentic-insurance-chatbot \
-  --image gcr.io/YOUR_PROJECT_ID/agentic-insurance-chatbot \
-  --set-env-vars OPENAI_API_KEY=your_key
+  --image GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest \
+  --platform managed \
+  --region us-central1 \
+  --set-env-vars OPENAI_API_KEY=your_key \
+  --set-env-vars ENABLE_CONVERSATION_STORAGE=false \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID \
+  --allow-unauthenticated
 ```
 
 ### Environment Configuration
 ```bash
-# Required
+# CRITICAL - Required for application to function
 OPENAI_API_KEY=your_openai_api_key
 
-# Optional - Storage & Analytics
+# OPTIONAL - Enable conversation logging to Google Cloud Storage
 ENABLE_CONVERSATION_STORAGE=false
 GOOGLE_CLOUD_PROJECT=your_project_id
-GCS_BUCKET_NAME=your_bucket_name
+GCS_BUCKET_NAME=your_bucket_name  # defaults to "insurance-chatbot-logs"
 ```
 
 ---
