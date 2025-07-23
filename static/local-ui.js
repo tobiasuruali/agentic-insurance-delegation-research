@@ -202,8 +202,8 @@ async function sendMessage() {
                 
                 // Add system message AFTER the first message in handoff scenario
                 if (isHandoff && i === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
                     addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         } else {

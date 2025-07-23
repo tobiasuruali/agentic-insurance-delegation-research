@@ -58,20 +58,39 @@ The system returns an array of messages during handoff:
   - Recommendation Agent: Light blue background with blue border
 - **Smooth Transitions**: 1-second delays between messages for natural flow
 
-### Overall System Flow
+### Complete Agent-Focused Application Flow
 
 ```mermaid
-graph TD
-    A[User Starts Chat] --> B[Information Agent]
-    B --> C{All 9 Fields Collected?}
-    C -->|No| D[Ask Next Question]
+%%{init:{ "theme":"neutral" }}%%
+flowchart TB
+    A["👤 User<br>Starts Chat"] --> B(["💻 Information Agent"])
+    B --> C{"All Information<br>Collected?"}
+    C -- No --> D["Ask Next Question"]
     D --> A
-    C -->|Yes| E[Agent Handoff Signal]
-    E --> F[🔄 System Transition Message]
-    F --> G[Recommendation Agent]
-    G --> H[Product Recommendation with Link]
-    H --> I[Conversation Complete]
-```
+    C -- Yes --> E["🔄Agent Handoff Signal & System Transition"]
+    E --> G(["💻 Recommendation Agent"])
+    G -.-> H["🛠️ Product Recommendation with Link"]
+    H --> I["✅ Conversation Complete"]
+
+    %% classes (2 px strokes by default)
+    classDef infoAgent fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
+    classDef recoAgent fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef system    fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef user      fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+
+    class A user
+    class B infoAgent
+    class C infoAgent
+    class D infoAgent
+    class E system
+    class G recoAgent
+    class H recoAgent
+    class I system
+
+    %% heavier outlines for the two focus nodes
+    style B stroke-width:4px
+    style G stroke-width:4px
+
 
 ### Agent Handoff Sequence
 
