@@ -97,9 +97,11 @@ function addChatHeader() {
     chatWindow.parentNode.insertBefore(chatHeader, chatWindow);
 }
 
-function sendMessage() {
+async function sendMessage() {
     console.log("Send button clicked");
     var userInput = document.getElementById('user-input').value;
+    if (!userInput.trim()) return;
+    
     var chatWindow = document.getElementById('chat-window');
     var timestamp = new Date().toISOString();
     chatHistory += "User: " + userInput + "\n";
@@ -131,52 +133,152 @@ function sendMessage() {
     loadingMessageDiv.textContent = botName + ' is typing...';
     chatWindow.appendChild(loadingMessageDiv);
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', chatbotURL, true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            var loadingDiv = document.getElementById('loading-message');
-            loadingDiv && loadingDiv.remove();
-            if (xhr.status === 200) {
-                var response = JSON.parse(xhr.responseText);
-                var botTimestamp = new Date().toISOString();
-                chatHistory += "Agent: " + response.response + "\n";
-                chatHistoryJson.push({ role: "assistant", type: "text", timestamp: botTimestamp, content: response.response });
+    try {
+        var qualtricsResponseId = "${e://Field/ResponseID}";
+        var requestData = {
+            message: chatHistoryJson,
+            session_id: sessionId,
+            qualtrics_response_id: qualtricsResponseId
+        };
+        
+        console.log("Sending request:", JSON.stringify(requestData, null, 2));
+        
+        var response = await fetch(chatbotURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
 
-                // Bot message styling
-                var botMessageDiv = document.createElement('div');
-                botMessageDiv.style.fontSize = '14pt';
-                botMessageDiv.style.color = botMessageFontColor;
-                botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
-                botMessageDiv.style.padding = "10px";
-                botMessageDiv.style.borderRadius = "10px";
-                botMessageDiv.style.marginBottom = "10px";
-                botMessageDiv.style.maxWidth = "70%";
-                botMessageDiv.style.alignSelf = "flex-start";
-                botMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-                botMessageDiv.innerHTML = '<strong>'+botName+':</strong> ' + response.response;
+        var loadingDiv = document.getElementById('loading-message');
+        if (loadingDiv) loadingDiv.remove();
+
+        if (response.ok) {
+            var data = await response.json();
+            var botTimestamp = new Date().toISOString();
+            
+            // Handle multiple messages
+            var responses = Array.isArray(data.response) ? data.response : [data.response];
+            var isHandoff = responses.length > 1; // Multi-message response indicates handoff
+            
+            console.log("Received response:", data.response);
+            console.log("Processed responses:", responses);
+            console.log("Is handoff:", isHandoff);
+            
+            // Display each message with a delay
+            for (let i = 0; i < responses.length; i++) {
+                var messageContent = responses[i];
+                // For handoff: first message is Information Agent, second is Recommendation Agent
+                var agentType = isHandoff && i === 1 ? 'recommendation' : 'collector';
+                
+                console.log(`Message ${i}:`, messageContent, "Type:", typeof messageContent, "Agent:", agentType);
+                
+                // Add delay for non-first messages
+                if (i > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                chatHistory += "Agent: " + messageContent + "\n";
+                chatHistoryJson.push({ 
+                    role: "assistant", 
+                    type: "text",
+                    content: messageContent,
+                    timestamp: botTimestamp 
+                });
+
+                console.log("Added to chatHistoryJson:", {
+                    role: "assistant", 
+                    type: "text",
+                    content: messageContent,
+                    timestamp: botTimestamp 
+                });
+
+                // Create bot message with agent-specific styling
+                var botMessageDiv = createBotMessage(messageContent, agentType);
                 chatWindow.appendChild(botMessageDiv);
-            } else {
-                showErrorMessage("Error from server.<br>Status code: " + xhr.status);
-                console.error("Error from server: " + xhr.status);
+                
+                // Scroll to bottom after each message
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                
+                // Add system message AFTER the first message in handoff scenario
+                if (isHandoff && i === 0) {
+                    addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
-            try{
-                Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-                Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-                Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-                Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-//                chatWindow.scrollTop = chatWindow.scrollHeight;
-            } catch(error) {
-                console.error("Error from Qualtrics: ", error);
-                sessionId = "DEBUG"
-                qualtrics_response_id = "DEBUG"
-            }
+        } else {
+            showErrorMessage("Error from server.<br>Status code: " + response.status);
+            console.error("Error from server: " + response.status);
         }
-    };
-    var qualtricsResponseId = "${e://Field/ResponseID}";
-    xhr.send(JSON.stringify({ message: chatHistoryJson, session_id: sessionId, qualtrics_response_id: qualtricsResponseId }));
+        
+        try{
+            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
+            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+            Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
+            Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+        } catch(error) {
+            console.error("Error from Qualtrics: ", error);
+            sessionId = "DEBUG"
+            qualtricsResponseId = "DEBUG"
+        }
+    } catch (error) {
+        var loadingDiv = document.getElementById('loading-message');
+        if (loadingDiv) loadingDiv.remove();
+        showErrorMessage("Network error: " + error.message);
+        console.error("Network error: ", error);
+    }
+
     document.getElementById('user-input').value = '';
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function createBotMessage(content, agentType = 'collector') {
+    var botMessageDiv = document.createElement('div');
+    
+    // Base styling
+    botMessageDiv.style.fontSize = '14pt';
+    botMessageDiv.style.padding = '10px';
+    botMessageDiv.style.borderRadius = '10px';
+    botMessageDiv.style.marginBottom = '10px';
+    botMessageDiv.style.maxWidth = '70%';
+    botMessageDiv.style.alignSelf = 'flex-start';
+    botMessageDiv.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+    
+    // Agent-specific styling
+    if (agentType === 'collector') {
+        botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
+        botMessageDiv.style.color = botMessageFontColor;
+        botMessageDiv.style.borderLeft = '4px solid #970000';
+        botMessageDiv.innerHTML = '<strong>Information Agent:</strong> ' + content;
+    } else if (agentType === 'recommendation') {
+        botMessageDiv.style.backgroundColor = '#e8f4f8';
+        botMessageDiv.style.color = '#333';
+        botMessageDiv.style.borderLeft = '4px solid #0066cc';
+        botMessageDiv.innerHTML = '<strong>Recommendation Agent:</strong> ' + content;
+    }
+    
+    return botMessageDiv;
+}
+
+function addSystemMessage(message) {
+    var chatWindow = document.getElementById('chat-window');
+    var systemMessageDiv = document.createElement('div');
+    
+    systemMessageDiv.style.fontSize = '12pt';
+    systemMessageDiv.style.fontStyle = 'italic';
+    systemMessageDiv.style.color = '#666';
+    systemMessageDiv.style.backgroundColor = '#f8f9fa';
+    systemMessageDiv.style.padding = '8px 12px';
+    systemMessageDiv.style.borderRadius = '15px';
+    systemMessageDiv.style.marginBottom = '10px';
+    systemMessageDiv.style.maxWidth = '60%';
+    systemMessageDiv.style.alignSelf = 'center';
+    systemMessageDiv.style.border = '1px solid #dee2e6';
+    systemMessageDiv.style.textAlign = 'center';
+    
+    systemMessageDiv.innerHTML = '<em>' + message + '</em>';
+    chatWindow.appendChild(systemMessageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
@@ -376,7 +478,7 @@ function showRecommendation(productNumber) {
     } catch(error) {
         console.error("Error from Qualtrics: ", error);
         sessionId = "DEBUG"
-        qualtrics_response_id = "DEBUG"
+        qualtricsResponseId = "DEBUG"
     }
 }
 
