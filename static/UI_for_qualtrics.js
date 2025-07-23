@@ -1,69 +1,68 @@
-console.log("Qualtrics UI script loaded");
+console.log("Script loaded");
+var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
+//var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
+var botName = 'Lab Bot';
+var chatTitle = 'Chat Title';
+var avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Replace with your actual image URL (square image)
 
-// Configuration - Update these variables for your deployment
-var chatbotURL = 'https://your-cloud-run-service-url.com/InsuranceRecommendation';
-var botName = 'Comparabot';
-var chatTitle = 'Insurance Recommendation Chat';
-var avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv';
-
-// Product image data (same as original)
 const productImageData = [
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
         alertText: 'This is image 1'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
         alertText: 'This is image 2'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
         alertText: 'This is image 3'
     },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+     {
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
         alertText: 'This is image 4'
     },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+     {
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
         alertText: 'This is image 5'
     },
-    {
+     {
         src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
         alertText: 'This is image 6'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+    }, {
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
         alertText: 'This is image 7'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+        src: 'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww',
         alertText: 'This is image 8'
     }
-];
+    ];
+
 
 // Colors
-documentBackgroundColor = "#F5F5F5";
-chatHeaderBackgroundColor = "#980033";
-chatHeaderFontColor = "#FFF";
-userMessageFontColor = "#333";
-userMessageBackgroundColor = "#FFF";
-loadingMessageFontColor = "#888";
-botMessageFontColor = "#333";
-botMessageBackgroundColor = "#EFEFEF";
-sendButtonColor = "#970000";
-sendButtonFontColor = "#FFF";
+documentBackgroundColor     = "#F5F5F5";    // Light background color
+chatHeaderBackgroundColor   = "#980033"     //Crimson Background
+chatHeaderFontColor         =  "#FFF";      // White text
+userMessageFontColor        = "#333"; // Darker text color
+userMessageBackgroundColor  = "#FFF"; // White background
+loadingMessageFontColor     = "#888"; // Grey text color
+botMessageFontColor         = "#333"; // Darker text color
+botMessageBackgroundColor    = "#EFEFEF"; // Light grey background
+sendButtonColor             = "#970000"; // Red button
+sendButtonFontColor         = "#FFF"; // White text
 
 // Internal variables
 var sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
 var chatHistory = "";
 var chatHistoryJson = [];
 
-// Apply styles
+// Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
-document.body.style.backgroundColor = documentBackgroundColor;
+document.body.style.backgroundColor = documentBackgroundColor
 
 function addChatHeader() {
+    // Create and style the chat header container (for avatar and text)
     var chatHeader = document.createElement('div');
     chatHeader.style.backgroundColor = chatHeaderBackgroundColor;
     chatHeader.style.color = chatHeaderFontColor;
@@ -73,23 +72,27 @@ function addChatHeader() {
     chatHeader.style.fontWeight = "bold";
     chatHeader.style.borderTopLeftRadius = "10px";
     chatHeader.style.borderTopRightRadius = "10px";
-    chatHeader.style.display = "flex";
-    chatHeader.style.alignItems = "center";
+    chatHeader.style.display = "flex"; // Flexbox for alignment
+    chatHeader.style.alignItems = "center"; // Center items vertically
 
+    // Create the avatar image element
     var avatar = document.createElement('img');
     avatar.src = avatarImageURL;
     avatar.alt = botName + 'Avatar';
-    avatar.style.width = "120px";
-    avatar.style.height = "120px";
-    avatar.style.marginRight = "10px";
-    avatar.style.borderRadius = "50%";
+    avatar.style.width = "80px"; // Set the size of the avatar
+    avatar.style.height = "80px"; // Set the size of the avatar
+    avatar.style.marginRight = "10px"; // Space between avatar and text
+    avatar.style.borderRadius = "50%"; // Make it circular if not already
 
+    // Create the text element
     var chatHeaderText = document.createElement('span');
     chatHeaderText.innerText = chatTitle;
 
+    // Append avatar and text to the header
     chatHeader.appendChild(avatar);
     chatHeader.appendChild(chatHeaderText);
 
+    // Insert the header above the existing chat box
     var chatWindow = document.getElementById('chat-window');
     chatWindow.parentNode.insertBefore(chatHeader, chatWindow);
 }
@@ -99,13 +102,8 @@ function sendMessage() {
     var userInput = document.getElementById('user-input').value;
     var chatWindow = document.getElementById('chat-window');
     var timestamp = new Date().toISOString();
-    
     chatHistory += "User: " + userInput + "\n";
-    chatHistoryJson.push({ 
-        role: "user", 
-        content: userInput,
-        timestamp: timestamp 
-    });
+    chatHistoryJson.push({ role: "user", type: "text", timestamp: timestamp, content: userInput });
 
     // User message styling
     var userMessageDiv = document.createElement('div');
@@ -136,22 +134,15 @@ function sendMessage() {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', chatbotURL, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
-    
     xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             var loadingDiv = document.getElementById('loading-message');
             loadingDiv && loadingDiv.remove();
-            
             if (xhr.status === 200) {
                 var response = JSON.parse(xhr.responseText);
                 var botTimestamp = new Date().toISOString();
-                
                 chatHistory += "Agent: " + response.response + "\n";
-                chatHistoryJson.push({ 
-                    role: "assistant", 
-                    content: response.response,
-                    timestamp: botTimestamp 
-                });
+                chatHistoryJson.push({ role: "assistant", type: "text", timestamp: botTimestamp, content: response.response });
 
                 // Bot message styling
                 var botMessageDiv = document.createElement('div');
@@ -164,55 +155,170 @@ function sendMessage() {
                 botMessageDiv.style.maxWidth = "70%";
                 botMessageDiv.style.alignSelf = "flex-start";
                 botMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-                botMessageDiv.innerHTML = '<strong>' + botName + ':</strong> ' + response.response;
+                botMessageDiv.innerHTML = '<strong>'+botName+':</strong> ' + response.response;
                 chatWindow.appendChild(botMessageDiv);
             } else {
                 showErrorMessage("Error from server.<br>Status code: " + xhr.status);
                 console.error("Error from server: " + xhr.status);
             }
-            
-            try {
+            try{
                 Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
                 Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
                 Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
                 Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+//                chatWindow.scrollTop = chatWindow.scrollHeight;
             } catch(error) {
                 console.error("Error from Qualtrics: ", error);
-                sessionId = "DEBUG";
-                qualtricsResponseId = "DEBUG";
+                sessionId = "DEBUG"
+                qualtrics_response_id = "DEBUG"
             }
         }
     };
-    
     var qualtricsResponseId = "${e://Field/ResponseID}";
-    xhr.send(JSON.stringify({ 
-        message: chatHistoryJson, 
-        session_id: sessionId, 
-        qualtrics_response_id: qualtricsResponseId 
-    }));
-    
+    xhr.send(JSON.stringify({ message: chatHistoryJson, session_id: sessionId, qualtrics_response_id: qualtricsResponseId }));
     document.getElementById('user-input').value = '';
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// Product recommendation functions (same as original implementation)
-function showRecommendation(productNumber) {
-    showProductOverlay();
-    var message = "Here is your recommended product: " + productNumber;
-    var alertMessage = document.getElementById("recommendationMessage");
+try {
+    addChatHeader();
+
+    var sendButton = document.getElementById('send-button');
+    sendButton.style.backgroundColor = sendButtonColor;
+    sendButton.style.color = sendButtonFontColor;
+    sendButton.style.padding = "10px 20px";
+    sendButton.style.border = "none";
+    sendButton.style.borderRadius = "5px";
+    sendButton.style.fontSize = "14pt";
+    sendButton.style.cursor = "pointer";
+    sendButton.addEventListener('click', sendMessage);
+
+    document.getElementById('user-input').style.padding = "10px";
+    document.getElementById('user-input').style.border = "1px solid #CCC";
+    document.getElementById('user-input').style.borderRadius = "5px";
+    document.getElementById('user-input').style.fontSize = "14pt";
+
+    // Handle Enter key to send message and prevent default behavior
+    document.getElementById('user-input').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();  // Prevent default behavior like form submission
+            if (document.getElementById('user-input').value.trim() !== "") {  // Ensure input is not empty
+                sendMessage();
+            }
+        }
+    });
+} catch (error) {
+    showErrorMessage("Error setting up event listeners. Error", error);
+    console.error("Error setting up event listeners: ", error);
+}
+
+
+
+ function showErrorMessage(message) {
+         // Create alertbox for errors
+        applyCustomAlertStyles();
+        let chatWindow = document.getElementById('chat-window');
+
+         // Create the main container div
+        let alertBox = document.createElement("div");
+        alertBox.id = "customAlertBox";
+        alertBox.className = "custom-alert";
+
+        // Create the content div
+        let alertContent = document.createElement("div");
+        alertContent.className = "custom-alert-content";
+
+        // Create the close button
+        let closeButton = document.createElement("span");
+        closeButton.className = "close";
+        closeButton.innerHTML = "&times;";
+        closeButton.onclick = () => alertBox.remove(); // Close functionality
+
+        // Create the message paragraph
+        let alertMessage = document.createElement("p");
+        alertMessage.id = "alertMessage";
+
+        // Assemble the alert box
+        alertContent.appendChild(closeButton);
+        alertContent.appendChild(alertMessage);
+        alertBox.appendChild(alertContent);
+
+        // Append to the body or desired parent element
+        //document.body.appendChild(alertBox);
+
+        chatWindow.appendChild(alertBox);
+
+        alertMessage.style.color = "#b60000"
+        alertMessage.innerHTML = message;
+        alertBox.style.display = "flex";
+        closeButton.addEventListener('click', function () {
+            alertBox.style.display = "none";
+        });
+}
+
+// Testing new product viewer:
+//showRecommendation(1)
+
+
+
+function showProductOverlay(){
+    // Create alertbox for errors
+    applyCustomRecommendationcStyles();
+    let chatWindow = document.getElementById('chat-window');
+
+    // Create the main container div
+    let alertBox = document.createElement("div");
+    alertBox.id = "recommendation";
+    alertBox.className = "custom-recommendation";    
+    alertBox.style.display = "flex";
+
+    // Create the content div
+    let alertContent = document.createElement("div");
+    alertContent.id = "product-overlay-content";
+    alertContent.className = "custom-recommendation-content";
+
+    // Create the message paragraph
+    let alertMessage = document.createElement("p");
+    alertMessage.id = "recommendationMessage";
+    alertMessage.style.color = "#b60000";
+    alertMessage.innerHTML = "message";
+
+    // Create the <img> container and image
+    const container = document.createElement('div');
+    container.id = 'image-container';
+    container.style.margin = '20px 0';
+
+     // Append elements in desired order
+    alertContent.appendChild(alertMessage);      // Top
+    alertContent.appendChild(container);         // Middle (Image)
+    
+    alertBox.appendChild(alertContent);
+    chatWindow.appendChild(alertBox);    
+}
+
+
+function showRecommendation(productNumber) {    
+    showProductOverlay()
+    message = "Here is your recommended product: " + productNumber 
+    // Adapt message
+    let alertMessage = document.getElementById("recommendationMessage")
     alertMessage.innerHTML = message;
 
-    var container = document.getElementById("image-container");
-    var img = document.createElement('img');
+    // Show recommended product as an image
+    let container = document.getElementById("image-container")
+
+    const img = document.createElement('img');
     img.src = productImageData[productNumber-1].src;
     img.alt = 'Description of image';
     img.style.width = '100%';
-    img.style.maxWidth = '600px';
+    img.style.maxWidth = '750px';
     img.style.display = 'block';
     img.style.margin = '0 auto';
+
     container.appendChild(img);
 
-    var acceptButton = document.createElement('button');
+    // Accept button
+    const acceptButton = document.createElement('button');
     acceptButton.textContent = 'Accept';
     acceptButton.style.backgroundColor = sendButtonColor;
     acceptButton.style.color = sendButtonFontColor;
@@ -223,9 +329,12 @@ function showRecommendation(productNumber) {
     acceptButton.style.cursor = "pointer";
     acceptButton.onclick = function() {
         alert('You accepted!');
+    // → Advance Qualtrics immediately:
+    document.getElementById("NextButton").click();
     };
 
-    var declineButton = document.createElement('button');
+    // Decline button
+    const declineButton = document.createElement('button');
     declineButton.textContent = 'Decline';
     declineButton.style.backgroundColor = sendButtonColor;
     declineButton.style.color = sendButtonFontColor;
@@ -236,28 +345,29 @@ function showRecommendation(productNumber) {
     declineButton.style.cursor = "pointer";
     declineButton.addEventListener('click', function () {
         document.getElementById("recommendation").remove();
-        showAllProducts("Choose a product below");
+        showAllProducts("Choose a product below")
     });
 
+    // Set button classes
     acceptButton.className = "custom-recommendation-button";
     declineButton.className = "custom-recommendation-button";
 
-    var buttonContainer = document.createElement('div');
+    // Wrap buttons
+    const buttonContainer = document.createElement('div');
     buttonContainer.className = "recommendation-buttons";
+
+    // Append buttons to button container
     buttonContainer.appendChild(acceptButton);
     buttonContainer.appendChild(declineButton);
 
-    var alertContent = document.getElementById('product-overlay-content');
-    alertContent.appendChild(buttonContainer);
+    let alertContent = document.getElementById('product-overlay-content')    
+       
+    alertContent.appendChild(buttonContainer);   // Bottom (Buttons)
     
-    try {
+    try{
         var botTimestamp = new Date().toISOString();
         chatHistory += "System: clicked-recommendation\n";
-        chatHistoryJson.push({ 
-            role: "system", 
-            content: "clicked-recommendation",
-            timestamp: botTimestamp 
-        });
+        chatHistoryJson.push({ role: "System", type: "text", timestamp: botTimestamp, content: "clicked-recommendation" });
 
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
@@ -265,110 +375,164 @@ function showRecommendation(productNumber) {
         Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
     } catch(error) {
         console.error("Error from Qualtrics: ", error);
-        sessionId = "DEBUG";
-        qualtricsResponseId = "DEBUG";
+        sessionId = "DEBUG"
+        qualtrics_response_id = "DEBUG"
     }
-}
-
-function showProductOverlay() {
-    applyCustomRecommendationStyles();
-    var chatWindow = document.getElementById('chat-window');
-
-    var alertBox = document.createElement("div");
-    alertBox.id = "recommendation";
-    alertBox.className = "custom-recommendation";
-    alertBox.style.display = "flex";
-
-    var alertContent = document.createElement("div");
-    alertContent.id = "product-overlay-content";
-    alertContent.className = "custom-recommendation-content";
-
-    var alertMessage = document.createElement("p");
-    alertMessage.id = "recommendationMessage";
-    alertMessage.style.color = "#b60000";
-    alertMessage.innerHTML = "message";
-
-    var container = document.createElement('div');
-    container.id = 'image-container';
-    container.style.margin = '20px 0';
-
-    alertContent.appendChild(alertMessage);
-    alertContent.appendChild(container);
-    alertBox.appendChild(alertContent);
-    chatWindow.appendChild(alertBox);
 }
 
 function showAllProducts(message) {
-    showProductOverlay();
-    var alertMessage = document.getElementById("recommendationMessage");
-    alertMessage.innerHTML = message;
+  console.log("showAllProducts() called with message:", message);
+  showProductOverlay();
 
-    var container = document.getElementById("image-container");
-    productImageData.forEach(function(data) {
-        var button = document.createElement('button');
-        button.className = 'image-button';
+  // Set prompt text
+  const alertMessage = document.getElementById("recommendationMessage");
+  alertMessage.innerHTML = message;
 
-        var img = document.createElement('img');
-        img.src = data.src;
-        img.alt = 'Description of image';
-        button.appendChild(img);
-        button.addEventListener('click', function() {
-            alert(data.alertText);
-        });
+  // Hide single-image container (we're in gallery mode)
+  const singleImgContainer = document.getElementById("image-container");
+  if (singleImgContainer) {
+    singleImgContainer.innerHTML = "";
+    singleImgContainer.style.display = "none";
+  }
 
-        container.appendChild(button);
-    });
-    
-    try {
-        var botTimestamp = new Date().toISOString();
-        chatHistory += "System: clicked-overview\n";
-        chatHistoryJson.push({ 
-            role: "system", 
-            content: "clicked-overview",
-            timestamp: botTimestamp 
-        });
+  const content = document.getElementById("product-overlay-content");
 
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-    } catch(error) {
-        console.error("Error from Qualtrics: ", error);
-        sessionId = "DEBUG";
-        qualtricsResponseId = "DEBUG";
+  // Remove any previous gallery / indicator / stray nodes
+  content.querySelectorAll(".carousel, .carousel-indicator, .recommendation-buttons").forEach(el => el.remove());
+  // Also strip stray text nodes that contain only "/" or whitespace
+  [...content.childNodes].forEach(n => {
+    if (n.nodeType === 3) {
+      const t = n.textContent.trim();
+      if (t === "/" || t === "") {
+        console.log("Removing stray text node:", JSON.stringify(t));
+        n.remove();
+      }
     }
+  });
+
+  // Build carousel
+  const carousel = document.createElement("div");
+  carousel.className = "carousel";
+
+  const prev = document.createElement("button");
+  prev.className = "prev";
+  prev.type = "button";
+  prev.textContent = "‹";
+
+  const track = document.createElement("div");
+  track.className = "slides";
+
+  productImageData.forEach((data, i) => {
+    const slide = document.createElement("div");
+    slide.className = "slide";
+
+    const img = document.createElement("img");
+    img.src = data.src;
+    img.alt = data.alertText;
+
+    img.addEventListener("click", () => {
+      console.log(`Slide ${i+1} clicked:`, data.alertText);
+      alert(data.alertText);
+      const nb = document.getElementById("NextButton");
+      if (nb) nb.click();
+    });
+
+    slide.appendChild(img);
+    track.appendChild(slide);
+  });
+
+  const next = document.createElement("button");
+  next.className = "next";
+  next.type = "button";
+  next.textContent = "›";
+
+  carousel.appendChild(prev);
+  carousel.appendChild(track);
+  carousel.appendChild(next);
+  content.appendChild(carousel);
+
+  // ===== Fraction Indicator (SPAN‑split to avoid Qualtrics sanitizing numbers) =====
+  const total = Array.isArray(productImageData) ? productImageData.length : 0;
+  let idx = 0;
+
+  const indicator = document.createElement("div");
+  indicator.className = "carousel-indicator";
+  indicator.innerHTML = `<span class="ci-current"></span> / <span class="ci-total"></span>`;
+  const ciCurrent = indicator.querySelector(".ci-current");
+  const ciTotal   = indicator.querySelector(".ci-total");
+  content.appendChild(indicator);
+
+  function updateIndicator() {
+    // clamp
+    if (idx < 0) idx = 0;
+    if (idx >= total) idx = total - 1;
+
+    ciCurrent.textContent = String(idx + 1);
+    ciTotal.textContent   = String(total);
+
+    console.log("Carousel indicator update:", {
+      idx,
+      total,
+      indicatorCurrent: ciCurrent.textContent,
+      indicatorTotal: ciTotal.textContent
+    });
+  }
+  updateIndicator();
+
+  // Nav arrow behavior (scrollIntoView is robust under Qualtrics)
+  const slides = Array.from(track.children);
+  function goTo(i) {
+    idx = (i + total) % total;
+    slides[idx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    updateIndicator();
+  }
+  prev.addEventListener("click", () => goTo(idx - 1));
+  next.addEventListener("click", () => goTo(idx + 1));
+
+  // Sync when user scrolls manually
+  let scrollRAF;
+  track.addEventListener("scroll", () => {
+    if (scrollRAF) cancelAnimationFrame(scrollRAF);
+    scrollRAF = requestAnimationFrame(() => {
+      const width = track.clientWidth || 1;
+      const newIdx = Math.round(track.scrollLeft / width);
+      if (newIdx !== idx) {
+        idx = Math.max(0, Math.min(total - 1, newIdx));
+        updateIndicator();
+      }
+    });
+  });
+
+  // Qualtrics embedded data logging (unchanged)
+  try {
+    const botTimestamp = new Date().toISOString();
+    console.log("Logging 'clicked-overview' at", botTimestamp);
+    chatHistory += "System: clicked-overview\n";
+    chatHistoryJson.push({
+      role:      "System",
+      type:      "text",
+      timestamp: botTimestamp,
+      content:   "clicked-overview"
+    });
+    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistory",     chatHistory);
+    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistoryJson", JSON.stringify(chatHistoryJson));
+    Qualtrics.SurveyEngine.setJSEmbeddedData("SessionId",       sessionId);
+    Qualtrics.SurveyEngine.setJSEmbeddedData("ResponseID",      "${e://Field/ResponseID}");
+  } catch (error) {
+    console.error("Error setting embedded data:", error);
+    sessionId = "DEBUG";
+  }
 }
 
-function showErrorMessage(message) {
-    applyCustomAlertStyles();
-    var chatWindow = document.getElementById('chat-window');
 
-    var alertBox = document.createElement("div");
-    alertBox.id = "customAlertBox";
-    alertBox.className = "custom-alert";
 
-    var alertContent = document.createElement("div");
-    alertContent.className = "custom-alert-content";
 
-    var closeButton = document.createElement("span");
-    closeButton.className = "close";
-    closeButton.innerHTML = "&times;";
-    closeButton.onclick = function() { alertBox.remove(); };
-
-    var alertMessage = document.createElement("p");
-    alertMessage.id = "alertMessage";
-    alertMessage.style.color = "#b60000";
-    alertMessage.innerHTML = message;
-
-    alertContent.appendChild(closeButton);
-    alertContent.appendChild(alertMessage);
-    alertBox.appendChild(alertContent);
-    chatWindow.appendChild(alertBox);
-    alertBox.style.display = "flex";
-}
+// Test errormessage on site load:
+//showErrorMessage("Test")
 
 function applyCustomAlertStyles() {
-    var customAlertStyle = document.createElement("style");
+    // Set styles for .custom-alert
+    const customAlertStyle = document.createElement("style");
     customAlertStyle.innerHTML = `
         .custom-alert {
             display: none;
@@ -393,12 +557,13 @@ function applyCustomAlertStyles() {
             position: relative;
         }
         .custom-alert-content p {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            font-size: 18px;
-            text-align: center;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        font-size: 18px;
+        text-align: center;
         }
+
         .close {
             color: #aaa;
             float: right;
@@ -415,114 +580,143 @@ function applyCustomAlertStyles() {
     document.head.appendChild(customAlertStyle);
 }
 
-function applyCustomRecommendationStyles() {
-    var customRecommendationStyle = document.createElement("style");
-    customRecommendationStyle.innerHTML = `
-        .custom-recommendation {
-            display: none;
-            position: absolute;
-            justify-content: center;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.4);
-        }
-        .custom-recommendation-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            margin: 20px auto;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 650px;
-            width: 100%;
-            height: fit-content;
-            box-sizing: border-box;
-        }
-        #recommendationMessage {
-            color: #b60000;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        #image-container {
-            margin: 20px 0;
-        }
-        #image-container img {
-            width: 100%;
-            max-width: 600px;
-            display: block;
-            margin: 0 auto;
-        }
-        .recommendation-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .custom-recommendation-button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14pt;
-            cursor: pointer;
-        }
-        button.image-button {
-            border: none;
-            background: transparent;
-            padding: 0;
-            cursor: pointer;
-            display: block;
-            margin: 0 auto;
-        }
-        button.image-button img {
-            width: 100%;
-            max-width: 600px;
-            display: block;
-            filter: brightness(70%);
-            transition: filter 0.3s ease;
-        }
-        button.image-button:hover img {
-            filter: brightness(100%);
-        }
-    `;
-    document.head.appendChild(customRecommendationStyle);
-}
+function applyCustomRecommendationcStyles() {
+  const css = `
+    /* ===== Overlay Backdrop ===== */
+    .custom-recommendation {
+      display: none;
+      position: fixed;  /* was absolute; fixed keeps centered on long pages */
+      inset: 0;
+      z-index: 1000;
+      background-color: rgba(0, 0, 0, 0.4);
+      align-items: center;
+      justify-content: center;
+    }
 
-// Initialize the chat interface
-try {
-    addChatHeader();
+    /* ===== Modal Card ===== */
+    .custom-recommendation-content {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      max-width: 90vw;
+      width: 100%;
+      padding: 20px;
+      margin: 40px auto;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-    var sendButton = document.getElementById('send-button');
-    sendButton.style.backgroundColor = sendButtonColor;
-    sendButton.style.color = sendButtonFontColor;
-    sendButton.style.padding = "10px 20px";
-    sendButton.style.border = "none";
-    sendButton.style.borderRadius = "5px";
-    sendButton.style.fontSize = "14pt";
-    sendButton.style.cursor = "pointer";
-    sendButton.addEventListener('click', sendMessage);
+    #recommendationMessage {
+      color: #b60000;
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 1.25rem;
+      line-height: 1.2;
+    }
 
-    document.getElementById('user-input').style.padding = "10px";
-    document.getElementById('user-input').style.border = "1px solid #CCC";
-    document.getElementById('user-input').style.borderRadius = "5px";
-    document.getElementById('user-input').style.fontSize = "14pt";
+    /* Container we originally used for a single image. We’ll clear/hide it in the gallery case. */
+    #image-container {
+      margin: 20px 0;
+      width: 100%;
+      text-align: center;
+    }
+    #image-container img {
+      width: 100%;
+      max-width: 750px;
+      display: block;
+      margin: 0 auto;
+    }
 
-    document.getElementById('user-input').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            if (document.getElementById('user-input').value.trim() !== "") {
-                sendMessage();
-            }
-        }
-    });
-} catch (error) {
-    showErrorMessage("Error setting up event listeners: " + error.message);
-    console.error("Error setting up event listeners: ", error);
+    /* ===== Accept/Decline Button Row ===== */
+    .recommendation-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .custom-recommendation-button {
+      padding: 10px 20px;
+      background-color: ${sendButtonColor};
+      color: ${sendButtonFontColor};
+      border: none;
+      border-radius: 5px;
+      font-size: 14pt;
+      cursor: pointer;
+    }
+
+    /* ===== Carousel ===== */
+    .carousel {
+      position: relative;
+      width: 100%;
+      margin: 20px 0;
+    }
+    /* Scroll container */
+    .carousel .slides {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;              /* Firefox */
+      scrollbar-color: rgba(0,0,0,.3) transparent;
+    }
+    /* WebKit scrollbar styling */
+    .carousel .slides::-webkit-scrollbar {
+      height: 8px;
+    }
+    .carousel .slides::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .carousel .slides::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+    }
+
+    .carousel .slide {
+      flex: 0 0 100%;
+      scroll-snap-align: center;
+      box-sizing: border-box;
+      padding: 0 10px;
+    }
+    .carousel .slide img {
+      width: 100%;
+      display: block;
+      border-radius: 5px;
+    }
+
+    /* Prev/Next Arrows */
+    .carousel .prev,
+    .carousel .next {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 2;  /* ensure above slides */
+    }
+    .carousel .prev { left: 10px; }
+    .carousel .next { right: 10px; }
+
+    /* Fraction Indicator */
+    .carousel-indicator {
+	  margin-top: 8px;
+	  font-size: 16px !important;    /* force visible */
+	  line-height: 1.2;
+	  color: #333 !important;         /* dark text */
+	  text-align: center;
+	  white-space: nowrap;            /* keep 1 / 8 on one line */
+	  min-height: 1.2em;              /* reserve space, prevent collapse */
+	}
+  `;
+  const style = document.createElement('style');
+  style.innerHTML = css;
+  document.head.appendChild(style);
 }
