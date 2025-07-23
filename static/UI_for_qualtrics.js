@@ -1,43 +1,45 @@
-console.log("Script loaded");
-var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
+console.log("Qualtrics UI script loaded");
+var chatbotURL = 'https://agentic-insurance-recom-chatbot-671115110734.europe-west1.run.app/InsuranceRecommendation';
+// var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
 //var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
-var botName = 'Lab Bot';
-var chatTitle = 'Chat Title';
+var botName = 'Comparabot';
+var chatTitle = 'Agentic Insurance Chatbot';
 var avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Replace with your actual image URL (square image)
 
 const productImageData = [
     {
         src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is image 1'
+        alertText: 'This is product 1'
     },
     {
         src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is image 2'
+        alertText: 'This is product 2'
     },
     {
         src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is image 3'
+        alertText: 'This is product 3'
     },
-     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is image 4'
-    },
-     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is image 5'
-    },
-     {
+    {
         src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is image 6'
-    }, {
+        alertText: 'This is product 4'
+    },
+    {
         src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is image 7'
+        alertText: 'This is product 5'
+    },
+    {
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
+        alertText: 'This is product 6'
+    },
+    {
+        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
+        alertText: 'This is product 7'
     },
     {
         src: 'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww',
-        alertText: 'This is image 8'
+        alertText: 'This is product 8'
     }
-    ];
+];
 
 
 // Colors
@@ -53,7 +55,7 @@ sendButtonColor             = "#970000"; // Red button
 sendButtonFontColor         = "#FFF"; // White text
 
 // Internal variables
-var sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+var sessionId = 'session_' + Math.random().toString(36).substring(2, 11);
 var chatHistory = "";
 var chatHistoryJson = [];
 
@@ -105,7 +107,7 @@ async function sendMessage() {
     var chatWindow = document.getElementById('chat-window');
     var timestamp = new Date().toISOString();
     chatHistory += "User: " + userInput + "\n";
-    chatHistoryJson.push({ role: "user", type: "text", timestamp: timestamp, content: userInput });
+    chatHistoryJson.push({ role: "user", content: userInput, timestamp: timestamp });
 
     // User message styling
     var userMessageDiv = document.createElement('div');
@@ -182,14 +184,12 @@ async function sendMessage() {
                 chatHistory += "Agent: " + messageContent + "\n";
                 chatHistoryJson.push({ 
                     role: "assistant", 
-                    type: "text",
                     content: messageContent,
                     timestamp: botTimestamp 
                 });
 
                 console.log("Added to chatHistoryJson:", {
                     role: "assistant", 
-                    type: "text",
                     content: messageContent,
                     timestamp: botTimestamp 
                 });
@@ -469,7 +469,7 @@ function showRecommendation(productNumber) {
     try{
         var botTimestamp = new Date().toISOString();
         chatHistory += "System: clicked-recommendation\n";
-        chatHistoryJson.push({ role: "System", type: "text", timestamp: botTimestamp, content: "clicked-recommendation" });
+        chatHistoryJson.push({ role: "System", content: "clicked-recommendation", timestamp: botTimestamp });
 
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
@@ -612,7 +612,6 @@ function showAllProducts(message) {
     chatHistory += "System: clicked-overview\n";
     chatHistoryJson.push({
       role:      "System",
-      type:      "text",
       timestamp: botTimestamp,
       content:   "clicked-overview"
     });
