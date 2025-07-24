@@ -462,8 +462,8 @@ function showRecommendation(productNumber) {
         // Log the decline action
         try{
             var botTimestamp = new Date().toISOString();
-            chatHistory += "System: declined-recommendation\n";
-            chatHistoryJson.push({ role: "System", content: "declined-recommendation", timestamp: botTimestamp });
+            chatHistory += "system: declined-recommendation\n";
+            chatHistoryJson.push({ role: "system", content: "declined-recommendation", timestamp: botTimestamp });
 
             Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
             Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
