@@ -1,4 +1,4 @@
-console.log("Qualtrics UI script loaded");
+console.log("Qualtrics UI script loaded - Simple Decline Version");
 var chatbotURL = 'https://agentic-insurance-recom-chatbot-671115110734.europe-west1.run.app/InsuranceRecommendation';
 // var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
 //var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
@@ -437,12 +437,12 @@ function showRecommendation(productNumber) {
     acceptButton.style.fontSize = "14pt";
     acceptButton.style.cursor = "pointer";
     acceptButton.onclick = function() {
-        alert('You accepted!');
-    // → Advance Qualtrics immediately:
-    document.getElementById("NextButton").click();
+        alert('You accepted the recommendation!');
+        // → Advance Qualtrics immediately:
+        document.getElementById("NextButton").click();
     };
 
-    // Decline button
+    // Decline button - MODIFIED: Simple decline workflow
     const declineButton = document.createElement('button');
     declineButton.textContent = '❌Decline';
     declineButton.style.backgroundColor = sendButtonColor;
@@ -453,8 +453,30 @@ function showRecommendation(productNumber) {
     declineButton.style.fontSize = "14pt";
     declineButton.style.cursor = "pointer";
     declineButton.addEventListener('click', function () {
+        // Remove the recommendation modal
         document.getElementById("recommendation").remove();
-        showAllProducts("Choose a product below")
+        
+        // Show decline message and proceed to next question
+        alert('Thank you for your feedback. You have declined our recommendation.');
+        
+        // Log the decline action
+        try{
+            var botTimestamp = new Date().toISOString();
+            chatHistory += "system: declined-recommendation\n";
+            chatHistoryJson.push({ role: "system", content: "declined-recommendation", timestamp: botTimestamp });
+
+            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
+            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+            Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
+            Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+        } catch(error) {
+            console.error("Error from Qualtrics: ", error);
+            sessionId = "DEBUG"
+            qualtricsResponseId = "DEBUG"
+        }
+        
+        // Advance to next question
+        document.getElementById("NextButton").click();
     });
 
     // Set button classes
@@ -476,7 +498,7 @@ function showRecommendation(productNumber) {
     try{
         var botTimestamp = new Date().toISOString();
         chatHistory += "System: clicked-recommendation\n";
-        chatHistoryJson.push({ role: "system", content: "clicked-recommendation", timestamp: botTimestamp });
+        chatHistoryJson.push({ role: "System", content: "clicked-recommendation", timestamp: botTimestamp });
 
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
@@ -489,154 +511,7 @@ function showRecommendation(productNumber) {
     }
 }
 
-function showAllProducts(message) {
-  console.log("showAllProducts() called with message:", message);
-  showProductOverlay();
-
-  // Set prompt text
-  const alertMessage = document.getElementById("recommendationMessage");
-  alertMessage.innerHTML = message;
-
-  // Hide single-image container (we're in gallery mode)
-  const singleImgContainer = document.getElementById("image-container");
-  if (singleImgContainer) {
-    singleImgContainer.innerHTML = "";
-    singleImgContainer.style.display = "none";
-  }
-
-  const content = document.getElementById("product-overlay-content");
-
-  // Remove any previous gallery / indicator / stray nodes
-  content.querySelectorAll(".carousel, .carousel-indicator, .recommendation-buttons").forEach(el => el.remove());
-  // Also strip stray text nodes that contain only "/" or whitespace
-  [...content.childNodes].forEach(n => {
-    if (n.nodeType === 3) {
-      const t = n.textContent.trim();
-      if (t === "/" || t === "") {
-        console.log("Removing stray text node:", JSON.stringify(t));
-        n.remove();
-      }
-    }
-  });
-
-  // Build carousel
-  const carousel = document.createElement("div");
-  carousel.className = "carousel";
-
-  const prev = document.createElement("button");
-  prev.className = "prev";
-  prev.type = "button";
-  prev.textContent = "‹";
-
-  const track = document.createElement("div");
-  track.className = "slides";
-
-  productImageData.forEach((data, i) => {
-    const slide = document.createElement("div");
-    slide.className = "slide";
-
-    const img = document.createElement("img");
-    img.src = data.src;
-    img.alt = data.alertText;
-
-    img.addEventListener("click", () => {
-      console.log(`Slide ${i+1} clicked:`, data.alertText);
-      alert(data.alertText);
-      const nb = document.getElementById("NextButton");
-      if (nb) nb.click();
-    });
-
-    slide.appendChild(img);
-    track.appendChild(slide);
-  });
-
-  const next = document.createElement("button");
-  next.className = "next";
-  next.type = "button";
-  next.textContent = "›";
-
-  carousel.appendChild(prev);
-  carousel.appendChild(track);
-  carousel.appendChild(next);
-  content.appendChild(carousel);
-
-  // ===== Fraction Indicator (SPAN‑split to avoid Qualtrics sanitizing numbers) =====
-  const total = Array.isArray(productImageData) ? productImageData.length : 0;
-  let idx = 0;
-
-  const indicator = document.createElement("div");
-  indicator.className = "carousel-indicator";
-  indicator.innerHTML = `<span class="ci-current"></span> / <span class="ci-total"></span>`;
-  const ciCurrent = indicator.querySelector(".ci-current");
-  const ciTotal   = indicator.querySelector(".ci-total");
-  content.appendChild(indicator);
-
-  function updateIndicator() {
-    // clamp
-    if (idx < 0) idx = 0;
-    if (idx >= total) idx = total - 1;
-
-    ciCurrent.textContent = String(idx + 1);
-    ciTotal.textContent   = String(total);
-
-    console.log("Carousel indicator update:", {
-      idx,
-      total,
-      indicatorCurrent: ciCurrent.textContent,
-      indicatorTotal: ciTotal.textContent
-    });
-  }
-  updateIndicator();
-
-  // Nav arrow behavior (scrollIntoView is robust under Qualtrics)
-  const slides = Array.from(track.children);
-  function goTo(i) {
-    idx = (i + total) % total;
-    slides[idx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-    updateIndicator();
-  }
-  prev.addEventListener("click", () => goTo(idx - 1));
-  next.addEventListener("click", () => goTo(idx + 1));
-
-  // Sync when user scrolls manually
-  let scrollRAF;
-  track.addEventListener("scroll", () => {
-    if (scrollRAF) cancelAnimationFrame(scrollRAF);
-    scrollRAF = requestAnimationFrame(() => {
-      const width = track.clientWidth || 1;
-      const newIdx = Math.round(track.scrollLeft / width);
-      if (newIdx !== idx) {
-        idx = Math.max(0, Math.min(total - 1, newIdx));
-        updateIndicator();
-      }
-    });
-  });
-
-  // Qualtrics embedded data logging (unchanged)
-  try {
-    const botTimestamp = new Date().toISOString();
-    console.log("Logging 'clicked-overview' at", botTimestamp);
-    chatHistory += "System: clicked-overview\n";
-    chatHistoryJson.push({
-      role:      "System",
-      timestamp: botTimestamp,
-      content:   "clicked-overview"
-    });
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistory",     chatHistory);
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistoryJson", JSON.stringify(chatHistoryJson));
-    Qualtrics.SurveyEngine.setJSEmbeddedData("SessionId",       sessionId);
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ResponseID",      "${e://Field/ResponseID}");
-  } catch (error) {
-    console.error("Error setting embedded data:", error);
-    sessionId = "DEBUG";
-  }
-}
-
-
-
-
-// Test errormessage on site load:
-//showErrorMessage("Test")
+// Note: showAllProducts function removed as it's not needed in simple decline workflow
 
 function applyCustomAlertStyles() {
     // Set styles for .custom-alert
@@ -744,7 +619,7 @@ function applyCustomRecommendationcStyles() {
       line-height: 1.2;
     }
 
-    /* Container we originally used for a single image. We’ll clear/hide it in the gallery case. */
+    /* Container for single image display */
     #image-container {
       margin: 20px 0;
       width: 100%;
@@ -775,91 +650,11 @@ function applyCustomRecommendationcStyles() {
       border-radius: 5px;
       font-size: 14pt;
       cursor: pointer;
-    }
-
-    /* ===== Carousel ===== */
-    .carousel {
-      position: relative;
-      width: 100%;
-      margin: 20px 0;
-    }
-    /* Scroll container */
-    .carousel .slides {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;              /* Firefox */
-      scrollbar-color: rgba(0,0,0,.3) transparent;
-    }
-    /* WebKit scrollbar styling */
-    .carousel .slides::-webkit-scrollbar {
-      height: 8px;
-    }
-    .carousel .slides::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .carousel .slides::-webkit-scrollbar-thumb {
-      background: rgba(0,0,0,0.3);
-      border-radius: 4px;
-    }
-
-    .carousel .slide {
-      flex: 0 0 100%;
-      scroll-snap-align: center;
-      box-sizing: border-box;
-      padding: 0 60px;
-      overflow: hidden;
-    }
-    .carousel .slide img {
-      width: 100%;
-      display: block;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .carousel .slide img:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Prev/Next Arrows */
-    .carousel .prev,
-    .carousel .next {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: ${sendButtonColor};
-      color: #fff;
-      border: none;
-      padding: 16px 20px;
-      font-size: 1.5rem;
-      line-height: 1;
-      cursor: pointer;
-      z-index: 2;
-      border-radius: 5px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       transition: background-color 0.3s ease;
     }
-    .carousel .prev:hover,
-    .carousel .next:hover {
-      background: #800000;
+    .custom-recommendation-button:hover {
+      background-color: #800000;
     }
-    .carousel .prev { left: 20px; }
-    .carousel .next { right: 20px; }
-
-    /* Fraction Indicator */
-    .carousel-indicator {
-	  margin-top: 12px;
-	  font-size: 18px !important;    /* increased from 16px for better visibility */
-	  line-height: 1.3;
-	  color: #333 !important;         /* dark text */
-	  text-align: center;
-	  white-space: nowrap;            /* keep 1 / 8 on one line */
-	  min-height: 1.3em;              /* reserve space, prevent collapse */
-	  font-weight: 500;               /* slightly bolder for better readability */
-	}
   `;
   const style = document.createElement('style');
   style.innerHTML = css;

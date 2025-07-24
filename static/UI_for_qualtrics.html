@@ -1,0 +1,43 @@
+<style>
+    /* 1) Wrap them in a flex container */
+    #input-row {
+      display: flex;
+      width: 100%;
+      gap: 8px;                /* optional spacing */
+      box-sizing: border-box;
+    }
+    /* 2) Let the input grow to fill available space */
+    #user-input {
+      flex: 1 1 auto;          /* grow & shrink */
+      min-width: 0;            /* needed so it can actually shrink in some browsers */
+      padding: 10px;
+      font-size: 14pt;
+      border: 1px solid #CCC;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    /* 3) Keep the button to its content size (or set a flex ratio) */
+    #send-button {
+      flex: 0 0 auto;          /* don’t grow, don’t shrink */
+      padding: 10px 20px;
+      font-size: 14pt;
+      background: #970000;
+      color: #FFF;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+  
+  <div id="chat-container" style="width:100%;">
+    <div id="chat-window" style="width:100%; height:50vh; overflow-y:auto; border:1px solid #ccc; padding:10px; display:flex; flex-direction:column;">
+      &nbsp;
+    </div>
+  
+    
+    <div id="input-row">
+      <input  id="user-input" placeholder="Type your message…" />
+      <button id="send-button">Send</button>
+    </div>
+  </div>
+  
