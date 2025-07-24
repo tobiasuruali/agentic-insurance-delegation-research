@@ -55,7 +55,7 @@ sendButtonColor             = "#970000"; // Red button
 sendButtonFontColor         = "#FFF"; // White text
 
 // Internal variables
-var sessionId = 'session_' + Math.random().toString(36).substring(2, 11);
+var sessionId = 'session_' + crypto.randomUUID();
 var chatHistory = "";
 var chatHistoryJson = [];
 
