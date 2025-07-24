@@ -476,7 +476,7 @@ function showRecommendation(productNumber) {
     try{
         var botTimestamp = new Date().toISOString();
         chatHistory += "System: clicked-recommendation\n";
-        chatHistoryJson.push({ role: "System", content: "clicked-recommendation", timestamp: botTimestamp });
+        chatHistoryJson.push({ role: "system", content: "clicked-recommendation", timestamp: botTimestamp });
 
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
         Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
