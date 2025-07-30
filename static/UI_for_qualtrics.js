@@ -59,6 +59,10 @@ var sessionId = 'session_' + crypto.randomUUID();
 var chatHistory = "";
 var chatHistoryJson = [];
 
+// Recommendation tracking variables
+var originalRecommendation = null;
+var recommendationType = null;
+
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
 document.body.style.backgroundColor = documentBackgroundColor
@@ -282,6 +286,81 @@ function addSystemMessage(message) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function logEvent(eventType, details) {
+    try {
+        var timestamp = new Date().toISOString();
+        var logEntry = {
+            role: "system",
+            content: eventType,
+            timestamp: timestamp,
+            details: details || {}
+        };
+        
+        chatHistory += "System: " + eventType + "\n";
+        chatHistoryJson.push(logEntry);
+        
+        // Set standard embedded data
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+        
+        // Initialize all variables to ensure consistent data structure
+        var currentRecommended = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendedProduct') || "";
+        var currentAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProduct') || "";
+        var currentWasAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('WasRecommendationAccepted') || "";
+        var currentUserJourney = Qualtrics.SurveyEngine.getJSEmbeddedData('UserJourney') || "";
+        var currentRecommendationType = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendationType') || "";
+        var currentRejected = Qualtrics.SurveyEngine.getJSEmbeddedData('RejectedRecommendation') || "";
+        var currentDeclined = Qualtrics.SurveyEngine.getJSEmbeddedData('DeclinedProduct') || "";
+        
+        // Set specific values based on event type, keeping others as current or empty
+        if (eventType.startsWith("recommended-product-")) {
+            var productNum = eventType.replace("recommended-product-", "");
+            currentRecommended = productNum;
+            currentRecommendationType = details.type || "single";
+        }
+        
+        if (eventType.startsWith("accepted-recommended-product-")) {
+            var productNum = eventType.replace("accepted-recommended-product-", "");
+            currentAccepted = productNum;
+            currentWasAccepted = "true";
+            currentUserJourney = details.recommendationType === "single" ? "direct-accept" : "gallery-accept-recommended";
+        }
+        
+        if (eventType.startsWith("accepted-alternative-product-")) {
+            var productNum = eventType.replace("accepted-alternative-product-", "");
+            currentAccepted = productNum;
+            currentWasAccepted = "false";
+            currentUserJourney = "decline-then-gallery-accept";
+        }
+        
+        if (eventType.startsWith("rejected-recommended-product-")) {
+            var productNum = eventType.replace("rejected-recommended-product-", "");
+            currentRejected = productNum;
+            currentDeclined = productNum;
+        }
+        
+        if (eventType === "showed-product-gallery") {
+            currentRecommendationType = details.type || "gallery";
+        }
+        
+        // Always set ALL variables to ensure consistent data structure
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendedProduct', currentRecommended);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProduct', currentAccepted);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('UserJourney', currentUserJourney);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendationType', currentRecommendationType);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RejectedRecommendation', currentRejected);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('DeclinedProduct', currentDeclined);
+        
+    } catch(error) {
+        console.error("Error logging event: ", error);
+        sessionId = "DEBUG";
+        qualtricsResponseId = "DEBUG";
+    }
+}
+
 try {
     addChatHeader();
 
@@ -413,6 +492,10 @@ function showProductOverlay(){
 
 
 function showRecommendation(productNumber) {    
+    // Set tracking variables
+    originalRecommendation = productNumber;
+    recommendationType = "single";
+    
     showProductOverlay()
     message = "Here is your recommended product: " + productNumber 
     // Adapt message
@@ -443,9 +526,16 @@ function showRecommendation(productNumber) {
     acceptButton.style.fontSize = "14pt";
     acceptButton.style.cursor = "pointer";
     acceptButton.onclick = function() {
-        alert('You accepted!');
-    // → Advance Qualtrics immediately:
-    document.getElementById("NextButton").click();
+        // Log acceptance with context
+        logEvent("accepted-recommended-product-" + productNumber, {
+            acceptedProduct: productNumber,
+            originalRecommendation: originalRecommendation,
+            wasRecommended: true,
+            recommendationType: recommendationType
+        });
+        
+        alert('You accepted product ' + productNumber + '!');
+        document.getElementById("NextButton").click();
     };
 
     // Decline button
@@ -479,24 +569,24 @@ function showRecommendation(productNumber) {
        
     alertContent.appendChild(buttonContainer);   // Bottom (Buttons)
     
-    try{
-        var botTimestamp = new Date().toISOString();
-        chatHistory += "System: clicked-recommendation\n";
-        chatHistoryJson.push({ role: "system", content: "clicked-recommendation", timestamp: botTimestamp });
-
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-    } catch(error) {
-        console.error("Error from Qualtrics: ", error);
-        sessionId = "DEBUG"
-        qualtricsResponseId = "DEBUG"
-    }
+    // Log the recommendation event
+    logEvent("recommended-product-" + productNumber, {
+        productNumber: productNumber,
+        type: "single",
+        recommendationType: "single"
+    });
 }
 
 function showAllProducts(message) {
   console.log("showAllProducts() called with message:", message);
+  
+  // Update recommendation type if switching from single to gallery
+  if (recommendationType === "single") {
+    recommendationType = "gallery-after-decline";
+  } else {
+    recommendationType = "gallery";
+  }
+  
   showProductOverlay();
 
   // Set prompt text
@@ -629,6 +719,30 @@ function showAllProducts(message) {
       var width = track.clientWidth || 1;
       currentSlide = Math.round(track.scrollLeft / width) + 1;
     }
+    
+    // Determine if this matches the original recommendation
+    var wasRecommended = (originalRecommendation === currentSlide);
+    var eventType = wasRecommended ? 
+      "accepted-recommended-product-" + currentSlide : 
+      "accepted-alternative-product-" + currentSlide;
+    
+    // Log acceptance with full context
+    logEvent(eventType, {
+      acceptedProduct: currentSlide,
+      originalRecommendation: originalRecommendation,
+      wasRecommended: wasRecommended,
+      recommendationType: recommendationType
+    });
+    
+    // If they chose alternative, also log the rejection of original
+    if (!wasRecommended && originalRecommendation) {
+      logEvent("rejected-recommended-product-" + originalRecommendation, {
+        rejectedProduct: originalRecommendation,
+        chosenInstead: currentSlide,
+        recommendationType: recommendationType
+      });
+    }
+    
     alert('You accepted product ' + currentSlide + '!');
     var nb = document.getElementById("NextButton");
     if (nb) nb.click();
@@ -655,24 +769,13 @@ function showAllProducts(message) {
   
   content.appendChild(buttonContainer);
 
-  // Qualtrics embedded data logging (unchanged)
-  try {
-    const botTimestamp = new Date().toISOString();
-    console.log("Logging 'clicked-overview' at", botTimestamp);
-    chatHistory += "System: clicked-overview\n";
-    chatHistoryJson.push({
-      role:      "System",
-      timestamp: botTimestamp,
-      content:   "clicked-overview"
-    });
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistory",     chatHistory);
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistoryJson", JSON.stringify(chatHistoryJson));
-    Qualtrics.SurveyEngine.setJSEmbeddedData("SessionId",       sessionId);
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ResponseID",      "${e://Field/ResponseID}");
-  } catch (error) {
-    console.error("Error setting embedded data:", error);
-    sessionId = "DEBUG";
-  }
+  // Log the gallery display event
+  logEvent("showed-product-gallery", {
+    totalProducts: productImageData.length,
+    type: recommendationType,
+    originalRecommendation: originalRecommendation,
+    message: message
+  });
 }
 
 

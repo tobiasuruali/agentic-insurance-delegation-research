@@ -4,7 +4,7 @@
 
 ![Chat Interface](img/chat-interface-poc.png)
 
-This system demonstrates cutting-edge agentic AI architecture where two specialized agents collaborate to deliver personalized insurance recommendations. Each agent has a distinct role and expertise, creating a natural conversation flow that mimics human insurance consultation.
+This system demonstrates a simple agentic AI architecture where two specialized agents collaborate to deliver personalized insurance recommendations. Each agent has a distinct role and expertise, creating a natural conversation flow that mimics human insurance consultation.
 
 ---
 

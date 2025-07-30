@@ -59,6 +59,10 @@ var sessionId = 'session_' + crypto.randomUUID();
 var chatHistory = "";
 var chatHistoryJson = [];
 
+// Recommendation tracking variables
+var originalRecommendation = null;
+var recommendationType = null;
+
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
 document.body.style.backgroundColor = documentBackgroundColor
@@ -282,8 +286,81 @@ function addSystemMessage(message) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function logEvent(eventType, details) {
+    try {
+        var timestamp = new Date().toISOString();
+        var logEntry = {
+            role: "system",
+            content: eventType,
+            timestamp: timestamp,
+            details: details || {}
+        };
+        
+        chatHistory += "System: " + eventType + "\n";
+        chatHistoryJson.push(logEntry);
+        
+        // Set standard embedded data
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+        
+        // Initialize all variables to ensure consistent data structure
+        var currentRecommended = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendedProduct') || "";
+        var currentAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProduct') || "";
+        var currentWasAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('WasRecommendationAccepted') || "";
+        var currentUserJourney = Qualtrics.SurveyEngine.getJSEmbeddedData('UserJourney') || "";
+        var currentRecommendationType = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendationType') || "";
+        var currentRejected = Qualtrics.SurveyEngine.getJSEmbeddedData('RejectedRecommendation') || "";
+        var currentDeclined = Qualtrics.SurveyEngine.getJSEmbeddedData('DeclinedProduct') || "";
+        
+        // Set specific values based on event type, keeping others as current or empty
+        if (eventType.startsWith("recommended-product-")) {
+            var productNum = eventType.replace("recommended-product-", "");
+            currentRecommended = productNum;
+            currentRecommendationType = "single";
+        }
+        
+        if (eventType.startsWith("accepted-recommended-product-")) {
+            var productNum = eventType.replace("accepted-recommended-product-", "");
+            currentAccepted = productNum;
+            currentWasAccepted = "true";
+            currentUserJourney = "direct-accept";
+        }
+        
+        if (eventType.startsWith("declined-recommended-product-")) {
+            var productNum = eventType.replace("declined-recommended-product-", "");
+            currentAccepted = "";
+            currentWasAccepted = "false";
+            currentUserJourney = "decline-only";
+            currentDeclined = productNum;
+            currentRejected = productNum;
+        }
+        
+        // Always set ALL variables to ensure consistent data structure
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendedProduct', currentRecommended);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProduct', currentAccepted);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('UserJourney', currentUserJourney);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendationType', currentRecommendationType);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RejectedRecommendation', currentRejected);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('DeclinedProduct', currentDeclined);
+        
+    } catch(error) {
+        console.error("Error logging event: ", error);
+        sessionId = "DEBUG";
+        qualtricsResponseId = "DEBUG";
+    }
+}
+
 try {
     addChatHeader();
+
+    // Hide NextButton during chat interaction
+    Qualtrics.SurveyEngine.addOnload(function () {
+        this.hideNextButton();      // built‑in helper
+        //  … any other per‑page setup
+      });
 
     var sendButton = document.getElementById('send-button');
     sendButton.style.backgroundColor = sendButtonColor;
@@ -407,6 +484,10 @@ function showProductOverlay(){
 
 
 function showRecommendation(productNumber) {    
+    // Set tracking variables
+    originalRecommendation = productNumber;
+    recommendationType = "single";
+    
     showProductOverlay()
     message = "Here is your recommended product: " + productNumber 
     // Adapt message
@@ -437,8 +518,15 @@ function showRecommendation(productNumber) {
     acceptButton.style.fontSize = "14pt";
     acceptButton.style.cursor = "pointer";
     acceptButton.onclick = function() {
-        alert('You accepted the recommendation!');
-        // → Advance Qualtrics immediately:
+        // Log acceptance with context
+        logEvent("accepted-recommended-product-" + productNumber, {
+            acceptedProduct: productNumber,
+            originalRecommendation: originalRecommendation,
+            wasRecommended: true,
+            recommendationType: recommendationType
+        });
+        
+        alert('You accepted product ' + productNumber + '!');
         document.getElementById("NextButton").click();
     };
 
@@ -453,27 +541,19 @@ function showRecommendation(productNumber) {
     declineButton.style.fontSize = "14pt";
     declineButton.style.cursor = "pointer";
     declineButton.addEventListener('click', function () {
+        // Log decline with context  
+        logEvent("declined-recommended-product-" + productNumber, {
+            declinedProduct: productNumber,
+            originalRecommendation: originalRecommendation,
+            wasRecommended: true,
+            recommendationType: recommendationType
+        });
+        
         // Remove the recommendation modal
         document.getElementById("recommendation").remove();
         
         // Show decline message and proceed to next question
-        alert('Thank you for your feedback. You have declined our recommendation.');
-        
-        // Log the decline action
-        try{
-            var botTimestamp = new Date().toISOString();
-            chatHistory += "system: declined-recommendation\n";
-            chatHistoryJson.push({ role: "system", content: "declined-recommendation", timestamp: botTimestamp });
-
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-            Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-        } catch(error) {
-            console.error("Error from Qualtrics: ", error);
-            sessionId = "DEBUG"
-            qualtricsResponseId = "DEBUG"
-        }
+        alert('Thank you for your feedback. You have declined product ' + productNumber + '.');
         
         // Advance to next question
         document.getElementById("NextButton").click();
@@ -495,20 +575,12 @@ function showRecommendation(productNumber) {
        
     alertContent.appendChild(buttonContainer);   // Bottom (Buttons)
     
-    try{
-        var botTimestamp = new Date().toISOString();
-        chatHistory += "System: clicked-recommendation\n";
-        chatHistoryJson.push({ role: "System", content: "clicked-recommendation", timestamp: botTimestamp });
-
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-    } catch(error) {
-        console.error("Error from Qualtrics: ", error);
-        sessionId = "DEBUG"
-        qualtricsResponseId = "DEBUG"
-    }
+    // Log the recommendation event
+    logEvent("recommended-product-" + productNumber, {
+        productNumber: productNumber,
+        type: "single",
+        recommendationType: "single"
+    });
 }
 
 // Note: showAllProducts function removed as it's not needed in simple decline workflow

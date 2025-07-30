@@ -319,4 +319,198 @@ FastAPI App
 - **Error Logs**: Failed requests with full context for debugging
 - **File Naming**: Includes chatbot ID, session ID, and Qualtrics response ID
 
+## Enhanced Frontend Logging System
+
+### Overview
+The frontend UI files (`UI_for_qualtrics.js` and `UI_for_qualtrics_simple_decline.js`) implement a comprehensive logging system that tracks user interactions with product recommendations and captures detailed analytics data with **consistent data structure across all scenarios**.
+
+### Core Logging Function
+
+#### `logEvent(eventType: string, details: object)`
+**Universal Logging Function with Consistent Data Structure**
+- **Input**: Event type string and details object
+- **Process**:
+  1. Creates timestamped log entry in `chatHistoryJson`
+  2. Updates `chatHistory` string for backward compatibility  
+  3. Sets standard Qualtrics embedded data (ChatHistory, ChatHistoryJson, SessionId, ResponseID)
+  4. **Retrieves current state** using `getJSEmbeddedData()` for all tracking variables
+  5. **Updates specific variables** based on event type while preserving others
+  6. **Always sets ALL 7 variables** to ensure consistent data structure
+- **Output**: Updates both conversation history and complete embedded data set
+- **Error Handling**: Graceful fallback with DEBUG mode for offline testing
+
+```javascript
+// Example usage
+logEvent("recommended-product-3", {
+    productNumber: 3,
+    type: "single",
+    recommendationType: "single"
+});
+
+// Always sets ALL variables:
+// RecommendedProduct, AcceptedProduct, WasRecommendationAccepted, 
+// UserJourney, RecommendationType, RejectedRecommendation, DeclinedProduct
+```
+
+### Consistent Data Structure Approach
+**Critical Design Decision**: Every scenario produces identical 7-field embedded data structure.
+- **Never Missing Fields**: All variables always present, using empty string `""` for non-applicable cases
+- **State Preservation**: Uses `getJSEmbeddedData()` to maintain existing values across events
+- **Analytics Friendly**: Consistent schema enables easy statistical analysis and database operations
+
+### Tracking Variables
+**Global State Management**
+- `originalRecommendation`: Stores initially recommended product number
+- `recommendationType`: Tracks interaction flow ("single", "gallery", "gallery-after-decline")
+
+### Complete Embedded Data Variable Set
+**All scenarios output these 7 variables:**
+
+1. **`RecommendedProduct`**: Product number initially recommended (always has value)
+2. **`AcceptedProduct`**: Product number accepted by user (value or `""`)
+3. **`WasRecommendationAccepted`**: "true" if accepted recommended product, "false" otherwise
+4. **`UserJourney`**: User flow type (always has value)
+5. **`RecommendationType`**: Interaction type (always has value)
+6. **`RejectedRecommendation`**: Product number that was rejected (value or `""`)
+7. **`DeclinedProduct`**: Product number that was declined (value or `""`)
+
+### Event Types and Logic
+
+#### Recommendation Events
+- **Event**: `"recommended-product-N"`
+- **Logic**: Sets RecommendedProduct=N, RecommendationType="single", others preserved/empty
+
+#### Direct Acceptance Events
+- **Event**: `"accepted-recommended-product-N"`
+- **Logic**: Sets AcceptedProduct=N, WasRecommendationAccepted="true", UserJourney based on context
+
+#### Alternative Acceptance Events  
+- **Event**: `"accepted-alternative-product-N"`
+- **Logic**: Sets AcceptedProduct=N, WasRecommendationAccepted="false", UserJourney="decline-then-gallery-accept"
+
+#### Rejection Events
+- **Event**: `"rejected-recommended-product-N"` (carousel version)
+- **Logic**: Sets RejectedRecommendation=N, DeclinedProduct=N
+
+- **Event**: `"declined-recommended-product-N"` (simple decline version)
+- **Logic**: Sets AcceptedProduct="", WasRecommendationAccepted="false", UserJourney="decline-only", RejectedRecommendation=N, DeclinedProduct=N
+
+#### Gallery Events
+- **Event**: `"showed-product-gallery"`
+- **Logic**: Updates RecommendationType to "gallery" or "gallery-after-decline"
+
+### User Journey Values
+**Standardized across both UI versions:**
+- `"direct-accept"`: Accepted recommended product immediately
+- `"gallery-accept-recommended"`: Saw gallery, chose originally recommended product
+- `"decline-then-gallery-accept"`: Declined, saw gallery, chose different product  
+- `"decline-only"`: Declined without choosing alternative (simple decline UI only)
+
+### Complete Sample Output Data
+**All scenarios show identical 7-field structure:**
+
+#### Scenario 1: Direct Accept (Both UIs)
+```json
+{
+  "ChatHistory": "System: recommended-product-3\nSystem: accepted-recommended-product-3",
+  "ChatHistoryJson": "[{\"role\":\"system\",\"content\":\"recommended-product-3\",\"timestamp\":\"2025-07-30T10:15:30.123Z\",\"details\":{\"productNumber\":3,\"type\":\"single\"}}]",
+  "RecommendedProduct": "3",
+  "AcceptedProduct": "3", 
+  "WasRecommendationAccepted": "true",
+  "UserJourney": "direct-accept",
+  "RecommendationType": "single",
+  "RejectedRecommendation": "",
+  "DeclinedProduct": "",
+  "SessionId": "session_abc123",
+  "ResponseID": "R_xyz789"
+}
+```
+
+#### Scenario 2: Decline → Gallery → Accept Original (Main UI Only)
+```json
+{
+  "ChatHistory": "System: recommended-product-3\nSystem: showed-product-gallery\nSystem: accepted-recommended-product-3",
+  "ChatHistoryJson": "[detailed array with timestamps and context]",
+  "RecommendedProduct": "3",
+  "AcceptedProduct": "3",
+  "WasRecommendationAccepted": "true",
+  "UserJourney": "gallery-accept-recommended",
+  "RecommendationType": "gallery-after-decline",
+  "RejectedRecommendation": "",
+  "DeclinedProduct": "",
+  "SessionId": "session_def456",
+  "ResponseID": "R_uvw012"
+}
+```
+
+#### Scenario 3: Decline → Gallery → Accept Alternative (Main UI Only)
+```json
+{
+  "ChatHistory": "System: recommended-product-2\nSystem: showed-product-gallery\nSystem: accepted-alternative-product-7\nSystem: rejected-recommended-product-2",
+  "ChatHistoryJson": "[detailed array with timestamps and context]",
+  "RecommendedProduct": "2",
+  "AcceptedProduct": "7",
+  "WasRecommendationAccepted": "false",
+  "UserJourney": "decline-then-gallery-accept", 
+  "RecommendationType": "gallery-after-decline",
+  "RejectedRecommendation": "2",
+  "DeclinedProduct": "2",
+  "SessionId": "session_ghi789",
+  "ResponseID": "R_abc345"
+}
+```
+
+#### Scenario 4: Decline Only (Simple Decline UI Only)
+```json
+{
+  "ChatHistory": "System: recommended-product-5\nSystem: declined-recommended-product-5",
+  "ChatHistoryJson": "[detailed array with timestamps and context]",
+  "RecommendedProduct": "5",
+  "AcceptedProduct": "",
+  "WasRecommendationAccepted": "false",
+  "UserJourney": "decline-only",
+  "RecommendationType": "single",
+  "RejectedRecommendation": "5",
+  "DeclinedProduct": "5",
+  "SessionId": "session_jkl012",
+  "ResponseID": "R_def678"
+}
+```
+
+### Integration with Backend
+- **Compatibility**: Fully backward compatible with existing backend
+- **Data Flow**: Enhanced `chatHistoryJson` sent to backend maintains existing structure
+- **Storage**: System events stored in conversation logs alongside agent messages
+- **Analytics**: Embedded data variables provide structured analytics for external systems
+- **Critical Note**: Potential conflicts if `sendMessage()` function has duplicate embedded data calls
+
+### Implementation Differences
+
+#### Main Version (`UI_for_qualtrics.js`)
+- **Capabilities**: Carousel/gallery for alternative product selection
+- **User Journeys**: 3 possible outcomes (direct-accept, gallery-accept-recommended, decline-then-gallery-accept)
+- **Product Selection**: Always required - user must choose a product to proceed
+
+#### Simple Decline Version (`UI_for_qualtrics_simple_decline.js`)  
+- **Capabilities**: Binary accept/decline workflow only
+- **User Journeys**: 2 possible outcomes (direct-accept, decline-only)
+- **Product Selection**: Optional - user can completely reject without alternative
+
+### Data Analysis Benefits
+1. **Consistent Schema**: Every record has identical 7 fields for easy analysis
+2. **No Missing Data**: Can query with `WHERE field != ""` instead of handling nulls
+3. **Statistical Analysis**: Easy cross-tabulation and percentage calculations
+4. **Database Ready**: Perfect for SQL joins and aggregations
+5. **CSV Export**: Clean columnar data for spreadsheet analysis
+6. **Machine Learning**: Consistent feature set for predictive models
+
+### Troubleshooting
+**Common Issues:**
+- **No Backend Logs**: Check for duplicate `setJSEmbeddedData` calls in `sendMessage()` function
+- **Inconsistent Data**: Ensure `logEvent()` is called for all user interactions
+- **Missing Variables**: Verify all 7 variables are being set in every scenario
+- **Cloud Run Connectivity**: Check CORS settings and network connectivity
+
+This enhanced logging system provides rich analytics capabilities while maintaining full compatibility with the existing agentic architecture and ensuring consistent data structure for reliable analysis.
+
 This technical reference provides a complete map of the system's internal operations, making it easy to understand where each process occurs and how data flows through the entire agentic architecture.
