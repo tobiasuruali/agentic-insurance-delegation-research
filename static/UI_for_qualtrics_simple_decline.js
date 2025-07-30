@@ -108,6 +108,14 @@ async function sendMessage() {
     var userInput = document.getElementById('user-input').value;
     if (!userInput.trim()) return;
     
+    // Clear input field immediately
+    document.getElementById('user-input').value = '';
+    
+    // Disable send button with visual feedback
+    const sendButton = document.getElementById('send-button');
+    sendButton.disabled = true;
+    sendButton.style.opacity = '0.6';
+    
     var chatWindow = document.getElementById('chat-window');
     var timestamp = new Date().toISOString();
     chatHistory += "User: " + userInput + "\n";
@@ -126,6 +134,9 @@ async function sendMessage() {
     userMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
     userMessageDiv.innerHTML = '<strong>You:</strong> ' + userInput;
     chatWindow.appendChild(userMessageDiv);
+    
+    // Scroll immediately to show user message
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
     // Loading message styling
     var loadingMessageDiv = document.createElement('div');
@@ -226,14 +237,24 @@ async function sendMessage() {
             sessionId = "DEBUG"
             qualtricsResponseId = "DEBUG"
         }
+        
+        // Re-enable send button
+        const sendButton = document.getElementById('send-button');
+        sendButton.disabled = false;
+        sendButton.style.opacity = '1';
     } catch (error) {
         var loadingDiv = document.getElementById('loading-message');
         if (loadingDiv) loadingDiv.remove();
         showErrorMessage("Network error: " + error.message);
         console.error("Network error: ", error);
+        
+        // Re-enable send button on error
+        const sendButton = document.getElementById('send-button');
+        sendButton.disabled = false;
+        sendButton.style.opacity = '1';
     }
 
-    document.getElementById('user-input').value = '';
+    // Final scroll (input already cleared earlier)
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
