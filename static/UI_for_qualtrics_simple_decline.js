@@ -51,7 +51,7 @@ userMessageBackgroundColor  = "#FFF"; // White background
 loadingMessageFontColor     = "#888"; // Grey text color
 botMessageFontColor         = "#333"; // Darker text color
 botMessageBackgroundColor    = "#EFEFEF"; // Light grey background
-sendButtonColor             = "#970000"; // Red button
+sendButtonColor             = "#980033"; // Crimson button (matches header)
 sendButtonFontColor         = "#FFF"; // White text
 
 // Internal variables
@@ -721,8 +721,8 @@ function applyCustomRecommendationcStyles() {
     }
     .custom-recommendation-button {
       padding: clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 4vw, 2rem);
-      background-color: ${sendButtonColor};
-      color: ${sendButtonFontColor};
+      background-color: #980033;
+      color: #fff;
       border: none;
       border-radius: clamp(0.25rem, 1vw, 0.5rem);
       font-size: clamp(1rem, 2.5vw, 1.125rem);
@@ -732,7 +732,7 @@ function applyCustomRecommendationcStyles() {
       transition: background-color 0.3s ease, transform 0.1s ease;
     }
     .custom-recommendation-button:hover {
-      background-color: #800000;
+      background-color:rgb(80, 0, 27);
       transform: translateY(-1px);
     }
     .custom-recommendation-button:active {

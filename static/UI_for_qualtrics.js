@@ -51,7 +51,7 @@ userMessageBackgroundColor  = "#FFF"; // White background
 loadingMessageFontColor     = "#888"; // Grey text color
 botMessageFontColor         = "#333"; // Darker text color
 botMessageBackgroundColor    = "#EFEFEF"; // Light grey background
-sendButtonColor             = "#970000"; // Red button
+sendButtonColor             = "#980033"; // Crimson button (matches header)
 sendButtonFontColor         = "#FFF"; // White text
 
 // Internal variables
@@ -520,14 +520,7 @@ function showRecommendation(productNumber) {
     // Accept button
     const acceptButton = document.createElement('button');
     acceptButton.textContent = '✅Accept';
-    acceptButton.style.backgroundColor = sendButtonColor;
-    acceptButton.style.color = sendButtonFontColor;
-    acceptButton.style.padding = "clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px)";
-    acceptButton.style.minHeight = "44px"; // Minimum touch target
-    acceptButton.style.border = "none";
-    acceptButton.style.borderRadius = "5px";
-    acceptButton.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
-    acceptButton.style.cursor = "pointer";
+    // Styling handled by CSS class
     acceptButton.onclick = function() {
         // Log acceptance with context
         logEvent("accepted-recommended-product-" + productNumber, {
@@ -544,14 +537,7 @@ function showRecommendation(productNumber) {
     // Decline button
     const declineButton = document.createElement('button');
     declineButton.textContent = '❌Decline';
-    declineButton.style.backgroundColor = sendButtonColor;
-    declineButton.style.color = sendButtonFontColor;
-    declineButton.style.padding = "clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px)";
-    declineButton.style.minHeight = "44px"; // Minimum touch target
-    declineButton.style.border = "none";
-    declineButton.style.borderRadius = "5px";
-    declineButton.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
-    declineButton.style.cursor = "pointer";
+    // Styling handled by CSS class
     declineButton.addEventListener('click', function () {
         document.getElementById("recommendation").remove();
         showAllProducts("Choose a product below")
@@ -920,8 +906,8 @@ function applyCustomRecommendationcStyles() {
     }
     .custom-recommendation-button {
       padding: clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 4vw, 2rem);
-      background-color: ${sendButtonColor};
-      color: ${sendButtonFontColor};
+      background-color: #980033;
+      color: #fff !important;
       border: none;
       border-radius: clamp(0.25rem, 1vw, 0.5rem);
       font-size: clamp(1rem, 2.5vw, 1.125rem);
@@ -931,7 +917,7 @@ function applyCustomRecommendationcStyles() {
       transition: background-color 0.3s ease, transform 0.1s ease;
     }
     .custom-recommendation-button:hover {
-      background-color: #800000;
+      background-color:rgb(80, 0, 27);
       transform: translateY(-1px);
     }
     .custom-recommendation-button:active {
@@ -993,7 +979,7 @@ function applyCustomRecommendationcStyles() {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: ${sendButtonColor};
+      background: rgba(152, 0, 51, 0.50);
       color: #fff;
       border: none;
       padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.25rem);
@@ -1012,7 +998,7 @@ function applyCustomRecommendationcStyles() {
     }
     .carousel .prev:hover,
     .carousel .next:hover {
-      background: #800000;
+      background: #980033;
       transform: translateY(-50%) translateY(-1px);
     }
     .carousel .prev:active,
