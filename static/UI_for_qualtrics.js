@@ -285,6 +285,12 @@ function addSystemMessage(message) {
 try {
     addChatHeader();
 
+    // Hide NextButton during chat interaction
+    Qualtrics.SurveyEngine.addOnload(function () {
+      this.hideNextButton();      // built‑in helper
+      //  … any other per‑page setup
+    });
+    
     var sendButton = document.getElementById('send-button');
     sendButton.style.backgroundColor = sendButtonColor;
     sendButton.style.color = sendButtonFontColor;
@@ -539,12 +545,12 @@ function showAllProducts(message) {
     img.src = data.src;
     img.alt = data.alertText;
 
-    img.addEventListener("click", () => {
-      console.log(`Slide ${i+1} clicked:`, data.alertText);
-      alert(data.alertText);
-      const nb = document.getElementById("NextButton");
-      if (nb) nb.click();
-    });
+    // img.addEventListener("click", () => {
+    //   console.log(`Slide ${i+1} clicked:`, data.alertText);
+    //   alert(data.alertText);
+    //   const nb = document.getElementById("NextButton");
+    //   if (nb) nb.click();
+    // });
 
     slide.appendChild(img);
     track.appendChild(slide);
@@ -611,6 +617,43 @@ function showAllProducts(message) {
       }
     });
   });
+
+  // ===== Accept/Decline Buttons =====
+  const acceptButton = document.createElement('button');
+  acceptButton.textContent = '✅Accept';
+  acceptButton.className = "custom-recommendation-button";
+  acceptButton.onclick = function() {
+    var track = document.querySelector('.carousel .slides');
+    var currentSlide = 1; // default fallback
+    if (track) {
+      var width = track.clientWidth || 1;
+      currentSlide = Math.round(track.scrollLeft / width) + 1;
+    }
+    alert('You accepted product ' + currentSlide + '!');
+    var nb = document.getElementById("NextButton");
+    if (nb) nb.click();
+  };
+
+  /* DECLINE LOGIC - START */
+  const declineButton = document.createElement('button');
+  declineButton.textContent = '❌Decline';
+  declineButton.className = "custom-recommendation-button";
+  declineButton.onclick = function() {
+    document.getElementById("recommendation").remove();
+    // Could add additional decline logic here if needed
+  };
+  /* DECLINE LOGIC - END */
+
+  // Wrap buttons in container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = "recommendation-buttons";
+  buttonContainer.appendChild(acceptButton);
+  
+  /* DECLINE LOGIC - START */
+  buttonContainer.appendChild(declineButton);
+  /* DECLINE LOGIC - END */
+  
+  content.appendChild(buttonContainer);
 
   // Qualtrics embedded data logging (unchanged)
   try {
@@ -706,10 +749,11 @@ function applyCustomRecommendationcStyles() {
       background: #fff;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 85vw;
-      width: 100%;
-      padding: 20px;
-      margin: 40px auto;
+      width: clamp(320px, 90vw, 60rem);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: clamp(1rem, 3vw, 2rem);
+      margin: clamp(1rem, 5vh, 2.5rem) auto;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -738,24 +782,24 @@ function applyCustomRecommendationcStyles() {
 
     #recommendationMessage {
       color: #b60000;
-      margin-bottom: 15px;
+      margin-bottom: clamp(1rem, 3vw, 1.5rem);
       text-align: center;
-      font-size: 1.25rem;
-      line-height: 1.2;
+      font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+      line-height: 1.3;
     }
 
-    /* Container we originally used for a single image. We’ll clear/hide it in the gallery case. */
+    /* Container we originally used for a single image. We'll clear/hide it in the gallery case. */
     #image-container {
-      margin: 20px 0;
+      margin: clamp(1rem, 4vw, 2rem) 0;
       width: 100%;
       text-align: center;
     }
     #image-container img {
       width: 100%;
-      max-width: 750px;
+      max-width: min(50rem, 90vw);
       display: block;
       margin: 0 auto;
-      border-radius: 8px;
+      border-radius: clamp(0.5rem, 1vw, 0.75rem);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
@@ -763,25 +807,35 @@ function applyCustomRecommendationcStyles() {
     .recommendation-buttons {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
+      gap: clamp(0.75rem, 2vw, 1.25rem);
+      margin-top: clamp(1.25rem, 4vw, 2rem);
       flex-wrap: wrap;
     }
     .custom-recommendation-button {
-      padding: 10px 20px;
+      padding: clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 4vw, 2rem);
       background-color: ${sendButtonColor};
       color: ${sendButtonFontColor};
       border: none;
-      border-radius: 5px;
-      font-size: 14pt;
+      border-radius: clamp(0.25rem, 1vw, 0.5rem);
+      font-size: clamp(1rem, 2.5vw, 1.125rem);
       cursor: pointer;
+      min-height: 44px;
+      min-width: 120px;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+    }
+    .custom-recommendation-button:hover {
+      background-color: #800000;
+      transform: translateY(-1px);
+    }
+    .custom-recommendation-button:active {
+      transform: translateY(0);
     }
 
     /* ===== Carousel ===== */
     .carousel {
       position: relative;
       width: 100%;
-      margin: 20px 0;
+      margin: clamp(1.25rem, 4vw, 2rem) 0;
     }
     /* Scroll container */
     .carousel .slides {
@@ -809,15 +863,17 @@ function applyCustomRecommendationcStyles() {
       flex: 0 0 100%;
       scroll-snap-align: center;
       box-sizing: border-box;
-      padding: 0 60px;
+      padding: 0 clamp(2rem, 8vw, 4rem);
       overflow: hidden;
     }
     .carousel .slide img {
       width: 100%;
       display: block;
-      border-radius: 8px;
+      border-radius: clamp(0.5rem, 1vw, 0.75rem);
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+      aspect-ratio: 16/9;
+      object-fit: cover;
     }
     .carousel .slide img:hover {
       transform: scale(1.02);
@@ -833,32 +889,42 @@ function applyCustomRecommendationcStyles() {
       background: ${sendButtonColor};
       color: #fff;
       border: none;
-      padding: 16px 20px;
-      font-size: 1.5rem;
+      padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.25rem);
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
       line-height: 1;
       cursor: pointer;
       z-index: 2;
-      border-radius: 5px;
+      border-radius: clamp(0.25rem, 1vw, 0.5rem);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .carousel .prev:hover,
     .carousel .next:hover {
       background: #800000;
+      transform: translateY(-50%) translateY(-1px);
     }
-    .carousel .prev { left: 20px; }
-    .carousel .next { right: 20px; }
+    .carousel .prev:active,
+    .carousel .next:active {
+      transform: translateY(-50%) translateY(0);
+    }
+    .carousel .prev { left: clamp(0.5rem, 2vw, 1.25rem); }
+    .carousel .next { right: clamp(0.5rem, 2vw, 1.25rem); }
 
     /* Fraction Indicator */
     .carousel-indicator {
-	  margin-top: 12px;
-	  font-size: 18px !important;    /* increased from 16px for better visibility */
+	  margin-top: clamp(0.75rem, 2vw, 1rem);
+	  font-size: clamp(1rem, 2.5vw, 1.25rem) !important;
 	  line-height: 1.3;
-	  color: #333 !important;         /* dark text */
+	  color: #333 !important;
 	  text-align: center;
-	  white-space: nowrap;            /* keep 1 / 8 on one line */
-	  min-height: 1.3em;              /* reserve space, prevent collapse */
-	  font-weight: 500;               /* slightly bolder for better readability */
+	  white-space: nowrap;
+	  min-height: 1.3em;
+	  font-weight: 500;
 	}
   `;
   const style = document.createElement('style');
