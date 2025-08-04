@@ -21,8 +21,14 @@ version_number = '1.0.0'
 # Load environment variables
 load_dotenv()
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Set up logging for Google Cloud Run (stdout required)
+import sys
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout,  # Explicitly direct to stdout for Cloud Run
+    force=True         # Override any existing configuration
+)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
