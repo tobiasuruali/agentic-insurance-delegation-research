@@ -152,9 +152,10 @@ async def local_ui():
     <div id="chat-container" style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px;">
         <h1>Agentic Insurance Chatbot</h1>
         <div id="chat-window" style="width: 100%; height: 400px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin-bottom: 10px; display: flex; flex-direction: column;">&nbsp;</div>
-        <div style="display: flex; gap: 10px;">
-            <input id="user-input" placeholder="Type your message here..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14pt;" type="text" />
-            <button id="send-button" style="padding: 10px 20px; background-color: #970000; color: white; border: none; border-radius: 5px; font-size: 14pt; cursor: pointer;">Send</button>
+        <div id="input-row" style="display: flex; width: 100%; gap: 8px; box-sizing: border-box;">
+            <input id="user-input" placeholder="Type your message here..." 
+                   style="flex: 1 1 auto; min-width: 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;" type="text" />
+            <button id="send-button" style="flex: 0 0 auto; background-color: #980033; color: white; border: none; border-radius: 5px; cursor: pointer;">Send</button>
         </div>
     </div>
     <script src="/static/local-ui.js"></script>
