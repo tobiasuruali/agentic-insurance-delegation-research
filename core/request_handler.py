@@ -11,14 +11,7 @@ from agents.information_collector import InformationCollectorAgent
 from agents.recommendation_agent import RecommendationAgent
 from data.insurance_products import recommend_insurance_product
 
-# Set up logging for Google Cloud Run (stdout required)
-import sys
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout,  # Explicitly direct to stdout for Cloud Run
-    force=True         # Override any existing configuration
-)
+# Configure module logger
 logger = logging.getLogger(__name__)
 
 # Load system prompts

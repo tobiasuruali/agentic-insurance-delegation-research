@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
 
+# Initialize logging configuration
+import core.logging_config  # noqa: F401
+
 import core.request_handler as request_handler
 
 # Version number - update on redeploy
@@ -21,14 +24,7 @@ version_number = '1.0.0'
 # Load environment variables
 load_dotenv()
 
-# Set up logging for Google Cloud Run (stdout required)
-import sys
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout,  # Explicitly direct to stdout for Cloud Run
-    force=True         # Override any existing configuration
-)
+# Configure logger for this module
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
