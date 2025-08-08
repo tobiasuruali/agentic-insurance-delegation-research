@@ -170,9 +170,9 @@ async def local_ui():
     </style>
 </head>
 <body>
-    <div id="chat-container" style="width: clamp(320px, 95vw, 800px); margin: 0 auto; padding: clamp(1rem, 4vw, 1.5rem);">
+    <div id="chat-container" style="width: clamp(320px, 95vw, 800px); margin: 0 auto; padding: clamp(1rem, 4vw, 1.5rem); box-sizing: border-box; max-width: 100%;">
         <h1>Agentic Insurance Chatbot</h1>
-        <div id="chat-window" style="width: 100%; height: 50vh; border: 1px solid #ccc; padding: clamp(0.5rem, 2vw, 1rem); overflow-y: scroll; margin-bottom: clamp(0.5rem, 2vw, 1rem); display: flex; flex-direction: column;">&nbsp;</div>
+        <div id="chat-window" style="width: 100%; height: 50vh; border: 1px solid #ccc; padding: clamp(0.5rem, 2vw, 1rem); overflow-y: scroll; margin-bottom: clamp(0.5rem, 2vw, 1rem); display: flex; flex-direction: column; box-sizing: border-box;">&nbsp;</div>
         <div id="input-row" style="display: flex; width: 100%; gap: clamp(8px, 2vw, 12px); box-sizing: border-box;">
             <input id="user-input" placeholder="Type your message here..." 
                    style="flex: 1 1 auto; min-width: 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; padding: clamp(8px, 2vw, 12px); font-size: clamp(0.875rem, 2.5vw, 1rem); min-height: 44px;" type="text" />
