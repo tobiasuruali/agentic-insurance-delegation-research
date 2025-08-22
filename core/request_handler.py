@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 import traceback
 import logging
+import yaml
 
 from core.settings import openai_client, gcs_client
 from agents.information_collector import InformationCollectorAgent
@@ -15,8 +16,8 @@ from data.insurance_products import recommend_insurance_product
 logger = logging.getLogger(__name__)
 
 # Load system prompts
-with open('data/system_prompts.json', 'r') as f:
-    system_prompts = json.load(f)
+with open('data/system_prompts.yaml', 'r') as f:
+    system_prompts = yaml.safe_load(f)
 
 # Initialize agents
 info_collector = InformationCollectorAgent(system_prompts['information_collector']['content'])
