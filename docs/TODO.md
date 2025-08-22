@@ -7,13 +7,16 @@
 
 - [ ] **Mobile responsive design improvements:** fix carousel on mobile & touch‑swipe 🔥🎨 <!-- prio:high area:ui -->
 - [ ] **Carousel view accept/decline button:** add accept & decline buttons to carousel 🔥🎨 <!-- prio:high area:ui -->
-- [ ] **Popup sizing:** When wide screen, popup suddenly fill the whole screen, should be smaller 🔥🎨 <!-- prio:high area:ui -->
+- [ ] **Popup sizing:** When wide screen, the popup for the caroussel suddenly fills the whole screen, should be smaller 🔥🎨 <!-- prio:high area:ui -->
 - [ ] **Integrate all product images:** all product images need to be sent to me and integrated into the carousel 🔥🎨 <!-- prio:high area:ui -->
+-
+
 </details>
 
 <details><summary>💻 Backend</summary>
 
 - [ ] **Prompt fool‑proofing:** handle edge cases & clarify the bot is an AI agent 🔥💻 <!-- prio:high area:logic -->
+- [ ] **Move logging to internal only:** Refactor the backend logging to restrict output solely to internal streams. Replace direct console logging with a secure internal logging mechanism to ensure sensitive information isn't exposed while maintaining necessary debug traces. 🔥💻 <!-- prio:high area:logic -->
 
 </details>
 
@@ -29,7 +32,7 @@
 
 <details><summary>🎨 UI</summary>
 
-- [ ] _None (placeholder)_ 🧊🎨 <!-- prio:low area:ui -->
+- [ ] **Restrict message sending and enforce auto-scroll:** Prevent sending a new message until a response is received, and automatically scroll the chat to the bottom when a new message is sent or received. 🧊🎨 <!-- prio:low area:ui -->
 
 </details>
 

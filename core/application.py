@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
 
+# Initialize logging configuration
+import core.logging_config  # noqa: F401
+
 import core.request_handler as request_handler
 
 # Version number - update on redeploy
@@ -21,8 +24,7 @@ version_number = '1.0.0'
 # Load environment variables
 load_dotenv()
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Configure logger for this module
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
@@ -141,14 +143,36 @@ async def local_ui():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agentic Insurance Chatbot</title>
+    <style>
+        body {
+            margin: 0;
+            padding: clamp(0.5rem, 2vw, 1rem);
+            font-family: 'Arial', sans-serif;
+        }
+        #input-row {
+            display: flex;
+            width: 100%;
+            gap: clamp(8px, 2vw, 12px);
+            box-sizing: border-box;
+        }
+        #user-input {
+            flex: 1 1 auto;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+        #send-button {
+            flex: 0 0 auto;
+        }
+    </style>
 </head>
 <body>
-    <div id="chat-container" style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px;">
+    <div id="chat-container" style="width: clamp(320px, 95vw, 800px); margin: 0 auto; padding: clamp(1rem, 4vw, 1.5rem); box-sizing: border-box; max-width: 100%;">
         <h1>Agentic Insurance Chatbot</h1>
-        <div id="chat-window" style="width: 100%; height: 400px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin-bottom: 10px; display: flex; flex-direction: column;">&nbsp;</div>
-        <div style="display: flex; gap: 10px;">
-            <input id="user-input" placeholder="Type your message here..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14pt;" type="text" />
-            <button id="send-button" style="padding: 10px 20px; background-color: #970000; color: white; border: none; border-radius: 5px; font-size: 14pt; cursor: pointer;">Send</button>
+        <div id="chat-window" style="width: 100%; height: 50vh; border: 1px solid #ccc; padding: clamp(0.5rem, 2vw, 1rem); overflow-y: scroll; margin-bottom: clamp(0.5rem, 2vw, 1rem); display: flex; flex-direction: column; box-sizing: border-box;">&nbsp;</div>
+        <div id="input-row" style="display: flex; width: 100%; gap: clamp(8px, 2vw, 12px); box-sizing: border-box;">
+            <input id="user-input" placeholder="Type your message here..." 
+                   style="flex: 1 1 auto; min-width: 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; padding: clamp(8px, 2vw, 12px); font-size: clamp(0.875rem, 2.5vw, 1rem); min-height: 44px;" type="text" />
+            <button id="send-button" style="flex: 0 0 auto; background-color: #980033; color: white; border: none; border-radius: 5px; cursor: pointer; padding: clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px); font-size: clamp(0.875rem, 2.5vw, 1rem); min-height: 44px;">Send</button>
         </div>
     </div>
     <script src="/static/local-ui.js"></script>

@@ -4,7 +4,7 @@
 
 ![Chat Interface](img/chat-interface-poc.png)
 
-This system demonstrates cutting-edge agentic AI architecture where two specialized agents collaborate to deliver personalized insurance recommendations. Each agent has a distinct role and expertise, creating a natural conversation flow that mimics human insurance consultation.
+This system demonstrates a simple agentic AI architecture where two specialized agents collaborate to deliver personalized insurance recommendations. Each agent has a distinct role and expertise, creating a natural conversation flow that mimics human insurance consultation.
 
 ---
 
@@ -147,6 +147,26 @@ This system is designed for seamless Qualtrics integration:
 - Upload `static/UI_for_qualtrics.js` as an embedded code block
 - Configure embedded data fields for conversation storage
 - Update `chatbotURL` with your deployment endpoint
+
+#### Required Embedded Data Variables
+Add these variables to your Qualtrics Survey Flow before the chatbot question:
+
+**Core Variables:**
+- `ChatHistory` - Conversation log
+- `ChatHistoryJson` - Structured conversation data
+- `SessionId` - Session identifier
+- `ResponseID` - Qualtrics response ID
+
+**Analytics Variables:**
+- `RecommendedProduct` - Initially recommended product number
+- `AcceptedProduct` - Product user accepted
+- `WasRecommendationAccepted` - "true"/"false" 
+- `UserJourney` - User interaction flow
+- `RecommendationType` - Interaction type
+- `RejectedRecommendation` - Rejected product number
+- `DeclinedProduct` - Declined product number
+
+*Leave all values empty - JavaScript will populate them automatically.*
 
 ### Google Cloud Authentication & Setup
 ```bash

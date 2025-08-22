@@ -51,13 +51,17 @@ userMessageBackgroundColor  = "#FFF"; // White background
 loadingMessageFontColor     = "#888"; // Grey text color
 botMessageFontColor         = "#333"; // Darker text color
 botMessageBackgroundColor    = "#EFEFEF"; // Light grey background
-sendButtonColor             = "#970000"; // Red button
+sendButtonColor             = "#980033"; // Crimson button (matches header)
 sendButtonFontColor         = "#FFF"; // White text
 
 // Internal variables
 var sessionId = 'session_' + crypto.randomUUID();
 var chatHistory = "";
 var chatHistoryJson = [];
+
+// Recommendation tracking variables
+var originalRecommendation = null;
+var recommendationType = null;
 
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
@@ -68,9 +72,9 @@ function addChatHeader() {
     var chatHeader = document.createElement('div');
     chatHeader.style.backgroundColor = chatHeaderBackgroundColor;
     chatHeader.style.color = chatHeaderFontColor;
-    chatHeader.style.padding = "10px";
+    chatHeader.style.padding = "clamp(8px, 2vw, 12px)";
     chatHeader.style.textAlign = "center";
-    chatHeader.style.fontSize = "14pt";
+    chatHeader.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
     chatHeader.style.fontWeight = "bold";
     chatHeader.style.borderTopLeftRadius = "10px";
     chatHeader.style.borderTopRightRadius = "10px";
@@ -81,9 +85,9 @@ function addChatHeader() {
     var avatar = document.createElement('img');
     avatar.src = avatarImageURL;
     avatar.alt = botName + 'Avatar';
-    avatar.style.width = "80px"; // Set the size of the avatar
-    avatar.style.height = "80px"; // Set the size of the avatar
-    avatar.style.marginRight = "10px"; // Space between avatar and text
+    avatar.style.width = "clamp(50px, 8vw, 80px)"; // Responsive avatar size
+    avatar.style.height = "clamp(50px, 8vw, 80px)"; // Responsive avatar size
+    avatar.style.marginRight = "clamp(8px, 2vw, 12px)"; // Responsive space between avatar and text
     avatar.style.borderRadius = "50%"; // Make it circular if not already
 
     // Create the text element
@@ -104,6 +108,14 @@ async function sendMessage() {
     var userInput = document.getElementById('user-input').value;
     if (!userInput.trim()) return;
     
+    // Clear input field immediately
+    document.getElementById('user-input').value = '';
+    
+    // Disable send button with visual feedback
+    const sendButton = document.getElementById('send-button');
+    sendButton.disabled = true;
+    sendButton.style.opacity = '0.6';
+    
     var chatWindow = document.getElementById('chat-window');
     var timestamp = new Date().toISOString();
     chatHistory += "User: " + userInput + "\n";
@@ -111,24 +123,27 @@ async function sendMessage() {
 
     // User message styling
     var userMessageDiv = document.createElement('div');
-    userMessageDiv.style.fontSize = '14pt';
+    userMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
     userMessageDiv.style.color = userMessageFontColor;
     userMessageDiv.style.backgroundColor = userMessageBackgroundColor;
-    userMessageDiv.style.padding = "10px";
+    userMessageDiv.style.padding = "clamp(8px, 2vw, 12px)";
     userMessageDiv.style.borderRadius = "10px";
-    userMessageDiv.style.marginBottom = "10px";
+    userMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
     userMessageDiv.style.maxWidth = "70%";
     userMessageDiv.style.alignSelf = "flex-end";
     userMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
     userMessageDiv.innerHTML = '<strong>You:</strong> ' + userInput;
     chatWindow.appendChild(userMessageDiv);
+    
+    // Scroll immediately to show user message
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
     // Loading message styling
     var loadingMessageDiv = document.createElement('div');
-    loadingMessageDiv.style.fontSize = '12pt';
+    loadingMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
     loadingMessageDiv.style.fontStyle = 'italic';
     loadingMessageDiv.style.color = loadingMessageFontColor;
-    loadingMessageDiv.style.marginBottom = "10px";
+    loadingMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
     loadingMessageDiv.style.maxWidth = "70%";
     loadingMessageDiv.style.alignSelf = "flex-start";
     loadingMessageDiv.id = 'loading-message';
@@ -222,14 +237,24 @@ async function sendMessage() {
             sessionId = "DEBUG"
             qualtricsResponseId = "DEBUG"
         }
+        
+        // Re-enable send button
+        const sendButton = document.getElementById('send-button');
+        sendButton.disabled = false;
+        sendButton.style.opacity = '1';
     } catch (error) {
         var loadingDiv = document.getElementById('loading-message');
         if (loadingDiv) loadingDiv.remove();
         showErrorMessage("Network error: " + error.message);
         console.error("Network error: ", error);
+        
+        // Re-enable send button on error
+        const sendButton = document.getElementById('send-button');
+        sendButton.disabled = false;
+        sendButton.style.opacity = '1';
     }
 
-    document.getElementById('user-input').value = '';
+    // Final scroll (input already cleared earlier)
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
@@ -237,10 +262,10 @@ function createBotMessage(content, agentType = 'collector') {
     var botMessageDiv = document.createElement('div');
     
     // Base styling
-    botMessageDiv.style.fontSize = '14pt';
-    botMessageDiv.style.padding = '10px';
+    botMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
+    botMessageDiv.style.padding = 'clamp(8px, 2vw, 12px)';
     botMessageDiv.style.borderRadius = '10px';
-    botMessageDiv.style.marginBottom = '10px';
+    botMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
     botMessageDiv.style.maxWidth = '70%';
     botMessageDiv.style.alignSelf = 'flex-start';
     botMessageDiv.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
@@ -265,13 +290,13 @@ function addSystemMessage(message) {
     var chatWindow = document.getElementById('chat-window');
     var systemMessageDiv = document.createElement('div');
     
-    systemMessageDiv.style.fontSize = '12pt';
+    systemMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
     systemMessageDiv.style.fontStyle = 'italic';
     systemMessageDiv.style.color = '#666';
     systemMessageDiv.style.backgroundColor = '#f8f9fa';
     systemMessageDiv.style.padding = '8px 12px';
     systemMessageDiv.style.borderRadius = '15px';
-    systemMessageDiv.style.marginBottom = '10px';
+    systemMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
     systemMessageDiv.style.maxWidth = '60%';
     systemMessageDiv.style.alignSelf = 'center';
     systemMessageDiv.style.border = '1px solid #dee2e6';
@@ -282,23 +307,106 @@ function addSystemMessage(message) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function logEvent(eventType, details) {
+    try {
+        var timestamp = new Date().toISOString();
+        var logEntry = {
+            role: "system",
+            content: eventType,
+            timestamp: timestamp,
+            details: details || {}
+        };
+        
+        chatHistory += "System: " + eventType + "\n";
+        chatHistoryJson.push(logEntry);
+        
+        // Set standard embedded data
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+        
+        // Initialize all variables to ensure consistent data structure
+        var currentRecommended = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendedProduct') || "";
+        var currentAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProduct') || "";
+        var currentWasAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('WasRecommendationAccepted') || "";
+        var currentUserJourney = Qualtrics.SurveyEngine.getJSEmbeddedData('UserJourney') || "";
+        var currentRecommendationType = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendationType') || "";
+        var currentRejected = Qualtrics.SurveyEngine.getJSEmbeddedData('RejectedRecommendation') || "";
+        var currentDeclined = Qualtrics.SurveyEngine.getJSEmbeddedData('DeclinedProduct') || "";
+        
+        // Set specific values based on event type, keeping others as current or empty
+        if (eventType.startsWith("recommended-product-")) {
+            var productNum = eventType.replace("recommended-product-", "");
+            currentRecommended = productNum;
+            currentRecommendationType = details.type || "single";
+        }
+        
+        if (eventType.startsWith("accepted-recommended-product-")) {
+            var productNum = eventType.replace("accepted-recommended-product-", "");
+            currentAccepted = productNum;
+            currentWasAccepted = "true";
+            currentUserJourney = details.recommendationType === "single" ? "direct-accept" : "gallery-accept-recommended";
+        }
+        
+        if (eventType.startsWith("accepted-alternative-product-")) {
+            var productNum = eventType.replace("accepted-alternative-product-", "");
+            currentAccepted = productNum;
+            currentWasAccepted = "false";
+            currentUserJourney = "decline-then-gallery-accept";
+        }
+        
+        if (eventType.startsWith("rejected-recommended-product-")) {
+            var productNum = eventType.replace("rejected-recommended-product-", "");
+            currentRejected = productNum;
+            currentDeclined = productNum;
+        }
+        
+        if (eventType === "showed-product-gallery") {
+            currentRecommendationType = details.type || "gallery";
+        }
+        
+        // Always set ALL variables to ensure consistent data structure
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendedProduct', currentRecommended);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProduct', currentAccepted);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('UserJourney', currentUserJourney);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendationType', currentRecommendationType);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('RejectedRecommendation', currentRejected);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('DeclinedProduct', currentDeclined);
+        
+    } catch(error) {
+        console.error("Error logging event: ", error);
+        sessionId = "DEBUG";
+        qualtricsResponseId = "DEBUG";
+    }
+}
+
 try {
     addChatHeader();
 
+    // Hide NextButton during chat interaction
+    Qualtrics.SurveyEngine.addOnload(function () {
+      this.hideNextButton();      // built‑in helper
+      //  … any other per‑page setup
+    });
+    
     var sendButton = document.getElementById('send-button');
     sendButton.style.backgroundColor = sendButtonColor;
     sendButton.style.color = sendButtonFontColor;
-    sendButton.style.padding = "10px 20px";
+    sendButton.style.padding = "clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px)";
+    sendButton.style.minHeight = "44px"; // Minimum touch target
     sendButton.style.border = "none";
     sendButton.style.borderRadius = "5px";
-    sendButton.style.fontSize = "14pt";
+    sendButton.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
     sendButton.style.cursor = "pointer";
     sendButton.addEventListener('click', sendMessage);
 
-    document.getElementById('user-input').style.padding = "10px";
+    document.getElementById('user-input').style.padding = "clamp(8px, 2vw, 12px)";
+    document.getElementById('user-input').style.minHeight = "44px"; // Minimum touch target
     document.getElementById('user-input').style.border = "1px solid #CCC";
     document.getElementById('user-input').style.borderRadius = "5px";
-    document.getElementById('user-input').style.fontSize = "14pt";
+    document.getElementById('user-input').style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
 
     // Handle Enter key to send message and prevent default behavior
     document.getElementById('user-input').addEventListener('keydown', function (e) {
@@ -407,6 +515,10 @@ function showProductOverlay(){
 
 
 function showRecommendation(productNumber) {    
+    // Set tracking variables
+    originalRecommendation = productNumber;
+    recommendationType = "single";
+    
     showProductOverlay()
     message = "Here is your recommended product: " + productNumber 
     // Adapt message
@@ -429,29 +541,24 @@ function showRecommendation(productNumber) {
     // Accept button
     const acceptButton = document.createElement('button');
     acceptButton.textContent = '✅Accept';
-    acceptButton.style.backgroundColor = sendButtonColor;
-    acceptButton.style.color = sendButtonFontColor;
-    acceptButton.style.padding = "10px 20px";
-    acceptButton.style.border = "none";
-    acceptButton.style.borderRadius = "5px";
-    acceptButton.style.fontSize = "14pt";
-    acceptButton.style.cursor = "pointer";
+    // Styling handled by CSS class
     acceptButton.onclick = function() {
-        alert('You accepted!');
-    // → Advance Qualtrics immediately:
-    document.getElementById("NextButton").click();
+        // Log acceptance with context
+        logEvent("accepted-recommended-product-" + productNumber, {
+            acceptedProduct: productNumber,
+            originalRecommendation: originalRecommendation,
+            wasRecommended: true,
+            recommendationType: recommendationType
+        });
+        
+        alert('You accepted product ' + productNumber + '!');
+        document.getElementById("NextButton").click();
     };
 
     // Decline button
     const declineButton = document.createElement('button');
     declineButton.textContent = '❌Decline';
-    declineButton.style.backgroundColor = sendButtonColor;
-    declineButton.style.color = sendButtonFontColor;
-    declineButton.style.padding = "10px 20px";
-    declineButton.style.border = "none";
-    declineButton.style.borderRadius = "5px";
-    declineButton.style.fontSize = "14pt";
-    declineButton.style.cursor = "pointer";
+    // Styling handled by CSS class
     declineButton.addEventListener('click', function () {
         document.getElementById("recommendation").remove();
         showAllProducts("Choose a product below")
@@ -473,24 +580,24 @@ function showRecommendation(productNumber) {
        
     alertContent.appendChild(buttonContainer);   // Bottom (Buttons)
     
-    try{
-        var botTimestamp = new Date().toISOString();
-        chatHistory += "System: clicked-recommendation\n";
-        chatHistoryJson.push({ role: "system", content: "clicked-recommendation", timestamp: botTimestamp });
-
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-    } catch(error) {
-        console.error("Error from Qualtrics: ", error);
-        sessionId = "DEBUG"
-        qualtricsResponseId = "DEBUG"
-    }
+    // Log the recommendation event
+    logEvent("recommended-product-" + productNumber, {
+        productNumber: productNumber,
+        type: "single",
+        recommendationType: "single"
+    });
 }
 
 function showAllProducts(message) {
   console.log("showAllProducts() called with message:", message);
+  
+  // Update recommendation type if switching from single to gallery
+  if (recommendationType === "single") {
+    recommendationType = "gallery-after-decline";
+  } else {
+    recommendationType = "gallery";
+  }
+  
   showProductOverlay();
 
   // Set prompt text
@@ -539,12 +646,12 @@ function showAllProducts(message) {
     img.src = data.src;
     img.alt = data.alertText;
 
-    img.addEventListener("click", () => {
-      console.log(`Slide ${i+1} clicked:`, data.alertText);
-      alert(data.alertText);
-      const nb = document.getElementById("NextButton");
-      if (nb) nb.click();
-    });
+    // img.addEventListener("click", () => {
+    //   console.log(`Slide ${i+1} clicked:`, data.alertText);
+    //   alert(data.alertText);
+    //   const nb = document.getElementById("NextButton");
+    //   if (nb) nb.click();
+    // });
 
     slide.appendChild(img);
     track.appendChild(slide);
@@ -612,24 +719,74 @@ function showAllProducts(message) {
     });
   });
 
-  // Qualtrics embedded data logging (unchanged)
-  try {
-    const botTimestamp = new Date().toISOString();
-    console.log("Logging 'clicked-overview' at", botTimestamp);
-    chatHistory += "System: clicked-overview\n";
-    chatHistoryJson.push({
-      role:      "System",
-      timestamp: botTimestamp,
-      content:   "clicked-overview"
+  // ===== Accept/Decline Buttons =====
+  const acceptButton = document.createElement('button');
+  acceptButton.textContent = '✅Accept';
+  acceptButton.className = "custom-recommendation-button";
+  acceptButton.onclick = function() {
+    var track = document.querySelector('.carousel .slides');
+    var currentSlide = 1; // default fallback
+    if (track) {
+      var width = track.clientWidth || 1;
+      currentSlide = Math.round(track.scrollLeft / width) + 1;
+    }
+    
+    // Determine if this matches the original recommendation
+    var wasRecommended = (originalRecommendation === currentSlide);
+    var eventType = wasRecommended ? 
+      "accepted-recommended-product-" + currentSlide : 
+      "accepted-alternative-product-" + currentSlide;
+    
+    // Log acceptance with full context
+    logEvent(eventType, {
+      acceptedProduct: currentSlide,
+      originalRecommendation: originalRecommendation,
+      wasRecommended: wasRecommended,
+      recommendationType: recommendationType
     });
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistory",     chatHistory);
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ChatHistoryJson", JSON.stringify(chatHistoryJson));
-    Qualtrics.SurveyEngine.setJSEmbeddedData("SessionId",       sessionId);
-    Qualtrics.SurveyEngine.setJSEmbeddedData("ResponseID",      "${e://Field/ResponseID}");
-  } catch (error) {
-    console.error("Error setting embedded data:", error);
-    sessionId = "DEBUG";
-  }
+    
+    // If they chose alternative, also log the rejection of original
+    if (!wasRecommended && originalRecommendation) {
+      logEvent("rejected-recommended-product-" + originalRecommendation, {
+        rejectedProduct: originalRecommendation,
+        chosenInstead: currentSlide,
+        recommendationType: recommendationType
+      });
+    }
+    
+    alert('You accepted product ' + currentSlide + '!');
+    var nb = document.getElementById("NextButton");
+    if (nb) nb.click();
+  };
+
+  /* DECLINE LOGIC - START */
+  const declineButton = document.createElement('button');
+  declineButton.textContent = '❌Decline';
+  declineButton.className = "custom-recommendation-button";
+  declineButton.onclick = function() {
+    document.getElementById("recommendation").remove();
+    // Could add additional decline logic here if needed
+  };
+  /* DECLINE LOGIC - END */
+
+  // Wrap buttons in container
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = "recommendation-buttons";
+  buttonContainer.appendChild(acceptButton);
+  
+  /* DECLINE LOGIC - START */
+  buttonContainer.appendChild(declineButton);
+  /* DECLINE LOGIC - END */
+  
+  content.appendChild(buttonContainer);
+
+  // Log the gallery display event
+  logEvent("showed-product-gallery", {
+    totalProducts: productImageData.length,
+    type: recommendationType,
+    originalRecommendation: originalRecommendation,
+    message: message
+  });
 }
 
 
@@ -706,10 +863,11 @@ function applyCustomRecommendationcStyles() {
       background: #fff;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 85vw;
-      width: 100%;
-      padding: 20px;
-      margin: 40px auto;
+      width: clamp(320px, 90vw, 60rem);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: clamp(1rem, 3vw, 2rem);
+      margin: clamp(1rem, 5vh, 2.5rem) auto;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -738,24 +896,24 @@ function applyCustomRecommendationcStyles() {
 
     #recommendationMessage {
       color: #b60000;
-      margin-bottom: 15px;
+      margin-bottom: clamp(1rem, 3vw, 1.5rem);
       text-align: center;
-      font-size: 1.25rem;
-      line-height: 1.2;
+      font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+      line-height: 1.3;
     }
 
-    /* Container we originally used for a single image. We’ll clear/hide it in the gallery case. */
+    /* Container we originally used for a single image. We'll clear/hide it in the gallery case. */
     #image-container {
-      margin: 20px 0;
+      margin: clamp(1rem, 4vw, 2rem) 0;
       width: 100%;
       text-align: center;
     }
     #image-container img {
       width: 100%;
-      max-width: 750px;
+      max-width: min(50rem, 90vw);
       display: block;
       margin: 0 auto;
-      border-radius: 8px;
+      border-radius: clamp(0.5rem, 1vw, 0.75rem);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
@@ -763,25 +921,35 @@ function applyCustomRecommendationcStyles() {
     .recommendation-buttons {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
+      gap: clamp(0.75rem, 2vw, 1.25rem);
+      margin-top: clamp(1.25rem, 4vw, 2rem);
       flex-wrap: wrap;
     }
     .custom-recommendation-button {
-      padding: 10px 20px;
-      background-color: ${sendButtonColor};
-      color: ${sendButtonFontColor};
+      padding: clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 4vw, 2rem);
+      background-color: #980033;
+      color: #fff !important;
       border: none;
-      border-radius: 5px;
-      font-size: 14pt;
+      border-radius: clamp(0.25rem, 1vw, 0.5rem);
+      font-size: clamp(1rem, 2.5vw, 1.125rem);
       cursor: pointer;
+      min-height: 44px;
+      min-width: 120px;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+    }
+    .custom-recommendation-button:hover {
+      background-color:rgb(80, 0, 27);
+      transform: translateY(-1px);
+    }
+    .custom-recommendation-button:active {
+      transform: translateY(0);
     }
 
     /* ===== Carousel ===== */
     .carousel {
       position: relative;
       width: 100%;
-      margin: 20px 0;
+      margin: clamp(1.25rem, 4vw, 2rem) 0;
     }
     /* Scroll container */
     .carousel .slides {
@@ -809,15 +977,17 @@ function applyCustomRecommendationcStyles() {
       flex: 0 0 100%;
       scroll-snap-align: center;
       box-sizing: border-box;
-      padding: 0 60px;
+      padding: 0 clamp(2rem, 8vw, 4rem);
       overflow: hidden;
     }
     .carousel .slide img {
       width: 100%;
       display: block;
-      border-radius: 8px;
+      border-radius: clamp(0.5rem, 1vw, 0.75rem);
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+      aspect-ratio: 16/9;
+      object-fit: cover;
     }
     .carousel .slide img:hover {
       transform: scale(1.02);
@@ -830,35 +1000,45 @@ function applyCustomRecommendationcStyles() {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: ${sendButtonColor};
+      background: rgba(152, 0, 51, 0.50);
       color: #fff;
       border: none;
-      padding: 16px 20px;
-      font-size: 1.5rem;
+      padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.25rem);
+      font-size: clamp(1.25rem, 3vw, 1.75rem);
       line-height: 1;
       cursor: pointer;
       z-index: 2;
-      border-radius: 5px;
+      border-radius: clamp(0.25rem, 1vw, 0.5rem);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .carousel .prev:hover,
     .carousel .next:hover {
-      background: #800000;
+      background: #980033;
+      transform: translateY(-50%) translateY(-1px);
     }
-    .carousel .prev { left: 20px; }
-    .carousel .next { right: 20px; }
+    .carousel .prev:active,
+    .carousel .next:active {
+      transform: translateY(-50%) translateY(0);
+    }
+    .carousel .prev { left: clamp(0.5rem, 2vw, 1.25rem); }
+    .carousel .next { right: clamp(0.5rem, 2vw, 1.25rem); }
 
     /* Fraction Indicator */
     .carousel-indicator {
-	  margin-top: 12px;
-	  font-size: 18px !important;    /* increased from 16px for better visibility */
+	  margin-top: clamp(0.75rem, 2vw, 1rem);
+	  font-size: clamp(1rem, 2.5vw, 1.25rem) !important;
 	  line-height: 1.3;
-	  color: #333 !important;         /* dark text */
+	  color: #333 !important;
 	  text-align: center;
-	  white-space: nowrap;            /* keep 1 / 8 on one line */
-	  min-height: 1.3em;              /* reserve space, prevent collapse */
-	  font-weight: 500;               /* slightly bolder for better readability */
+	  white-space: nowrap;
+	  min-height: 1.3em;
+	  font-weight: 500;
 	}
   `;
   const style = document.createElement('style');

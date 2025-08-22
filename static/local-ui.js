@@ -67,9 +67,9 @@ function addChatHeader() {
     const chatHeader = document.createElement('div');
     chatHeader.style.backgroundColor = chatHeaderBackgroundColor;
     chatHeader.style.color = chatHeaderFontColor;
-    chatHeader.style.padding = "10px";
+    chatHeader.style.padding = "clamp(8px, 2vw, 12px)";
     chatHeader.style.textAlign = "center";
-    chatHeader.style.fontSize = "14pt";
+    chatHeader.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
     chatHeader.style.fontWeight = "bold";
     chatHeader.style.borderTopLeftRadius = "10px";
     chatHeader.style.borderTopRightRadius = "10px";
@@ -79,9 +79,9 @@ function addChatHeader() {
     const avatar = document.createElement('img');
     avatar.src = avatarImageURL;
     avatar.alt = botName + ' Avatar';
-    avatar.style.width = "60px";
-    avatar.style.height = "60px";
-    avatar.style.marginRight = "10px";
+    avatar.style.width = "clamp(50px, 8vw, 80px)";
+    avatar.style.height = "clamp(50px, 8vw, 80px)";
+    avatar.style.marginRight = "clamp(8px, 2vw, 12px)";
     avatar.style.borderRadius = "50%";
 
     const chatHeaderText = document.createElement('span');
@@ -111,12 +111,12 @@ async function sendMessage() {
 
     // User message styling
     const userMessageDiv = document.createElement('div');
-    userMessageDiv.style.fontSize = '14pt';
+    userMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
     userMessageDiv.style.color = userMessageFontColor;
     userMessageDiv.style.backgroundColor = userMessageBackgroundColor;
-    userMessageDiv.style.padding = "10px";
+    userMessageDiv.style.padding = "clamp(8px, 2vw, 12px)";
     userMessageDiv.style.borderRadius = "10px";
-    userMessageDiv.style.marginBottom = "10px";
+    userMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
     userMessageDiv.style.maxWidth = "70%";
     userMessageDiv.style.alignSelf = "flex-end";
     userMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
@@ -125,10 +125,10 @@ async function sendMessage() {
 
     // Loading message styling
     const loadingMessageDiv = document.createElement('div');
-    loadingMessageDiv.style.fontSize = '12pt';
+    loadingMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
     loadingMessageDiv.style.fontStyle = 'italic';
     loadingMessageDiv.style.color = loadingMessageFontColor;
-    loadingMessageDiv.style.marginBottom = "10px";
+    loadingMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
     loadingMessageDiv.style.maxWidth = "70%";
     loadingMessageDiv.style.alignSelf = "flex-start";
     loadingMessageDiv.id = 'loading-message';
@@ -225,13 +225,13 @@ function addSystemMessage(message) {
     const chatWindow = document.getElementById('chat-window');
     const systemMessageDiv = document.createElement('div');
     
-    systemMessageDiv.style.fontSize = '12pt';
+    systemMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
     systemMessageDiv.style.fontStyle = 'italic';
     systemMessageDiv.style.color = '#666';
     systemMessageDiv.style.backgroundColor = '#f8f9fa';
     systemMessageDiv.style.padding = '8px 12px';
     systemMessageDiv.style.borderRadius = '15px';
-    systemMessageDiv.style.marginBottom = '10px';
+    systemMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
     systemMessageDiv.style.maxWidth = '60%';
     systemMessageDiv.style.alignSelf = 'center';
     systemMessageDiv.style.border = '1px solid #dee2e6';
@@ -246,10 +246,10 @@ function createBotMessage(content, agentType = 'collector') {
     const botMessageDiv = document.createElement('div');
     
     // Base styling
-    botMessageDiv.style.fontSize = '14pt';
-    botMessageDiv.style.padding = '10px';
+    botMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
+    botMessageDiv.style.padding = 'clamp(8px, 2vw, 12px)';
     botMessageDiv.style.borderRadius = '10px';
-    botMessageDiv.style.marginBottom = '10px';
+    botMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
     botMessageDiv.style.maxWidth = '70%';
     botMessageDiv.style.alignSelf = 'flex-start';
     botMessageDiv.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
@@ -365,18 +365,20 @@ try {
     const sendButton = document.getElementById('send-button');
     sendButton.style.backgroundColor = sendButtonColor;
     sendButton.style.color = sendButtonFontColor;
-    sendButton.style.padding = "10px 20px";
+    sendButton.style.padding = "clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px)";
+    sendButton.style.minHeight = "44px";
     sendButton.style.border = "none";
     sendButton.style.borderRadius = "5px";
-    sendButton.style.fontSize = "14pt";
+    sendButton.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
     sendButton.style.cursor = "pointer";
     sendButton.addEventListener('click', sendMessage);
 
     const userInput = document.getElementById('user-input');
-    userInput.style.padding = "10px";
+    userInput.style.padding = "clamp(8px, 2vw, 12px)";
+    userInput.style.minHeight = "44px";
     userInput.style.border = "1px solid #CCC";
     userInput.style.borderRadius = "5px";
-    userInput.style.fontSize = "14pt";
+    userInput.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
 
     // Handle Enter key to send message
     userInput.addEventListener('keydown', function (e) {
