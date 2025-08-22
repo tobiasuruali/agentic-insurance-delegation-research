@@ -1,6 +1,6 @@
 # 🤖 Agentic Insurance Chatbot
 
-> **An intelligent 2-agent system that revolutionizes insurance recommendations through specialized AI agents and seamless handoff mechanisms.**
+> **An intelligent 2-agent system that enables insurance recommendations through specialized AI agents and seamless handoff mechanisms.**
 
 ![Chat Interface](img/chat-interface-poc.png)
 
