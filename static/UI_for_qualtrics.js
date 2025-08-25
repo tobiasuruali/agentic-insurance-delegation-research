@@ -642,6 +642,10 @@ function showAllProducts(message) {
     const slide = document.createElement("div");
     slide.className = "slide";
 
+    if (originalRecommendation && i + 1 === originalRecommendation) {
+      slide.classList.add("highlighted");
+    }
+
     const img = document.createElement("img");
     img.src = data.src;
     img.alt = data.alertText;
@@ -974,6 +978,7 @@ function applyCustomRecommendationcStyles() {
     }
 
     .carousel .slide {
+      position: relative;
       flex: 0 0 100%;
       scroll-snap-align: center;
       box-sizing: border-box;
@@ -988,6 +993,22 @@ function applyCustomRecommendationcStyles() {
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       aspect-ratio: 16/9;
       object-fit: cover;
+    }
+    .carousel .slide.highlighted img {
+      border: 6px solid #FFD700;
+    }
+    .carousel .slide.highlighted::after {
+      content: "Originally suggested";
+      position: absolute;
+      top: clamp(0.5rem, 2vw, 1rem);
+      left: clamp(0.5rem, 2vw, 1rem);
+      background: #FFD700;
+      color: #000;
+      font-weight: bold;
+      font-size: clamp(0.75rem, 2vw, 0.875rem);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
     .carousel .slide img:hover {
       transform: scale(1.02);
