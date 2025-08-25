@@ -642,6 +642,10 @@ function showAllProducts(message) {
     const slide = document.createElement("div");
     slide.className = "slide";
 
+    if (originalRecommendation && i + 1 === originalRecommendation) {
+      slide.classList.add("highlighted");
+    }
+
     const img = document.createElement("img");
     img.src = data.src;
     img.alt = data.alertText;
@@ -988,6 +992,9 @@ function applyCustomRecommendationcStyles() {
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       aspect-ratio: 16/9;
       object-fit: cover;
+    }
+    .carousel .slide.highlighted img {
+      border: 4px solid #FFD700;
     }
     .carousel .slide img:hover {
       transform: scale(1.02);
