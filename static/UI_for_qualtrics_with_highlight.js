@@ -42,17 +42,17 @@ const productImageData = [
 ];
 
 
-// Colors
-documentBackgroundColor     = "#F5F5F5";    // Light background color
-chatHeaderBackgroundColor   = "#980033"     //Crimson Background
-chatHeaderFontColor         =  "#FFF";      // White text
-userMessageFontColor        = "#333"; // Darker text color
-userMessageBackgroundColor  = "#FFF"; // White background
-loadingMessageFontColor     = "#888"; // Grey text color
-botMessageFontColor         = "#333"; // Darker text color
-botMessageBackgroundColor    = "#EFEFEF"; // Light grey background
-sendButtonColor             = "#980033"; // Crimson button (matches header)
-sendButtonFontColor         = "#FFF"; // White text
+// Colors - Professional Palette
+documentBackgroundColor     = "#F6F5F2";    // Main page background
+chatHeaderBackgroundColor   = "#4B48EC";    // Accent color (header background)
+chatHeaderFontColor         = "#FFFFFF";    // White text
+userMessageFontColor        = "#000000";    // Primary black text
+userMessageBackgroundColor  = "#FFFFFF";    // White card background
+loadingMessageFontColor     = "#6E6E6E";    // Secondary gray text
+botMessageFontColor         = "#000000";    // Primary black text
+botMessageBackgroundColor   = "#F8F9FA";    // Light gray card background
+sendButtonColor             = "#4B48EC";    // Accent button color
+sendButtonFontColor         = "#FFFFFF";    // White text
 
 // Internal variables
 var sessionId = 'session_' + crypto.randomUUID();
@@ -274,12 +274,14 @@ function createBotMessage(content, agentType = 'collector') {
     if (agentType === 'collector') {
         botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
         botMessageDiv.style.color = botMessageFontColor;
-        botMessageDiv.style.borderLeft = '4px solid #970000';
+        botMessageDiv.style.border = '1px solid #E9ECEF';
+        botMessageDiv.style.borderLeft = '4px solid #4B48EC';
         botMessageDiv.innerHTML = '<strong>Information Agent:</strong> ' + content;
     } else if (agentType === 'recommendation') {
-        botMessageDiv.style.backgroundColor = '#e8f4f8';
-        botMessageDiv.style.color = '#333';
-        botMessageDiv.style.borderLeft = '4px solid #0066cc';
+        botMessageDiv.style.backgroundColor = '#E8F4F8';
+        botMessageDiv.style.color = '#000000';
+        botMessageDiv.style.border = '1px solid #D4E8F3';
+        botMessageDiv.style.borderLeft = '4px solid #1A73E8';
         botMessageDiv.innerHTML = '<strong>Recommendation Agent:</strong> ' + content;
     }
     
@@ -292,14 +294,14 @@ function addSystemMessage(message) {
     
     systemMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
     systemMessageDiv.style.fontStyle = 'italic';
-    systemMessageDiv.style.color = '#666';
-    systemMessageDiv.style.backgroundColor = '#f8f9fa';
+    systemMessageDiv.style.color = '#6E6E6E';
+    systemMessageDiv.style.backgroundColor = '#FFFFFF';
     systemMessageDiv.style.padding = '8px 12px';
     systemMessageDiv.style.borderRadius = '15px';
     systemMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
     systemMessageDiv.style.maxWidth = '60%';
     systemMessageDiv.style.alignSelf = 'center';
-    systemMessageDiv.style.border = '1px solid #dee2e6';
+    systemMessageDiv.style.border = '1px solid #DADADA';
     systemMessageDiv.style.textAlign = 'center';
     
     systemMessageDiv.innerHTML = '<em>' + message + '</em>';
@@ -458,7 +460,7 @@ try {
 
         chatWindow.appendChild(alertBox);
 
-        alertMessage.style.color = "#b60000"
+        alertMessage.style.color = "#000000"
         alertMessage.innerHTML = message;
         alertBox.style.display = "flex";
         closeButton.addEventListener('click', function () {
@@ -496,7 +498,7 @@ function showProductOverlay(){
     // Create the message paragraph
     let alertMessage = document.createElement("p");
     alertMessage.id = "recommendationMessage";
-    alertMessage.style.color = "#b60000";
+    alertMessage.style.color = "#000000";
     alertMessage.innerHTML = "message";
 
     // Create the <img> container and image
@@ -895,7 +897,7 @@ function applyCustomRecommendationcStyles() {
       transition: color 0.3s ease;
     }
     .modal-close-button:hover {
-      color: ${sendButtonColor};
+      color: #4B48EC;
     }
 
     #recommendationMessage {
@@ -931,8 +933,8 @@ function applyCustomRecommendationcStyles() {
     }
     .custom-recommendation-button {
       padding: clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 4vw, 2rem);
-      background-color: #980033;
-      color: #fff !important;
+      background-color: #4B48EC;
+      color: #FFFFFF !important;
       border: none;
       border-radius: clamp(0.25rem, 1vw, 0.5rem);
       font-size: clamp(1rem, 2.5vw, 1.125rem);
@@ -942,7 +944,7 @@ function applyCustomRecommendationcStyles() {
       transition: background-color 0.3s ease, transform 0.1s ease;
     }
     .custom-recommendation-button:hover {
-      background-color:rgb(80, 0, 27);
+      background-color: #3A36BC;
       transform: translateY(-1px);
     }
     .custom-recommendation-button:active {
@@ -1021,7 +1023,7 @@ function applyCustomRecommendationcStyles() {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(152, 0, 51, 0.50);
+      background: rgba(75, 72, 236, 0.50);
       color: #fff;
       border: none;
       padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.25rem);
@@ -1040,7 +1042,7 @@ function applyCustomRecommendationcStyles() {
     }
     .carousel .prev:hover,
     .carousel .next:hover {
-      background: #980033;
+      background: #4B48EC;
       transform: translateY(-50%) translateY(-1px);
     }
     .carousel .prev:active,

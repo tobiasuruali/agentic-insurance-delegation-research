@@ -148,6 +148,7 @@ async def local_ui():
             margin: 0;
             padding: clamp(0.5rem, 2vw, 1rem);
             font-family: 'Arial', sans-serif;
+            background-color: #F6F5F2;
         }
         #input-row {
             display: flex;
@@ -172,7 +173,7 @@ async def local_ui():
         <div id="input-row" style="display: flex; width: 100%; gap: clamp(8px, 2vw, 12px); box-sizing: border-box;">
             <input id="user-input" placeholder="Type your message here..." 
                    style="flex: 1 1 auto; min-width: 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; padding: clamp(8px, 2vw, 12px); font-size: clamp(0.875rem, 2.5vw, 1rem); min-height: 44px;" type="text" />
-            <button id="send-button" style="flex: 0 0 auto; background-color: #980033; color: white; border: none; border-radius: 5px; cursor: pointer; padding: clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px); font-size: clamp(0.875rem, 2.5vw, 1rem); min-height: 44px;">Send</button>
+            <button id="send-button" style="flex: 0 0 auto; background-color: #4B48EC; color: white; border: none; border-radius: 5px; cursor: pointer; padding: clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px); font-size: clamp(0.875rem, 2.5vw, 1rem); min-height: 44px;">Send</button>
         </div>
     </div>
     <script src="/static/local-ui.js"></script>

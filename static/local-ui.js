@@ -42,17 +42,17 @@ const productImageData = [
     }
 ];
 
-// Colors
-const documentBackgroundColor = "#F5F5F5";
-const chatHeaderBackgroundColor = "#980033";
-const chatHeaderFontColor = "#FFF";
-const userMessageFontColor = "#333";
-const userMessageBackgroundColor = "#FFF";
-const loadingMessageFontColor = "#888";
-const botMessageFontColor = "#333";
-const botMessageBackgroundColor = "#EFEFEF";
-const sendButtonColor = "#970000";
-const sendButtonFontColor = "#FFF";
+// Colors - Professional Palette
+const documentBackgroundColor = "#F6F5F2";      // Main page background
+const chatHeaderBackgroundColor = "#4B48EC";    // Accent color (header background)
+const chatHeaderFontColor = "#FFFFFF";          // White text
+const userMessageFontColor = "#000000";         // Primary black text
+const userMessageBackgroundColor = "#FFFFFF";   // White card background
+const loadingMessageFontColor = "#6E6E6E";     // Secondary gray text
+const botMessageFontColor = "#000000";          // Primary black text
+const botMessageBackgroundColor = "#F8F9FA";    // Light gray card background
+const sendButtonColor = "#4B48EC";              // Accent button color
+const sendButtonFontColor = "#FFFFFF";          // White text
 
 // Internal variables
 const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);

@@ -1,4 +1,9 @@
 <style>
+    /* Professional Color Palette */
+    body {
+      background-color: #F6F5F2;  /* Main page background */
+      font-family: 'Arial', sans-serif;
+    }
     /* 1) Wrap them in a flex container */
     #input-row {
       display: flex;
@@ -12,7 +17,9 @@
       min-width: 0;            /* needed so it can actually shrink in some browsers */
       padding: 10px;
       font-size: 14pt;
-      border: 1px solid #CCC;
+      border: 1px solid #DADADA;
+      background-color: #FFFFFF;
+      color: #000000;
       border-radius: 5px;
       box-sizing: border-box;
     }
@@ -21,16 +28,20 @@
       flex: 0 0 auto;          /* don’t grow, don’t shrink */
       padding: 10px 20px;
       font-size: 14pt;
-      background: #980033;
-      color: #FFF;
+      background: #4B48EC;
+      color: #FFFFFF;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #send-button:hover {
+      background: #3A36BC;     /* Darker accent on hover */
     }
   </style>
   
   <div id="chat-container" style="width:100%;">
-    <div id="chat-window" style="width:100%; height:50vh; overflow-y:auto; border:1px solid #ccc; padding:10px; display:flex; flex-direction:column;">
+    <div id="chat-window" style="width:100%; height:50vh; overflow-y:auto; border:1px solid #DADADA; padding:10px; display:flex; flex-direction:column; background-color:#FFFFFF;">
       &nbsp;
     </div>
   
