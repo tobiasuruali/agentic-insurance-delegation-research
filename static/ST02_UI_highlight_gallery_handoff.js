@@ -3,7 +3,7 @@ var chatbotURL = 'https://agentic-insurance-recom-chatbot-671115110734.europe-we
 // var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
 //var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
 var botName = 'Comparabot';
-var chatTitle = 'Agentic Insurance Chatbot';
+var chatTitle = 'Comparabot Insurance Finder';
 var avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Replace with your actual image URL (square image)
 
 const productImageData = [

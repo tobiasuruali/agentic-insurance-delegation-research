@@ -3,7 +3,7 @@ console.log("Local UI script loaded");
 // Configuration
 const chatbotURL = '/InsuranceRecommendation';
 const botName = 'Comparabot';
-const chatTitle = 'Agentic Insurance Chatbot';
+const chatTitle = 'Comparabot Insurance Finder';
 const avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Placeholder avatar
 
 // Product image data (same as original)
