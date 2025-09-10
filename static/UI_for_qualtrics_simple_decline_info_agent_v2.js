@@ -44,14 +44,14 @@ const productImageData = [
 
 // Colors - Professional Palette
 documentBackgroundColor     = "#F6F5F2";    // Main page background
-chatHeaderBackgroundColor   = "#4B48EC";    // Accent color (header background)
+chatHeaderBackgroundColor   = "#3c3abd";    // Accent color (header background)
 chatHeaderFontColor         = "#FFFFFF";    // White text
 userMessageFontColor        = "#000000";    // Primary black text
 userMessageBackgroundColor  = "#FFFFFF";    // White card background
 loadingMessageFontColor     = "#6E6E6E";    // Secondary gray text
 botMessageFontColor         = "#000000";    // Primary black text
 botMessageBackgroundColor   = "#F8F9FA";    // Light gray card background
-sendButtonColor             = "#4B48EC";    // Accent button color
+sendButtonColor             = "#3c3abd";    // Accent button color
 sendButtonFontColor         = "#FFFFFF";    // White text
 
 // Internal variables
@@ -275,7 +275,7 @@ function createBotMessage(content, agentType = 'collector') {
         botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
         botMessageDiv.style.color = botMessageFontColor;
         botMessageDiv.style.border = '1px solid #E9ECEF';
-        botMessageDiv.style.borderLeft = '4px solid #4B48EC';
+        botMessageDiv.style.borderLeft = '4px solid #3c3abd';
         botMessageDiv.innerHTML = '<strong>Information Agent:</strong> ' + content;
     } else if (agentType === 'recommendation') {
         botMessageDiv.style.backgroundColor = '#E8F4F8';
@@ -744,7 +744,7 @@ function applyCustomRecommendationcStyles() {
     }
     .custom-recommendation-button {
       padding: clamp(0.75rem, 2vw, 1rem) clamp(1.25rem, 4vw, 2rem);
-      background-color: #4B48EC;
+      background-color: #3c3abd;
       color: #FFFFFF;
       border: none;
       border-radius: clamp(0.25rem, 1vw, 0.5rem);

@@ -44,14 +44,14 @@ const productImageData = [
 
 // Colors - Professional Palette
 const documentBackgroundColor = "#F6F5F2";      // Main page background
-const chatHeaderBackgroundColor = "#4B48EC";    // Accent color (header background)
+const chatHeaderBackgroundColor = "#3c3abd";    // Accent color (header background)
 const chatHeaderFontColor = "#FFFFFF";          // White text
 const userMessageFontColor = "#000000";         // Primary black text
 const userMessageBackgroundColor = "#FFFFFF";   // White card background
 const loadingMessageFontColor = "#6E6E6E";     // Secondary gray text
 const botMessageFontColor = "#000000";          // Primary black text
 const botMessageBackgroundColor = "#F8F9FA";    // Light gray card background
-const sendButtonColor = "#4B48EC";              // Accent button color
+const sendButtonColor = "#3c3abd";              // Accent button color
 const sendButtonFontColor = "#FFFFFF";          // White text
 
 // Internal variables
