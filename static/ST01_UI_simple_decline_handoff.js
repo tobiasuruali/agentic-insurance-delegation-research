@@ -6,7 +6,7 @@ var botName = 'Comparabot';
 var chatTitle = 'Comparabot Insurance Finder';
 var avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Replace with your actual image URL (square image)
 
-// Professional product images - dynamically generated
+// Professional product images - dynamically generated Example: https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_1.jpg
 const productImageData = Array.from({ length: 16 }, (_, i) => ({
     src: `https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_${i + 1}.jpg`,
     alertText: `Product ${i + 1} - Professional Insurance Option`
