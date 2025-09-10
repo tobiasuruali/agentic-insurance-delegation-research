@@ -178,7 +178,7 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
                     "strict": True,
                     "parameters": {
                         "type": "object",
-                        "required": ["deductible_preference", "coverage_estimation"],
+                        "required": ["deductible_preference", "coverage_estimation", "water_backup_preference"],
                         "properties": {
                             "deductible_preference": {
                                 "type": "string",
@@ -188,6 +188,11 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
                             "coverage_estimation": {
                                 "type": "number",
                                 "description": "An estimate of the total dollar value of the belongings"
+                            },
+                            "water_backup_preference": {
+                                "type": "string",
+                                "description": "Whether the customer wants coverage for water backup from sewers or drains",
+                                "enum": ["yes", "no"]
                             }
                         },
                         "additionalProperties": False
@@ -200,7 +205,7 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
             # Execute function call
             args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
             logger.info(f"Function call arguments: {args}")
-            result = recommend_insurance_product(args["deductible_preference"], args["coverage_estimation"])
+            result = recommend_insurance_product(args["deductible_preference"], args["coverage_estimation"], args["water_backup_preference"])
             logger.info(f"Insurance product recommendation: {result}")
             
             # Generate final response

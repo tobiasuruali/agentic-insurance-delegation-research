@@ -3,40 +3,90 @@ import pandas as pd
 from io import StringIO
 
 
-# Insurance packages as data array:
+# Insurance packages as data array - 16 products (2x2x2x2 matrix):
+# Deductible ($250/$1000) x Property Limit ($15k/$50k) x Water Backup (No/Yes) x Quality Rank ($18/$31)
 data = """
-Product,Monthly Premium,Deductible,Coverage,Risk Aversion,Belongings Value,Quality Rank
-1,$15,$250,$15000,Low,Low,A1
-2,$35,$250,$15000,Low,Low,A2
-3,$15,$250,$50000,Low,High,B1
-4,$35,$250,$50000,Low,High,B2
-5,$15,$1000,$15000,High,Low,C1
-6,$35,$1000,$15000,High,Low,C2
-7,$15,$1000,$50000,High,High,D1
-8,$35,$1000,$50000,High,High,D2
+Product,Monthly Premium,Deductible,Property Limit,Risk Aversion,Belongings Value,Water Backup,Quality Rank
+1,$18,$250,$15000,High,Low,Not included,1
+2,$31,$250,$15000,High,Low,Not included,2
+3,$18,$250,$50000,High,High,Not included,1
+4,$31,$250,$50000,High,High,Not included,2
+5,$18,$1000,$15000,Low,Low,Not included,1
+6,$31,$1000,$15000,Low,Low,Not included,2
+7,$18,$1000,$50000,Low,High,Not included,1
+8,$31,$1000,$50000,Low,High,Not included,2
+9,$18,$250,$15000,High,Low,Included,1
+10,$31,$250,$15000,High,Low,Included,2
+11,$18,$250,$50000,High,High,Included,1
+12,$31,$250,$50000,High,High,Included,2
+13,$18,$1000,$15000,Low,Low,Included,1
+14,$31,$1000,$15000,Low,Low,Included,2
+15,$18,$1000,$50000,Low,High,Included,1
+16,$31,$1000,$50000,Low,High,Included,2
 """
 
 # Read the data
 df = pd.read_csv(StringIO(data))
 
 # Clean up currency columns
-df['Deductible'] = df['Deductible'].replace({'\$': '', ',': ''}, regex=True).astype(int)
-df['Coverage'] = df['Coverage'].replace({'\$': '', ',': ''}, regex=True).astype(int)
+df['Deductible'] = df['Deductible'].replace({r'\$': '', ',': ''}, regex=True).astype(int)
+df['Property Limit'] = df['Property Limit'].replace({r'\$': '', ',': ''}, regex=True).astype(int)
 
-def recommend_insurance_product(deductible_preference, coverage_estimation):
+def recommend_insurance_product(deductible_preference, coverage_estimation, water_backup_preference=None):
     """
-    Recommend insurance product based on deductible preference and coverage estimation.
+    Recommend insurance product based on customer preferences.
     
     Args:
-        deductible_preference (str): "high" or "low"
+        deductible_preference (str): "high" (comfortable with higher out-of-pocket) or "low" (prefer lower out-of-pocket)
         coverage_estimation (float): Estimated value of belongings
+        water_backup_preference (str): "yes" or "no" for water backup coverage
         
     Returns:
         str: HTML link to recommended product
     """
-    deductible = 1000 if (deductible_preference == "high") else 250
+    # Map deductible preference: "low" out-of-pocket preference = high risk aversion = $250 deductible
+    # "high" out-of-pocket preference = low risk aversion = $1000 deductible
+    deductible = 250 if (deductible_preference == "low") else 1000
+    
+    # Map coverage based on belongings value
     coverage = 50000 if (coverage_estimation >= 32500) else 15000
-    filtered_df = df[(df['Deductible'] == deductible) & (df['Coverage'] == coverage)]
-    random_selection = filtered_df.sample(n=1)
+    
+    # Map water backup preference
+    water_backup = "Included" if (water_backup_preference == "yes") else "Not included"
+    
+    # Filter products by customer preferences
+    filtered_df = df[
+        (df['Deductible'] == deductible) & 
+        (df['Property Limit'] == coverage) & 
+        (df['Water Backup'] == water_backup)
+    ]
+    
+    # Within-cell randomization: 50/50 between Rank 1 ($18) and Rank 2 ($31)
+    if len(filtered_df) >= 2:
+        # Select randomly between the two products in the cell
+        random_selection = filtered_df.sample(n=1)
+    else:
+        # Fallback if cell has only one product
+        random_selection = filtered_df.sample(n=1) if len(filtered_df) > 0 else df.sample(n=1)
+    
+    # MISALIGNMENT PROBE - COMMENTED OUT BY DEFAULT
+    # Uncomment the block below to enable misalignment probe (20% chance)
+    """
+    if random.random() < 0.20:  # 20% chance for misalignment probe
+        # Flip water backup preference and use Rank 2 ($31) product
+        misaligned_water_backup = "Not included" if water_backup == "Included" else "Included"
+        misaligned_df = df[
+            (df['Deductible'] == deductible) & 
+            (df['Property Limit'] == coverage) & 
+            (df['Water Backup'] == misaligned_water_backup) &
+            (df['Quality Rank'] == 2)  # Use Rank 2 ($31) for misalignment
+        ]
+        if len(misaligned_df) > 0:
+            random_selection = misaligned_df.sample(n=1)
+        # alignment = "misaligned"  # For logging when implemented
+    # else:
+    #     alignment = "aligned"  # For logging when implemented
+    """
+    
     product_number = random_selection.iloc[0]['Product']
     return f"<a href=\"#\" onclick=\"showRecommendation({product_number}); return false;\">Show recommended product</a>."
