@@ -1,4 +1,4 @@
-console.log("Qualtrics UI script loaded - Information Agent V2 Simple Decline Version");
+console.log("ST01_UI_simple_decline_handoff.js - Study 1: Simple Decline with Handoff");
 var chatbotURL = 'https://agentic-insurance-recom-chatbot-671115110734.europe-west1.run.app/InsuranceRecommendation';
 // var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
 //var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
@@ -177,17 +177,17 @@ async function sendMessage() {
             
             // Handle multiple messages
             var responses = Array.isArray(data.response) ? data.response : [data.response];
-            var isMultiMessage = responses.length > 1; // Multi-message response
+            var isHandoff = responses.length > 1; // Multi-message response indicates handoff
             
             console.log("Received response:", data.response);
             console.log("Processed responses:", responses);
-            console.log("Is multi-message:", isMultiMessage);
+            console.log("Is handoff:", isHandoff);
             
             // Display each message with a delay
             for (let i = 0; i < responses.length; i++) {
                 var messageContent = responses[i];
-                // INFO AGENT V2 CHANGE: Always use 'collector' (Information Agent)
-                var agentType = 'collector';
+                // For handoff: first message is Information Agent, second is Recommendation Agent
+                var agentType = isHandoff && i === 1 ? 'recommendation' : 'collector';
                 
                 console.log(`Message ${i}:`, messageContent, "Type:", typeof messageContent, "Agent:", agentType);
                 
@@ -216,11 +216,11 @@ async function sendMessage() {
                 // Scroll to bottom after each message
                 chatWindow.scrollTop = chatWindow.scrollHeight;
                 
-                // INFO AGENT V2 CHANGE: Remove handoff system message
-                // if (isHandoff && i === 0) {
-                //     addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
-                //     await new Promise(resolve => setTimeout(resolve, 1000));
-                // }
+                // Add system message AFTER the first message in handoff scenario
+                if (isHandoff && i === 0) {
+                    addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
         } else {
             showErrorMessage("Error from server.<br>Status code: " + response.status);
@@ -708,7 +708,7 @@ function applyCustomRecommendationcStyles() {
       transition: color 0.3s ease;
     }
     .modal-close-button:hover {
-      color: ${sendButtonColor};
+      color: #3c3abd;
     }
 
     #recommendationMessage {

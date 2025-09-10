@@ -1,4 +1,4 @@
-console.log("Qualtrics UI script loaded");
+console.log("ST02_UI_highlight_gallery_handoff.js - Study 2: Highlight Gallery with Handoff");
 var chatbotURL = 'https://agentic-insurance-recom-chatbot-671115110734.europe-west1.run.app/InsuranceRecommendation';
 // var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
 //var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
