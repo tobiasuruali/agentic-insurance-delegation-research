@@ -7,10 +7,72 @@ const chatTitle = 'Comparabot Insurance Finder';
 const avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Placeholder avatar
 
 // Product image data (same as original) Example: https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_1.jpg
-const productImageData = Array.from({ length: 16 }, (_, i) => ({
-    src: `https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_${i + 1}.jpg`,
-    alertText: `Product ${i + 1} - Professional Insurance Option`
-}));
+const productImageData = [
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_1.jpg',
+        alertText: 'Professional Insurance Option 1'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_2.jpg',
+        alertText: 'Professional Insurance Option 2'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_3.jpg',
+        alertText: 'Professional Insurance Option 3'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_4.jpg',
+        alertText: 'Professional Insurance Option 4'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_5.jpg',
+        alertText: 'Professional Insurance Option 5'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_6.jpg',
+        alertText: 'Professional Insurance Option 6'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_7.jpg',
+        alertText: 'Professional Insurance Option 7'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_8.jpg',
+        alertText: 'Professional Insurance Option 8'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_9.jpg',
+        alertText: 'Professional Insurance Option 9'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_10.jpg',
+        alertText: 'Professional Insurance Option 10'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_11.jpg',
+        alertText: 'Professional Insurance Option 11'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_12.jpg',
+        alertText: 'Professional Insurance Option 12'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_13.jpg',
+        alertText: 'Professional Insurance Option 13'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_14.jpg',
+        alertText: 'Professional Insurance Option 14'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_15.jpg',
+        alertText: 'Professional Insurance Option 15'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_16.jpg',
+        alertText: 'Professional Insurance Option 16'
+    }
+];
 
 // Colors - Professional Palette
 const documentBackgroundColor = "#F6F5F2";      // Main page background
