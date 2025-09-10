@@ -4,42 +4,12 @@ var chatbotURL = 'https://agentic-insurance-recom-chatbot-671115110734.europe-we
 //var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
 var botName = 'Comparabot';
 var chatTitle = 'Comparabot Insurance Finder';
-var avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Replace with your actual image URL (square image)
+var avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Replace with your actual image URL (square image)
 
-const productImageData = [
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 1'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 2'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 3'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 4'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 5'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 6'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 7'
-    },
-    {
-        src: 'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww',
-        alertText: 'This is product 8'
-    }
-];
+const productImageData = Array.from({ length: 16 }, (_, i) => ({
+    src: `https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_${i + 1}.jpg`,
+    alertText: `Product ${i + 1} - Professional Insurance Option`
+}));
 
 
 // Colors - Professional Palette

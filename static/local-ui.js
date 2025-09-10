@@ -4,43 +4,13 @@ console.log("Local UI script loaded");
 const chatbotURL = '/InsuranceRecommendation';
 const botName = 'Comparabot';
 const chatTitle = 'Comparabot Insurance Finder';
-const avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Placeholder avatar
+const avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Placeholder avatar
 
 // Product image data (same as original)
-const productImageData = [
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 1'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 2'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 3'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 4'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 5'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 6'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 7'
-    },
-    {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 8'
-    }
-];
+const productImageData = Array.from({ length: 16 }, (_, i) => ({
+    src: `https://storage.googleapis.com/images-mobilab/Final%20Product%20Sheet_${i + 1}.jpg`,
+    alertText: `Product ${i + 1} - Professional Insurance Option`
+}));
 
 // Colors - Professional Palette
 const documentBackgroundColor = "#F6F5F2";      // Main page background
