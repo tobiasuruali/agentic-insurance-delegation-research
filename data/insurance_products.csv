@@ -1,0 +1,17 @@
+product_id,monthly_premium,deductible,property_limit,risk_aversion_Q1,belongings_value_Q2,water_backup,quality_rank,tier_w,cell_id
+P1,18,1000,15000,Low,Low,Not included,1,0,D1000_P15_WB0
+P2,22,1000,15000,Low,Low,Not included,2,0,D1000_P15_WB0
+P3,23,1000,50000,Low,High,Not included,1,1,D1000_P50_WB0
+P4,27,1000,50000,Low,High,Not included,2,1,D1000_P50_WB0
+P5,23,250,15000,High,Low,Not included,1,1,D250_P15_WB0
+P6,27,250,15000,High,Low,Not included,2,1,D250_P15_WB0
+P7,28,250,50000,High,High,Not included,1,2,D250_P50_WB0
+P8,32,250,50000,High,High,Not included,2,2,D250_P50_WB0
+P9,23,1000,15000,Low,Low,Included,1,1,D1000_P15_WB1
+P10,27,1000,15000,Low,Low,Included,2,1,D1000_P15_WB1
+P11,28,1000,50000,Low,High,Included,1,2,D1000_P50_WB1
+P12,32,1000,50000,Low,High,Included,2,2,D1000_P50_WB1
+P13,28,250,15000,High,Low,Included,1,2,D250_P15_WB1
+P14,32,250,15000,High,Low,Included,2,2,D250_P15_WB1
+P15,33,250,50000,High,High,Included,1,3,D250_P50_WB1
+P16,37,250,50000,High,High,Included,2,3,D250_P50_WB1

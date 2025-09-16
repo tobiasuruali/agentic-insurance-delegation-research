@@ -1,38 +1,18 @@
 import random
 import pandas as pd
-from io import StringIO
-
+import os
 
 # Insurance packages as data array - 16 products with robust monotonic pricing:
 # Pricing Logic: Price = base(18) + coverage_tier(w)*5 + quality_rank_delta(4 for Rank 2)
 # Coverage tier (w): $250 deductible(+1) + $50k property limit(+1) + water backup(+1) = 0-3 points
 # Guarantees: More coverage = Higher price, No cross-tier dominance, Interval separation
-data = """
-Product,Monthly Premium,Deductible,Property Limit,Risk Aversion,Belongings Value,Water Backup,Quality Rank
-1,$18,$1000,$15000,Low,Low,Not included,1
-2,$22,$1000,$15000,Low,Low,Not included,2
-3,$23,$1000,$50000,Low,High,Not included,1
-4,$27,$1000,$50000,Low,High,Not included,2
-5,$23,$250,$15000,High,Low,Not included,1
-6,$27,$250,$15000,High,Low,Not included,2
-7,$28,$250,$50000,High,High,Not included,1
-8,$32,$250,$50000,High,High,Not included,2
-9,$23,$1000,$15000,Low,Low,Included,1
-10,$27,$1000,$15000,Low,Low,Included,2
-11,$28,$1000,$50000,Low,High,Included,1
-12,$32,$1000,$50000,Low,High,Included,2
-13,$28,$250,$15000,High,Low,Included,1
-14,$32,$250,$15000,High,Low,Included,2
-15,$33,$250,$50000,High,High,Included,1
-16,$37,$250,$50000,High,High,Included,2
-"""
 
-# Read the data
-df = pd.read_csv(StringIO(data))
+# Get the directory of this file to construct the CSV path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(current_dir, 'insurance_products.csv')
 
-# Clean up currency columns
-df['Deductible'] = df['Deductible'].replace({r'\$': '', ',': ''}, regex=True).astype(int)
-df['Property Limit'] = df['Property Limit'].replace({r'\$': '', ',': ''}, regex=True).astype(int)
+# Read the data from CSV file
+df = pd.read_csv(csv_path)
 
 def recommend_insurance_product(deductible_preference, coverage_estimation, water_backup_preference=None):
     """
@@ -58,9 +38,9 @@ def recommend_insurance_product(deductible_preference, coverage_estimation, wate
     
     # Filter products by customer preferences
     filtered_df = df[
-        (df['Deductible'] == deductible) & 
-        (df['Property Limit'] == coverage) & 
-        (df['Water Backup'] == water_backup)
+        (df['deductible'] == deductible) &
+        (df['property_limit'] == coverage) &
+        (df['water_backup'] == water_backup)
     ]
     
     # Within-cell randomization: 50/50 between Rank 1 (better price) and Rank 2 (worse price)
@@ -78,10 +58,10 @@ def recommend_insurance_product(deductible_preference, coverage_estimation, wate
         # Flip water backup preference and use Rank 2 (worse price) product
         misaligned_water_backup = "Not included" if water_backup == "Included" else "Included"
         misaligned_df = df[
-            (df['Deductible'] == deductible) & 
-            (df['Property Limit'] == coverage) & 
-            (df['Water Backup'] == misaligned_water_backup) &
-            (df['Quality Rank'] == 2)  # Use Rank 2 (worse price) for misalignment
+            (df['deductible'] == deductible) &
+            (df['property_limit'] == coverage) &
+            (df['water_backup'] == misaligned_water_backup) &
+            (df['quality_rank'] == 2)  # Use Rank 2 (worse price) for misalignment
         ]
         if len(misaligned_df) > 0:
             random_selection = misaligned_df.sample(n=1)
@@ -90,5 +70,7 @@ def recommend_insurance_product(deductible_preference, coverage_estimation, wate
     #     alignment = "aligned"  # For logging when implemented
     """
     
-    product_number = random_selection.iloc[0]['Product']
+    product_id = random_selection.iloc[0]['product_id']
+    # Extract numeric part from product_id (P1 -> 1, P2 -> 2, etc.)
+    product_number = product_id[1:]  # Remove 'P' prefix
     return f"<a href=\"#\" onclick=\"showRecommendation({product_number}); return false;\">Show recommended product</a>."
