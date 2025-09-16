@@ -9,22 +9,22 @@ from io import StringIO
 # Guarantees: More coverage = Higher price, No cross-tier dominance, Interval separation
 data = """
 Product,Monthly Premium,Deductible,Property Limit,Risk Aversion,Belongings Value,Water Backup,Quality Rank
-1,$23,$250,$15000,High,Low,Not included,1
-2,$27,$250,$15000,High,Low,Not included,2
-3,$28,$250,$50000,High,High,Not included,1
-4,$32,$250,$50000,High,High,Not included,2
-5,$18,$1000,$15000,Low,Low,Not included,1
-6,$22,$1000,$15000,Low,Low,Not included,2
-7,$23,$1000,$50000,Low,High,Not included,1
-8,$27,$1000,$50000,Low,High,Not included,2
-9,$28,$250,$15000,High,Low,Included,1
-10,$32,$250,$15000,High,Low,Included,2
-11,$33,$250,$50000,High,High,Included,1
-12,$37,$250,$50000,High,High,Included,2
-13,$23,$1000,$15000,Low,Low,Included,1
-14,$27,$1000,$15000,Low,Low,Included,2
-15,$28,$1000,$50000,Low,High,Included,1
-16,$32,$1000,$50000,Low,High,Included,2
+1,$18,$1000,$15000,Low,Low,Not included,1
+2,$22,$1000,$15000,Low,Low,Not included,2
+3,$23,$1000,$50000,Low,High,Not included,1
+4,$27,$1000,$50000,Low,High,Not included,2
+5,$23,$250,$15000,High,Low,Not included,1
+6,$27,$250,$15000,High,Low,Not included,2
+7,$28,$250,$50000,High,High,Not included,1
+8,$32,$250,$50000,High,High,Not included,2
+9,$23,$1000,$15000,Low,Low,Included,1
+10,$27,$1000,$15000,Low,Low,Included,2
+11,$28,$1000,$50000,Low,High,Included,1
+12,$32,$1000,$50000,Low,High,Included,2
+13,$28,$250,$15000,High,Low,Included,1
+14,$32,$250,$15000,High,Low,Included,2
+15,$33,$250,$50000,High,High,Included,1
+16,$37,$250,$50000,High,High,Included,2
 """
 
 # Read the data
