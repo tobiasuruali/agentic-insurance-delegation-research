@@ -12,15 +12,18 @@ This is a **2-agent insurance recommendation system** that uses specialized AI a
 ## Agent Workflow
 
 ### Phase 1: Information Collection
-The Information Collector Agent gathers 9 required data points:
-1. Customer name and date of birth
-2. Deductible preference (high/low out-of-pocket expenses)
-3. Belongings value estimation
-4. Residence type (apartment, house, etc.)
-5. Household size
-6. Pet information
-7. Zip code
-8. Previous insurance claims history
+The Information Collector Agent:
+1. **Initial Acknowledgment**: Welcomes user and explicitly states it's an AI assistant for rental insurance, checking for any questions
+2. **Gathers 10 required data points in this order**:
+   - Residence type (apartment, house, etc.)
+   - Household size
+   - Pet information
+   - Zip code
+   - Previous insurance claims history
+   - Customer name and date of birth
+   - Deductible preference (high/low out-of-pocket expenses)
+   - Belongings value estimation
+   - Water backup coverage preference for sewers/drains (yes/no)
 
 ### Phase 2: Agent Handoff
 When all information is collected, Agent 1:
@@ -30,8 +33,8 @@ When all information is collected, Agent 1:
 
 ### Phase 3: Recommendation Generation
 Agent 2 receives the customer data and:
-1. Processes preferences and risk factors
-2. Calls insurance product recommendation function
+1. Processes preferences and risk factors (deductible, coverage, water backup)
+2. Calls insurance product recommendation function with 3 parameters
 3. Returns concise response with product link: *"Based on the information you gave me, here's your recommendation: [LINK]"*
 
 ## Technical Implementation

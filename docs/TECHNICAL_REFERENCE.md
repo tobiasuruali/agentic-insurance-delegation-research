@@ -109,7 +109,7 @@ response = openai_client.chat.completions.create(
 # Execute function call
 if response.choices[0].finish_reason == 'tool_calls':
     args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
-    result = recommend_insurance_product(args["deductible_preference"], args["coverage_estimation"])
+    result = recommend_insurance_product(args["deductible_preference"], args["coverage_estimation"], args["water_backup_preference"])
 ```
 
 ### 3. Agent Classes
@@ -135,11 +135,11 @@ if response.choices[0].finish_reason == 'tool_calls':
 ##### `validate_collected_data(data: Dict) -> Tuple[bool, List[str]]`
 **Customer Data Validation**
 - **Input**: Customer data dictionary
-- **Process**: Validates all 9 required fields are present and valid
-- **Required Fields**: 
+- **Process**: Validates all 10 required fields are present and valid
+- **Required Fields** (in collection order):
+  - `residence_type`, `household_size`, `pets`, `zip_code`, `previous_claims`
   - `customer_name`, `date_of_birth`, `deductible_preference`
-  - `belongings_value`, `residence_type`, `household_size`
-  - `pets`, `zip_code`, `previous_claims`
+  - `belongings_value`, `water_backup_preference`
 - **Output**: (is_valid: bool, missing_fields: List[str])
 
 ##### `get_conversation_messages(conversation_history: List[Dict]) -> List[Dict]`
@@ -154,7 +154,7 @@ if response.choices[0].finish_reason == 'tool_calls':
 **Customer Data Processing**
 - **Input**: Validated customer data
 - **Process**: Extracts key parameters and calls product recommendation
-- **Function Call**: `recommend_insurance_product(deductible_preference, belongings_value)`
+- **Function Call**: `recommend_insurance_product(deductible_preference, belongings_value, water_backup_preference)`
 - **Output**: Dict with recommendation link and customer data
 
 ##### `get_conversation_messages(customer_data: Dict, recommendation_result: Dict) -> List[Dict]`
@@ -165,31 +165,68 @@ if response.choices[0].finish_reason == 'tool_calls':
 
 ### 4. Insurance Product Logic (`data/insurance_products.py`)
 
-#### `recommend_insurance_product(deductible_preference: str, coverage_estimation: float) -> str`
+#### `recommend_insurance_product(deductible_preference: str, coverage_estimation: float, water_backup_preference: str) -> str`
 **Product Selection Algorithm**
-- **Input**: 
+- **Input**:
   - `deductible_preference`: "high" or "low"
   - `coverage_estimation`: Dollar value of belongings
+  - `water_backup_preference`: "yes" or "no"
 - **Process**:
-  1. Maps deductible preference to risk aversion
-  2. Maps coverage estimation to belongings value category
-  3. Filters product database by criteria
-  4. Selects product based on quality ranking
-  5. Generates HTML link with JavaScript callback
+  1. Maps deductible preference to risk aversion ($250 or $1000 deductible)
+  2. Maps coverage estimation to belongings value category ($15k or $50k limit)
+  3. Maps water backup preference to coverage inclusion
+  4. Filters product database by all 3 criteria
+  5. Selects product randomly from filtered results (Quality Rank 1 or 2)
+  6. Generates HTML link with JavaScript callback
 - **Output**: HTML link string for product recommendation
 
 ```python
 # Product selection logic
-risk_aversion = "High" if deductible_preference == "high" else "Low"
-belongings_category = "High" if coverage_estimation > 25000 else "Low"
+deductible = 250 if (deductible_preference == "low") else 1000
+coverage = 50000 if (coverage_estimation >= 32500) else 15000
+water_backup = "Included" if (water_backup_preference == "yes") else "Not included"
 
 filtered_products = df[
-    (df['Risk Aversion'] == risk_aversion) & 
-    (df['Belongings Value'] == belongings_category)
+    (df['deductible'] == deductible) &
+    (df['property_limit'] == coverage) &
+    (df['water_backup'] == water_backup)
 ]
 
-selected_product = filtered_products.loc[filtered_products['Quality Rank'].idxmin()]
+# Random selection between Quality Rank 1 and 2 in matching cell
+selected_product = filtered_products.sample(n=1)
 ```
+
+## Product Data Structure
+
+### CSV-Based Product Database
+The system now uses a structured CSV file (`data/insurance_products.csv`) instead of embedded data:
+
+```csv
+product_id,monthly_premium,deductible,property_limit,risk_aversion_Q1,belongings_value_Q2,water_backup,quality_rank,tier_w,cell_id
+P1,18,1000,15000,Low,Low,Not included,1,0,D1000_P15_WB0
+P2,22,1000,15000,Low,Low,Not included,2,0,D1000_P15_WB0
+...
+P16,37,250,50000,High,High,Included,2,3,D250_P50_WB1
+```
+
+### Key Features:
+- **16 Products**: Complete matrix of deductible × coverage × water backup combinations
+- **Cell-Based Structure**: Each unique combination (cell_id) contains 2 products with different Quality Ranks
+- **Tier Calculation**: `tier_w = deductible_bonus + coverage_bonus + water_backup_bonus (0-3 scale)`
+- **Pricing Logic**: `Price = base(18) + tier_w*5 + quality_rank_delta(4)`
+- **Product Images**: Standardized naming `product_sheet_01.jpg` through `product_sheet_16.jpg`
+
+### Pricing Structure:
+- **Base Price**: $18/month minimum
+- **Coverage Tiers**: 0-3 points based on feature combination
+- **Quality Ranks**: 1 (better price) vs 2 (worse price within same coverage)
+- **Monotonic Pricing**: More coverage always costs more
+
+### Cell ID Format:
+- **Pattern**: `D{deductible}_P{property_limit}_WB{water_backup_binary}`
+- **Examples**:
+  - `D1000_P15_WB0` = $1000 deductible, $15k coverage, no water backup
+  - `D250_P50_WB1` = $250 deductible, $50k coverage, with water backup
 
 ## API Call Sequences
 
@@ -208,9 +245,9 @@ selected_product = filtered_products.loc[filtered_products['Quality Rank'].idxmi
 5. **Data extraction** → `extract_collected_data()` parses JSON
 6. **Data validation** → `validate_collected_data()` checks completeness
 7. **Route to Recommendation Agent** → `process_with_recommendation_agent()`
-8. **Product processing** → `process_customer_data()` + `recommend_insurance_product()`
+8. **Product processing** → `process_customer_data()` + `recommend_insurance_product()` with 3 parameters
 9. **OpenAI API Call #2** → Function calling for recommendation
-10. **Function execution** → `recommend_insurance_product()` selects product
+10. **Function execution** → `recommend_insurance_product()` selects product based on deductible + coverage + water backup
 11. **OpenAI API Call #3** → Final response generation
 12. **Return multiple messages** → Array with transition + recommendation
 
