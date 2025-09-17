@@ -14,13 +14,13 @@ This is a **2-agent insurance recommendation system** that uses specialized AI a
 ### Phase 1: Information Collection
 The Information Collector Agent:
 1. **Initial Acknowledgment**: Welcomes user and explicitly states it's an AI assistant for rental insurance, checking for any questions
-2. **Gathers 10 required data points in this order**:
+2. **Gathers 9 required data points in this order**:
    - Residence type (apartment, house, etc.)
    - Household size
    - Pet information
    - Zip code
    - Previous insurance claims history
-   - Customer name and date of birth
+   - Customer age (confirm it is a number)
    - Deductible preference (high/low out-of-pocket expenses)
    - Belongings value estimation
    - Water backup coverage preference for sewers/drains (yes/no)
