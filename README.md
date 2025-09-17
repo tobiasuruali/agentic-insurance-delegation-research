@@ -16,7 +16,7 @@ Our system employs **two specialized AI agents** that work in perfect harmony:
 
 **💻 Information Agent** (Data Collection Specialist)
 - Conducts structured conversations to gather customer information
-- Validates completeness of 9 essential data points
+- Validates completeness of 9 essential data points, including customer age
 - Provides friendly, conversational experience
 - Signals when ready for handoff
 
@@ -113,7 +113,7 @@ uvicorn core.application:app --host 0.0.0.0 --port 8001 --reload
 ```
 FastAPI Application
 ├── 💻 Information Agent          ┌─ Collects customer data
-│   ├── Structured conversation   │  ├─ Name, DOB, preferences
+│   ├── Structured conversation   │  ├─ Age, preferences
 │   ├── Data validation          │  ├─ Residence, household info  
 │   └── Handoff trigger          │  └─ Insurance history
 │                                │

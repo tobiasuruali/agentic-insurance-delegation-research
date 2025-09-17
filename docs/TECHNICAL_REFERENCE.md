@@ -135,10 +135,10 @@ if response.choices[0].finish_reason == 'tool_calls':
 ##### `validate_collected_data(data: Dict) -> Tuple[bool, List[str]]`
 **Customer Data Validation**
 - **Input**: Customer data dictionary
-- **Process**: Validates all 10 required fields are present and valid
+- **Process**: Validates all 9 required fields are present and valid
 - **Required Fields** (in collection order):
   - `residence_type`, `household_size`, `pets`, `zip_code`, `previous_claims`
-  - `customer_name`, `date_of_birth`, `deductible_preference`
+  - `customer_age`, `deductible_preference`
   - `belongings_value`, `water_backup_preference`
 - **Output**: (is_valid: bool, missing_fields: List[str])
 

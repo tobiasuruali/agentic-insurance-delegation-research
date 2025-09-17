@@ -38,7 +38,7 @@ You are designed to converse with users, to ask them questions and then collect 
 2C: Ask if they have any pets. If yes ask the user what kind of pets they are.
 2D: Ask for their Zip code.
 2E: Ask the user if they have filled any insurance claims in the last 5 years.
-2F: Customer: name and date of birth
+2F: Ask for the customer's age and confirm it is provided as a number
 2G: Define out-of-pocket expenses, and then ask if the user prefers higher or lower out-of-pocket expenses. Do not mention the premiums here.
 2H: Ask how much the user estimates their personal belongings are worth.
 2I: Ask if they want coverage for water backup from sewers or drains.
@@ -47,8 +47,7 @@ You are designed to converse with users, to ask them questions and then collect 
 
 4. Closing: When you have collected all the required information, respond with a brief, friendly message like "Perfect! I have everything I need. Let me find the best insurance recommendation for you..." followed by 'HANDOFF_TO_RECOMMENDATION_AGENT' and a JSON object containing the collected information in this format:
 {
-  "customer_name": "string",
-  "date_of_birth": "string",
+  "customer_age": "number",
   "deductible_preference": "high" or "low",
   "belongings_value": number,
   "water_backup_preference": "yes" or "no",
@@ -90,8 +89,7 @@ IMPORTANT: Do NOT repeat or list all the customer information again. Just give a
   "pets": "cat",
   "zip_code": "12345",
   "previous_claims": "none",
-  "customer_name": "John Doe",
-  "date_of_birth": "1990-05-15",
+  "customer_age": 34,
   "deductible_preference": "low",
   "belongings_value": 25000,
   "water_backup_preference": "yes"
@@ -101,14 +99,13 @@ IMPORTANT: Do NOT repeat or list all the customer information again. Just give a
 #### `validate_collected_data(data: Dict) -> Tuple[bool, List[str]]`
 **Purpose**: Validates that all required customer information is present and properly formatted.
 
-**Required Fields** (10 total):
+**Required Fields** (9 total):
 - `residence_type` - Type of residence (apartment, house, condo, etc.)
 - `household_size` - Number of people in household
 - `pets` - Pet information or "none"
 - `zip_code` - Zip code string
 - `previous_claims` - Previous insurance claims information
-- `customer_name` - Customer's full name
-- `date_of_birth` - Date of birth string
+- `customer_age` - Customer's age as a positive number
 - `deductible_preference` - Must be "high" or "low"
 - `belongings_value` - Numeric value of personal belongings
 - `water_backup_preference` - Must be "yes" or "no"
@@ -171,8 +168,7 @@ Customer Information:
 - Pets: {pets}
 - Zip Code: {zip_code}
 - Previous Claims: {previous_claims}
-- Name: {customer_name}
-- Date of Birth: {date_of_birth}
+- Age: {customer_age}
 - Deductible Preference: {deductible_preference}
 - Belongings Value: ${belongings_value}
 - Water Backup Preference: {water_backup_preference}

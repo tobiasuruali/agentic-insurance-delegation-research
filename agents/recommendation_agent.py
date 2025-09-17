@@ -51,7 +51,6 @@ class RecommendationAgent:
         # Create a user message with customer data and recommendation
         user_message = f"""
         Customer Information:
-        - Name: {customer_data.get('customer_name', 'N/A')}
         - Deductible Preference: {customer_data.get('deductible_preference', 'N/A')}
         - Belongings Value: ${customer_data.get('belongings_value', 0)}
         - Water Backup Preference: {customer_data.get('water_backup_preference', 'N/A')}
@@ -60,6 +59,7 @@ class RecommendationAgent:
         - Pets: {customer_data.get('pets', 'None')}
         - Zip Code: {customer_data.get('zip_code', 'N/A')}
         - Previous Claims: {customer_data.get('previous_claims', 'N/A')}
+        - Age: {customer_data.get('customer_age', 'N/A')}
         
         Recommended Product Link: {recommendation_result['recommendation_link']}
         

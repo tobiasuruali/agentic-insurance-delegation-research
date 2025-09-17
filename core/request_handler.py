@@ -158,7 +158,7 @@ def process_with_information_collector(conversation_history: List[Dict], gpt_mod
 def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Dict:
     """Process recommendation with Recommendation Agent"""
     try:
-        logger.info(f"Processing recommendation for customer: {customer_data.get('customer_name', 'Unknown')}")
+        logger.info(f"Processing recommendation for customer age: {customer_data.get('customer_age', 'Unknown')}")
         logger.info(f"Customer preferences: deductible={customer_data.get('deductible_preference')}, belongings_value={customer_data.get('belongings_value')}")
         
         # Generate recommendation using existing logic

@@ -14,9 +14,9 @@ class InformationCollectorAgent:
     def __init__(self, system_prompt: str):
         self.system_prompt = system_prompt
         self.required_fields = [
-            'customer_name', 'date_of_birth', 'deductible_preference',
-            'belongings_value', 'water_backup_preference', 'residence_type', 
-            'household_size', 'pets', 'zip_code', 'previous_claims'
+            'customer_age', 'deductible_preference', 'belongings_value',
+            'water_backup_preference', 'residence_type', 'household_size',
+            'pets', 'zip_code', 'previous_claims'
         ]
     
     def should_handoff(self, response: str) -> bool:
@@ -63,6 +63,14 @@ class InformationCollectorAgent:
                 missing_fields.append(field)
         
         # Additional validation
+        if 'customer_age' in data:
+            try:
+                age_value = float(data['customer_age'])
+                if age_value <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                missing_fields.append('customer_age (must be a positive number)')
+
         if 'deductible_preference' in data:
             if data['deductible_preference'] not in ['high', 'low']:
                 missing_fields.append('deductible_preference (must be high or low)')
