@@ -28,17 +28,20 @@ You communicate using American English
 
 You are designed to converse with users, to ask them questions and then collect the necessary information for insurance recommendations. Structure the conversation using the 5 themes below:
 
-1. Initial Acknowledgment: welcome the user to the interaction, mention that you are an AI assistant designed to help them find and purchase rental insurance products.
+1.	Initial Acknowledgment: welcome the user to the interaction. Then:
+1A: Explicitly state that you are an AI assistant designed to help them find and purchase rental insurance products.
+1B: Briefly check if the user has any questions or queries regarding 1A. If not, proceed onto next section.
 
-2. Information Request: find out the following pieces of information:
-2A: Customer: name and date of birth
-2B: Define out-of-pocket expenses, and then ask if the user prefers higher or lower out-of-pocket expenses. Do not mention the premiums here.
-2C: Ask how much the user estimates their personal belongings are worth.
-2D: Ask what type of residence they live in. If the user asks for examples you can list: Apartment, single-family house, condo or others.
-2E: Ask how many people live with the user (including the user).
-2F: Ask if they have any pets. If yes ask the user what kind of pets they are.
-2G: Ask for their Zip code.
-2H: Ask the user if they have filled any insurance claims in the last 5 years.
+2. Information Request: find out the following pieces of information in this suggested order:
+2A: Ask what type of residence they live in. If the user asks for examples you can list: Apartment, single-family house, condo or others.
+2B: Ask how many people live with the user (including the user).
+2C: Ask if they have any pets. If yes ask the user what kind of pets they are.
+2D: Ask for their Zip code.
+2E: Ask the user if they have filled any insurance claims in the last 5 years.
+2F: Customer: name and date of birth
+2G: Define out-of-pocket expenses, and then ask if the user prefers higher or lower out-of-pocket expenses. Do not mention the premiums here.
+2H: Ask how much the user estimates their personal belongings are worth.
+2I: Ask if they want coverage for water backup from sewers or drains.
 
 3. Clarification Requests: Politely ask for any additional information needed to ensure accurate product recommendation, showing that you want to help them as best as possible.
 
@@ -48,6 +51,7 @@ You are designed to converse with users, to ask them questions and then collect 
   "date_of_birth": "string",
   "deductible_preference": "high" or "low",
   "belongings_value": number,
+  "water_backup_preference": "yes" or "no",
   "residence_type": "string",
   "household_size": number,
   "pets": "string or none",
@@ -81,34 +85,37 @@ IMPORTANT: Do NOT repeat or list all the customer information again. Just give a
 **Sample Output**:
 ```json
 {
-  "customer_name": "John Doe",
-  "date_of_birth": "1990-05-15",
-  "deductible_preference": "low",
-  "belongings_value": 25000,
   "residence_type": "apartment",
   "household_size": 2,
   "pets": "cat",
   "zip_code": "12345",
-  "previous_claims": "none"
+  "previous_claims": "none",
+  "customer_name": "John Doe",
+  "date_of_birth": "1990-05-15",
+  "deductible_preference": "low",
+  "belongings_value": 25000,
+  "water_backup_preference": "yes"
 }
 ```
 
 #### `validate_collected_data(data: Dict) -> Tuple[bool, List[str]]`
 **Purpose**: Validates that all required customer information is present and properly formatted.
 
-**Required Fields** (9 total):
-- `customer_name` - Customer's full name
-- `date_of_birth` - Date of birth string
-- `deductible_preference` - Must be "high" or "low"
-- `belongings_value` - Numeric value of personal belongings
+**Required Fields** (10 total):
 - `residence_type` - Type of residence (apartment, house, condo, etc.)
 - `household_size` - Number of people in household
 - `pets` - Pet information or "none"
 - `zip_code` - Zip code string
 - `previous_claims` - Previous insurance claims information
+- `customer_name` - Customer's full name
+- `date_of_birth` - Date of birth string
+- `deductible_preference` - Must be "high" or "low"
+- `belongings_value` - Numeric value of personal belongings
+- `water_backup_preference` - Must be "yes" or "no"
 
 **Additional Validation**:
 - `deductible_preference` must be exactly "high" or "low"
+- `water_backup_preference` must be exactly "yes" or "no"
 - `belongings_value` must be convertible to float
 
 **Returns**: Tuple of (is_valid: bool, missing_fields: List[str])
@@ -159,14 +166,16 @@ Do not include any link or additional text.
 **User Message Template**:
 ```
 Customer Information:
-- Name: {customer_name}
-- Deductible Preference: {deductible_preference}
-- Belongings Value: ${belongings_value}
 - Residence Type: {residence_type}
 - Household Size: {household_size}
 - Pets: {pets}
 - Zip Code: {zip_code}
 - Previous Claims: {previous_claims}
+- Name: {customer_name}
+- Date of Birth: {date_of_birth}
+- Deductible Preference: {deductible_preference}
+- Belongings Value: ${belongings_value}
+- Water Backup Preference: {water_backup_preference}
 
 Recommended Product Link: {recommendation_link}
 
@@ -181,6 +190,7 @@ Please provide a personalized response to the customer based on this information
 - **Parameters**: 
   - `deductible_preference`: "high" or "low"
   - `coverage_estimation`: Float value of belongings
+  - `water_backup_preference`: "yes" or "no"
 
 **Returns**: Structured function call response for OpenAI API
 
@@ -189,7 +199,7 @@ Please provide a personalized response to the customer based on this information
 ### 1. Information Collection Phase
 1. User starts conversation
 2. Information Collector Agent engages with friendly greeting
-3. Agent systematically collects 9 required data points through conversation
+3. Agent systematically collects 10 required data points through conversation
 4. Agent validates collected information internally
 5. When complete, agent signals handoff with `HANDOFF_TO_RECOMMENDATION_AGENT` + JSON data
 

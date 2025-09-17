@@ -23,11 +23,13 @@ class RecommendationAgent:
         # Extract key parameters for recommendation
         deductible_preference = customer_data.get('deductible_preference', 'low')
         belongings_value = float(customer_data.get('belongings_value', 0))
+        water_backup_preference = customer_data.get('water_backup_preference', 'no')
         
-        # Generate recommendation using existing logic
+        # Generate recommendation using updated logic
         recommendation_link = recommend_insurance_product(
             deductible_preference, 
-            belongings_value
+            belongings_value,
+            water_backup_preference
         )
         
         return {
@@ -52,6 +54,7 @@ class RecommendationAgent:
         - Name: {customer_data.get('customer_name', 'N/A')}
         - Deductible Preference: {customer_data.get('deductible_preference', 'N/A')}
         - Belongings Value: ${customer_data.get('belongings_value', 0)}
+        - Water Backup Preference: {customer_data.get('water_backup_preference', 'N/A')}
         - Residence Type: {customer_data.get('residence_type', 'N/A')}
         - Household Size: {customer_data.get('household_size', 'N/A')}
         - Pets: {customer_data.get('pets', 'None')}
@@ -90,7 +93,8 @@ class RecommendationAgent:
                     "name": "recommend_insurance_package",
                     "arguments": json.dumps({
                         "deductible_preference": customer_data.get('deductible_preference', 'low'),
-                        "coverage_estimation": float(customer_data.get('belongings_value', 0))
+                        "coverage_estimation": float(customer_data.get('belongings_value', 0)),
+                        "water_backup_preference": customer_data.get('water_backup_preference', 'no')
                     })
                 }
             }]

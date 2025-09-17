@@ -3,43 +3,76 @@ var chatbotURL = 'https://agentic-insurance-recom-chatbot-671115110734.europe-we
 // var chatbotURL = 'https://crimson-science.com/InsuranceRecommendation';
 //var chatbotURL = 'http://127.0.0.1:5000/InsuranceRecommendation';
 var botName = 'Comparabot';
-var chatTitle = 'Agentic Insurance Chatbot';
-var avatarImageURL = 'https://mtecethz.eu.qualtrics.com/ControlPanel/Graphic.php?IM=IM_C2TjVl3ky4o9ybv'; // Replace with your actual image URL (square image)
+var chatTitle = 'Comparabot Insurance Finder';
+var avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Replace with your actual image URL (square image)
 
 const productImageData = [
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 1'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_01.jpg',
+        alertText: 'Professional Insurance Option 1'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 2'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_02.jpg',
+        alertText: 'Professional Insurance Option 2'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 3'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_03.jpg',
+        alertText: 'Professional Insurance Option 3'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 4'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_04.jpg',
+        alertText: 'Professional Insurance Option 4'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 5'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_05.jpg',
+        alertText: 'Professional Insurance Option 5'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/07/Recommended_Product_Insurance-1.png',
-        alertText: 'This is product 6'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_06.jpg',
+        alertText: 'Professional Insurance Option 6'
     },
     {
-        src: 'https://mobiliarlab.ethz.ch/wp-content/uploads/2025/02/mobiliar-ctrl-alt-relax-visual-1024x461.webp',
-        alertText: 'This is product 7'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_07.jpg',
+        alertText: 'Professional Insurance Option 7'
     },
     {
-        src: 'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww',
-        alertText: 'This is product 8'
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_08.jpg',
+        alertText: 'Professional Insurance Option 8'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_09.jpg',
+        alertText: 'Professional Insurance Option 9'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_10.jpg',
+        alertText: 'Professional Insurance Option 10'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_11.jpg',
+        alertText: 'Professional Insurance Option 11'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_12.jpg',
+        alertText: 'Professional Insurance Option 12'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_13.jpg',
+        alertText: 'Professional Insurance Option 13'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_14.jpg',
+        alertText: 'Professional Insurance Option 14'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_15.jpg',
+        alertText: 'Professional Insurance Option 15'
+    },
+    {
+        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_16.jpg',
+        alertText: 'Professional Insurance Option 16'
     }
 ];
+
 
 // 
 // https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png

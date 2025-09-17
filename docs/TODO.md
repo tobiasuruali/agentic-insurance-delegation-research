@@ -1,26 +1,25 @@
-# 📌 Agentic Insurance Chatbot — Project TODO
-> **Last Updated:** January 2025  |  **Status:** Active Development
+# 📌 Agentic Insurance Chatbot — Project TODO
+> **Last Updated:** January 2025  |  **Status:** Active Development
 
-## 🔥 High Priority
+## 🔥 High Priority
 
-<details><summary>🎨 UI</summary>
+<details><summary>🎨 UI</summary>
 
-- [ ] **Mobile responsive design improvements:** fix carousel on mobile & touch‑swipe 🔥🎨 <!-- prio:high area:ui -->
-- [ ] **Carousel view accept/decline button:** add accept & decline buttons to carousel 🔥🎨 <!-- prio:high area:ui -->
-- [ ] **Popup sizing:** When wide screen, the popup for the caroussel suddenly fills the whole screen, should be smaller 🔥🎨 <!-- prio:high area:ui -->
-- [ ] **Integrate all product images:** all product images need to be sent to me and integrated into the carousel 🔥🎨 <!-- prio:high area:ui -->
+- [ ] **Mobile responsive design improvements:** fix carousel on mobile & touch‑swipe 🔥🎨 <!-- prio:high area:ui -->
+- [ ] **Carousel view accept/decline button:** add accept & decline buttons to carousel 🔥🎨 <!-- prio:high area:ui -->
+- [ ] **Popup sizing:** When wide screen, the popup for the caroussel suddenly fills the whole screen, should be smaller 🔥🎨 <!-- prio:high area:ui -->
 -
 
 </details>
 
-<details><summary>💻 Backend</summary>
+<details><summary>💻 Backend</summary>
 
-- [ ] **Prompt fool‑proofing:** handle edge cases & clarify the bot is an AI agent 🔥💻 <!-- prio:high area:logic -->
+- [ ] **Prompt fool‑proofing:** handle edge cases & clarify the bot is an AI agent 🔥💻 <!-- prio:high area:logic -->
 - [ ] **Move logging to internal only:** Refactor the backend logging to restrict output solely to internal streams. Replace direct console logging with a secure internal logging mechanism to ensure sensitive information isn't exposed while maintaining necessary debug traces. 🔥💻 <!-- prio:high area:logic -->
 
 </details>
 
-<details><summary>🛠️ Technical</summary>
+<details><summary>🛠️ Technical</summary>
 
 - [ ] _None (placeholder)_ 🔥🛠️ <!-- prio:high area:technical -->
 
@@ -28,30 +27,35 @@
 
 ---
 
-## 🔧 Nice‑to‑Have / Low Priority
+## 🔧 Nice‑to‑Have / Low Priority
 
-<details><summary>🎨 UI</summary>
+<details><summary>🎨 UI</summary>
 
 - [ ] **Restrict message sending and enforce auto-scroll:** Prevent sending a new message until a response is received, and automatically scroll the chat to the bottom when a new message is sent or received. 🧊🎨 <!-- prio:low area:ui -->
 
 </details>
 
-<details><summary>💻 Backend</summary>
+<details><summary>💻 Backend</summary>
 
-- [ ] **Agentic Autogen hand‑off:** refactor backend logic for full agentic flow with AutoGen 🧊💻 <!-- prio:low area:logic -->
+- [ ] **Agentic Autogen hand‑off:** refactor backend logic for full agentic flow with AutoGen 🧊💻 <!-- prio:low area:logic -->
 
 </details>
 
-<details><summary>🛠️ Technical</summary>
+<details><summary>🛠️ Technical</summary>
 
-- [ ] **Welcome message optimisation:** sample outputs to pick best greeting ( self-consistency or majority-vote/consensus decoding) 🧊🛠️ <!-- prio:low area:technical -->
+- [ ] **Welcome message optimisation:** sample outputs to pick best greeting ( self-consistency or majority-vote/consensus decoding) 🧊🛠️ <!-- prio:low area:technical -->
 
 </details>
 
 ---
 
-## ✅ Recently Completed
+## ✅ Recently Completed
 
-- [x] **Enhanced carousel navigation buttons:** bigger, branded, fixed overlap ✅🎨
-- [x] **Modal improvements:** added close button & responsive sizing ✅🎨
-- [x] **Simple decline workflow:** alternative UI removing carousel after decline ✅🎨
+- [x] **Enhanced carousel navigation buttons:** bigger, branded, fixed overlap ✅🎨
+- [x] **Modal improvements:** added close button & responsive sizing ✅🎨
+- [x] **Simple decline workflow:** alternative UI removing carousel after decline ✅🎨
+- [x] **Product sheet standardization:** renamed all product images to consistent `product_sheet_XX.jpg` format ✅🎨
+- [x] **JavaScript URL updates:** updated all 5 JS files to use new standardized product image URLs ✅💻
+- [x] **CSV product data conversion:** converted embedded product data to structured CSV with cell_id column ✅🛠️
+- [x] **Water backup feature:** added 10th data collection point for water backup coverage preference ✅💻
+- [x] **Documentation updates:** updated all docs to reflect new features and pricing structure ✅📚
