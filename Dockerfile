@@ -34,4 +34,4 @@ EXPOSE 8080
 #     CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
 # Run the application
-CMD ["uvicorn", "core.application:app", "--host", "0.0.0.0", "--port", "${PORT:-8080}"]
+CMD ["sh","-c","uvicorn core.application:app --host 0.0.0.0 --port ${PORT:-8080}"]

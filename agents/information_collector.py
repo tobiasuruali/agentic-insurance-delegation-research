@@ -63,13 +63,13 @@ class InformationCollectorAgent:
                 missing_fields.append(field)
         
         # Additional validation
-        if 'customer_age' in data:
-            try:
-                age_value = float(data['customer_age'])
-                if age_value <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                missing_fields.append('customer_age (must be a positive number)')
+        # if 'customer_age' in data:
+        #     try:
+        #         age_value = float(data['customer_age'])
+        #         if age_value <= 0:
+        #             raise ValueError
+        #     except (ValueError, TypeError):
+        #         missing_fields.append('customer_age (must be a positive number)')
 
         if 'deductible_preference' in data:
             if data['deductible_preference'] not in ['high', 'low']:
