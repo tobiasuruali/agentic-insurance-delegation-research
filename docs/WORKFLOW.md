@@ -55,7 +55,7 @@ The system returns an array of messages during handoff:
 - **Message 2**: Recommendation Agent's product recommendation
 
 ### UI Features
-- **System Message**: "🔄 Connecting you with our Insurance Specialist..." appears between agents
+- **System Message**: "🔄 Handing off → Recommendation Agent" appears between agents
 - **Visual Indicators**: Different colors and labels for each agent
   - Information Agent: Gray background with red border
   - Recommendation Agent: Light blue background with blue border
@@ -107,7 +107,7 @@ sequenceDiagram
     U->>IA: "Yes" (confirms all data)
     IA->>S: "Perfect! Let me find..." + HANDOFF_SIGNAL + JSON
     S->>U: Display transition message
-    S->>U: Show "🔄 Connecting..." indicator  
+    S->>U: Show "🔄 Handing off → Recommendation Agent" indicator  
     S->>RA: Process customer data immediately
     RA->>S: "Based on info, here's recommendation: [LINK]"
     S->>U: Display recommendation with agent styling
@@ -119,7 +119,7 @@ sequenceDiagram
 graph LR
     A[API Response Array] --> B[Message 1: Info Agent]
     B --> C[1 sec delay]
-    C --> D[System Message: 🔄 Connecting...]
+    C --> D[System Message: 🔄 Handing off → Recommendation Agent]
     D --> E[1 sec delay]
     E --> F[Message 2: Recommendation Agent]
     F --> G[Different Visual Styling]

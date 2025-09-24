@@ -4,7 +4,7 @@ from data.insurance_products import recommend_insurance_product
 
 class RecommendationAgent:
     """
-    Agent 2: Processes user data and generates insurance recommendations
+    Recommendation Agent: Processes user data and generates insurance recommendations
     """
     
     def __init__(self, system_prompt: str):
@@ -15,7 +15,7 @@ class RecommendationAgent:
         Process customer data and generate recommendation
         
         Args:
-            customer_data (Dict): Customer information collected by Agent 1
+            customer_data (Dict): Customer information collected by Information Collector Agent
             
         Returns:
             Dict: Recommendation result with HTML link

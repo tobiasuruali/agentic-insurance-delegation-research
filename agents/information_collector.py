@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class InformationCollectorAgent:
     """
-    Agent 1: Handles conversation flow and collects user information
+    Information Collector Agent: Handles conversation flow and collects user information
     for insurance recommendations.
     """
     

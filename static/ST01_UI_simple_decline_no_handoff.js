@@ -250,7 +250,7 @@ async function sendMessage() {
                 
                 // INFO AGENT V2 CHANGE: Remove handoff system message
                 // if (isHandoff && i === 0) {
-                //     addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
+                //     addSystemMessage("🔄 Handing off → Recommendation Agent");
                 //     await new Promise(resolve => setTimeout(resolve, 1000));
                 // }
             }

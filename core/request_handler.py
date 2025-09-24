@@ -108,7 +108,7 @@ def process_with_information_collector(conversation_history: List[Dict], gpt_mod
                     # Process recommendation immediately and return multiple messages
                     first_message = f"{display_response}"
                     
-                    # Get recommendation from Agent 2
+                    # Get recommendation from Recommendation Agent
                     recommendation_result = process_with_recommendation_agent(customer_data, gpt_model)
                     
                     if recommendation_result['success']:

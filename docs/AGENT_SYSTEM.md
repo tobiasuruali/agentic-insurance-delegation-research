@@ -6,8 +6,8 @@ This document provides complete details about the two-agent system that powers t
 
 The chatbot employs a specialized dual-agent architecture where each agent has distinct responsibilities and expertise:
 
-- **Information Collector Agent**: Conversational specialist focused on gathering customer data
-- **Recommendation Agent**: Insurance specialist focused on generating personalized recommendations
+- **Information Collector Agent**: Focused on gathering customer data through conversational interaction
+- **Recommendation Agent**: Focused on generating personalized insurance recommendations
 
 ## Information Collector Agent
 

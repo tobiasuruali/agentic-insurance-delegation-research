@@ -14,13 +14,13 @@ This system demonstrates a simple agentic AI architecture where two specialized 
 
 Our system employs **two specialized AI agents** that work in perfect harmony:
 
-**💻 Information Agent** (Data Collection Specialist)
+**💻 Information Agent**
 - Conducts structured conversations to gather customer information
 - Validates completeness of 9 essential data points, including customer age
 - Provides friendly, conversational experience
 - Signals when ready for handoff
 
-**💻 Recommendation Agent** (Insurance Specialist) 
+**💻 Recommendation Agent** 
 - Processes customer data to generate personalized recommendations
 - Utilizes advanced product matching algorithms
 - Delivers recommendations with direct product links
@@ -65,7 +65,7 @@ flowchart TB
 ## ✨ Features
 
 🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI  
-🔄 **Seamless Handoff**: Smooth transitions with system messages like "🔄 Connecting you with our Insurance Specialist..."  
+🔄 **Seamless Handoff**: Smooth transitions with system messages like "🔄 Handing off → Recommendation Agent"  
 📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation  
 🎯 **Personalized Recommendations**: Advanced matching based on deductible preferences and coverage needs  
 ⚡ **Real-time Processing**: Multi-message responses with appropriate delays for natural conversation flow  
