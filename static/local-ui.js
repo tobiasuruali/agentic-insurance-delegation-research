@@ -378,9 +378,13 @@ function injectGlobalStyles() {
             animation: spinner 0.75s linear infinite;
         }
 
+        .handover-message {
+            background: linear-gradient(135deg, rgba(60, 58, 189, 0.08), rgba(41, 118, 221, 0.08));
+            border: 1px solid rgba(60, 58, 189, 0.14);
+        }
+
         .handover-sequence {
-            align-self: center;
-            width: min(520px, 92%);
+            width: 100%;
             padding: clamp(18px, 4vw, 26px);
             border-radius: 20px;
             background: linear-gradient(145deg, rgba(60, 58, 189, 0.12), rgba(41, 118, 221, 0.1));
@@ -447,6 +451,31 @@ function injectGlobalStyles() {
             filter: drop-shadow(0 6px 12px rgba(15, 23, 42, 0.18));
         }
 
+        .handover-step-label {
+            flex: 1 1 auto;
+            display: block;
+        }
+
+        .handover-step::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            border: 2px solid rgba(60, 58, 189, 0.18);
+            background: rgba(255, 255, 255, 0.8);
+            color: var(--accent-primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: grid;
+            place-items: center;
+            transform: translateY(-50%) scale(0.6);
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
         .handover-step::after {
             content: '';
             position: absolute;
@@ -464,8 +493,15 @@ function injectGlobalStyles() {
         .handover-step.active {
             opacity: 1;
             transform: translateY(0);
-            box-shadow: 0 16px 26px rgba(60, 58, 189, 0.2);
+            box-shadow: 0 18px 32px rgba(60, 58, 189, 0.22);
             color: var(--text-primary);
+            background: linear-gradient(120deg, rgba(60, 58, 189, 0.12), rgba(41, 118, 221, 0.2));
+            background-size: 220% 220%;
+            animation: carouselGlow 1.6s ease-in-out infinite;
+        }
+
+        .handover-step.active::before {
+            opacity: 0.4;
         }
 
         .handover-step.active::after {
@@ -473,13 +509,35 @@ function injectGlobalStyles() {
         }
 
         .handover-step.completed {
-            opacity: 0.58;
+            opacity: 0.75;
             box-shadow: none;
             transform: translateY(0);
+            background: rgba(60, 58, 189, 0.06);
+            color: var(--text-secondary);
         }
 
-        .handover-sequence.handover-exit {
-            animation: handoverFadeOut 0.32s ease forwards;
+        .handover-step.completed .handover-step-icon {
+            filter: none;
+        }
+
+        .handover-step.completed::before {
+            content: '✓';
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: #ffffff;
+            box-shadow: 0 12px 20px rgba(60, 58, 189, 0.26);
+        }
+
+        .handover-sequence.handover-finished::after {
+            opacity: 0;
+            animation: none;
+        }
+
+        .handover-message.handover-complete {
+            background: linear-gradient(135deg, rgba(60, 58, 189, 0.05), rgba(30, 147, 255, 0.06));
+            border-color: rgba(60, 58, 189, 0.12);
         }
 
         @keyframes messageIn {
@@ -521,19 +579,24 @@ function injectGlobalStyles() {
             }
         }
 
-        @keyframes handoverFadeOut {
-            to {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-        }
-
         @keyframes shimmer {
             0% {
                 transform: translateX(-60%);
             }
             100% {
                 transform: translateX(60%);
+            }
+        }
+
+        @keyframes carouselGlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
             }
         }
 
@@ -862,6 +925,16 @@ async function showHandoffSequence(chatWindowOverride) {
         return;
     }
 
+    const handoverMessage = document.createElement('div');
+    handoverMessage.className = 'message bot-message handover-message';
+
+    const label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = 'Agent Handoff';
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+
     const sequenceContainer = document.createElement('div');
     sequenceContainer.className = 'handover-sequence';
 
@@ -871,52 +944,72 @@ async function showHandoffSequence(chatWindowOverride) {
 
     const subtitle = document.createElement('div');
     subtitle.className = 'handover-subtitle';
-    subtitle.textContent = 'Information Specialist → Recommendation Expert';
+    subtitle.textContent = "We're routing your conversation to the right specialist.";
 
     const stepsWrapper = document.createElement('div');
     stepsWrapper.className = 'handover-steps';
 
     const steps = [
+        { label: 'Handing over to Insurance Specialist', icon: '🤝' },
         { label: 'Thinking', icon: '💭' },
-        { label: 'Checking', icon: '🧮' },
-        { label: 'Getting Top Recommendations', icon: '🏆' }
+        { label: 'Getting top recommendation', icon: '🏆' }
     ];
 
     const stepElements = steps.map(step => {
         const stepElement = document.createElement('div');
         stepElement.className = 'handover-step';
-        stepElement.innerHTML = `<span class="handover-step-icon">${step.icon}</span><span>${step.label}</span>`;
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'handover-step-icon';
+        iconSpan.textContent = step.icon;
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'handover-step-label';
+        labelSpan.textContent = step.label;
+
+        stepElement.appendChild(iconSpan);
+        stepElement.appendChild(labelSpan);
         stepsWrapper.appendChild(stepElement);
-        return stepElement;
+
+        return {
+            element: stepElement,
+            iconSpan,
+            defaultIcon: step.icon
+        };
     });
 
     sequenceContainer.appendChild(title);
     sequenceContainer.appendChild(subtitle);
     sequenceContainer.appendChild(stepsWrapper);
-    chatWindow.appendChild(sequenceContainer);
+    body.appendChild(sequenceContainer);
+    handoverMessage.appendChild(label);
+    handoverMessage.appendChild(body);
+    chatWindow.appendChild(handoverMessage);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
     for (let i = 0; i < stepElements.length; i++) {
-        await wait(i === 0 ? 100 : 650);
-        stepElements[i].classList.add('active');
+        const currentStep = stepElements[i];
+        await wait(i === 0 ? 200 : 850);
+        currentStep.element.classList.add('active');
+        currentStep.iconSpan.textContent = currentStep.defaultIcon;
 
         if (i > 0) {
-            stepElements[i - 1].classList.remove('active');
-            stepElements[i - 1].classList.add('completed');
+            const previousStep = stepElements[i - 1];
+            previousStep.element.classList.remove('active');
+            previousStep.element.classList.add('completed');
         }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    await wait(650);
+    await wait(850);
 
     const lastStep = stepElements[stepElements.length - 1];
-    lastStep.classList.remove('active');
-    lastStep.classList.add('completed');
+    lastStep.element.classList.remove('active');
+    lastStep.element.classList.add('completed');
 
-    await wait(450);
-    sequenceContainer.classList.add('handover-exit');
-
-    await wait(350);
-    sequenceContainer.remove();
+    sequenceContainer.classList.add('handover-finished');
+    handoverMessage.classList.add('handover-complete');
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function createBotMessage(content, agentType = 'collector') {
