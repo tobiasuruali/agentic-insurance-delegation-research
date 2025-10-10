@@ -166,41 +166,101 @@ function sanitizeHTML(value) {
     return template.innerHTML;
 }
 
-// Format message content with markdown-like support
-function formatMessageContent(value) {
+// Format message content with markdown-like support (Qualtrics-safe version)
+// NO innerHTML - builds everything with pure DOM methods
+function formatMessageContentSafe(value, container) {
     const normalized = String(value || '').replace(/\r\n?/g, '\n');
     if (!normalized.trim()) {
-        return '';
+        return;
     }
 
-    const paragraphs = normalized.split(/\n{2,}/).map(paragraph => {
-        const trimmed = paragraph.trim();
-        if (!trimmed) {
-            return '';
+    // Check for anchor tags and parse them manually
+    const anchorRegex = /<a\s+([^>]*)>(.*?)<\/a>/gi;
+    const hasAnchor = anchorRegex.test(normalized);
+
+    if (hasAnchor) {
+        // Parse anchor tags manually - Qualtrics blocks innerHTML
+        const p = document.createElement('p');
+        let lastIndex = 0;
+        const regex = /<a\s+([^>]*)>(.*?)<\/a>/gi;
+        let match;
+
+        while ((match = regex.exec(normalized)) !== null) {
+            // Add text before the link
+            if (match.index > lastIndex) {
+                const textBefore = normalized.substring(lastIndex, match.index);
+                p.appendChild(document.createTextNode(textBefore));
+            }
+
+            // Parse anchor attributes
+            const attrString = match[1];
+            const linkText = match[2];
+
+            // Create anchor element
+            const anchor = document.createElement('a');
+            anchor.textContent = linkText;
+
+            // Extract href
+            const hrefMatch = /href=["']([^"']*)["']/i.exec(attrString);
+            if (hrefMatch) {
+                anchor.href = hrefMatch[1];
+            }
+
+            // Extract onclick
+            const onclickMatch = /onclick=["']([^"']*)["']/i.exec(attrString);
+            if (onclickMatch) {
+                anchor.setAttribute('onclick', onclickMatch[1]);
+            }
+
+            p.appendChild(anchor);
+            lastIndex = regex.lastIndex;
         }
 
-        const containsHTML = /<[^>]+>/.test(trimmed);
-        if (containsHTML) {
-            return trimmed;
+        // Add remaining text after last link
+        if (lastIndex < normalized.length) {
+            p.appendChild(document.createTextNode(normalized.substring(lastIndex)));
         }
 
-        const lines = trimmed.split(/\n/);
-        const bulletLines = lines.every(line => /^[-*]\s+/.test(line.trim()));
+        container.appendChild(p);
+    } else {
+        // No HTML - use safe text-only approach
+        const paragraphs = normalized.split(/\n{2,}/);
 
-        if (bulletLines) {
-            const items = lines
-                .map(line => line.trim().replace(/^[-*]\s+/, ''))
-                .filter(Boolean)
-                .map(item => `<li>${escapeHTML(item)}</li>`)
-                .join('');
-            return `<ul>${items}</ul>`;
+        for (const paragraph of paragraphs) {
+            const trimmed = paragraph.trim();
+            if (!trimmed) continue;
+
+            const lines = trimmed.split(/\n/);
+            const bulletLines = lines.every(line => /^[-*]\s+/.test(line.trim()));
+
+            if (bulletLines) {
+                const ul = document.createElement('ul');
+                for (const line of lines) {
+                    const text = line.trim().replace(/^[-*]\s+/, '');
+                    if (text) {
+                        const li = document.createElement('li');
+                        li.textContent = text;
+                        ul.appendChild(li);
+                    }
+                }
+                container.appendChild(ul);
+            } else {
+                const p = document.createElement('p');
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (line) {
+                        p.appendChild(document.createTextNode(line));
+                        if (i < lines.length - 1) {
+                            p.appendChild(document.createElement('br'));
+                        }
+                    }
+                }
+                if (p.childNodes.length > 0) {
+                    container.appendChild(p);
+                }
+            }
         }
-
-        const escapedLines = lines.map(line => escapeHTML(line));
-        return `<p>${escapedLines.join('<br>')}</p>`;
-    }).filter(Boolean);
-
-    return sanitizeHTML(paragraphs.join(''));
+    }
 }
 
 // Inject modern CSS styles
@@ -316,15 +376,15 @@ function injectGlobalStyles() {
 
         .user-message {
             align-self: flex-end;
-            background: linear-gradient(135deg, #3c3abd, #4f4cd7);
-            color: #ffffff;
+            background: linear-gradient(135deg, #3c3abd, #4f4cd7) !important;
+            color: #ffffff !important;
         }
 
         .bot-message {
             align-self: flex-start;
-            background: rgba(60, 58, 189, 0.06);
-            color: #111322;
-            border: 1px solid rgba(60, 58, 189, 0.08);
+            background: #F0F1F9 !important;
+            color: #111322 !important;
+            border: 1px solid rgba(60, 58, 189, 0.2) !important;
         }
 
         .bot-message::before {
@@ -333,21 +393,22 @@ function injectGlobalStyles() {
             inset: 0;
             border-radius: inherit;
             pointer-events: none;
-            background: linear-gradient(145deg, rgba(60, 58, 189, 0.08), transparent 62%);
+            background: linear-gradient(145deg, rgba(60, 58, 189, 0.05), transparent 62%);
             mix-blend-mode: multiply;
-            opacity: 0.45;
+            opacity: 0.3;
         }
 
         .bot-message.recommendation {
-            background: linear-gradient(135deg, rgba(41, 118, 221, 0.08), rgba(30, 147, 255, 0.12));
-            border: 1px solid rgba(41, 118, 221, 0.22);
+            background: #E8F4F8 !important;
+            color: #000000 !important;
+            border: 1px solid rgba(41, 118, 221, 0.3) !important;
             box-shadow: 0 24px 48px rgba(41, 118, 221, 0.18);
         }
 
         .bot-message.recommendation::before {
-            background: linear-gradient(160deg, rgba(41, 118, 221, 0.18), transparent 58%);
+            background: linear-gradient(160deg, rgba(41, 118, 221, 0.12), transparent 58%);
             mix-blend-mode: normal;
-            opacity: 0.4;
+            opacity: 0.3;
         }
 
         .message-label {
@@ -390,9 +451,21 @@ function injectGlobalStyles() {
         }
 
         .message-body {
-            font-size: clamp(0.9rem, 2.6vw, 1.05rem);
-            line-height: 1.6;
-            color: inherit;
+            font-size: clamp(0.9rem, 2.6vw, 1.05rem) !important;
+            line-height: 1.6 !important;
+            color: inherit !important;
+        }
+
+        .user-message .message-body {
+            color: #ffffff !important;
+        }
+
+        .bot-message .message-body {
+            color: #111322 !important;
+        }
+
+        .bot-message.recommendation .message-body {
+            color: #000000 !important;
         }
 
         .message-body ul {
@@ -403,7 +476,14 @@ function injectGlobalStyles() {
         }
 
         .message-body p {
-            margin: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .message-body:empty::before {
+            content: '[No message content]';
+            color: red;
+            font-style: italic;
         }
 
         .message-body a {
@@ -746,8 +826,22 @@ function createMessageElement(role, content, agentType) {
     const normalizedRole = role === 'assistant' ? 'bot' : role;
     wrapper.className = `message ${normalizedRole}-message`;
 
-    if (normalizedRole === 'bot' && agentType === 'recommendation') {
+    // Add inline styles for colors (highest specificity, works in Qualtrics)
+    if (normalizedRole === 'user') {
+        wrapper.style.background = 'linear-gradient(135deg, #3c3abd, #4f4cd7)';
+        wrapper.style.color = '#ffffff';
+        wrapper.style.alignSelf = 'flex-end';
+    } else if (agentType === 'recommendation') {
         wrapper.classList.add('recommendation');
+        wrapper.style.background = '#E8F4F8';
+        wrapper.style.color = '#000000';
+        wrapper.style.border = '1px solid rgba(41, 118, 221, 0.3)';
+        wrapper.style.alignSelf = 'flex-start';
+    } else {
+        wrapper.style.background = '#F0F1F9';
+        wrapper.style.color = '#111322';
+        wrapper.style.border = '1px solid rgba(60, 58, 189, 0.2)';
+        wrapper.style.alignSelf = 'flex-start';
     }
 
     const label = document.createElement('div');
@@ -755,15 +849,25 @@ function createMessageElement(role, content, agentType) {
 
     if (normalizedRole === 'user') {
         label.textContent = 'You';
+        label.style.background = 'rgba(255, 255, 255, 0.22)';
+        label.style.color = '#ffffff';
     } else if (agentType === 'recommendation') {
         label.textContent = 'Recommendation Agent';
+        label.style.background = 'rgba(41, 118, 221, 0.18)';
+        label.style.color = '#2976dd';
     } else {
         label.textContent = 'Information Agent';
+        label.style.background = 'rgba(60, 58, 189, 0.12)';
+        label.style.color = '#3c3abd';
     }
 
     const body = document.createElement('div');
     body.className = 'message-body';
-    body.innerHTML = formatMessageContent(content);
+    // Add inline style for color
+    body.style.color = normalizedRole === 'user' ? '#ffffff' : (agentType === 'recommendation' ? '#000000' : '#111322');
+
+    // Use Qualtrics-safe formatting (no innerHTML)
+    formatMessageContentSafe(content, body);
 
     wrapper.appendChild(label);
     wrapper.appendChild(body);
