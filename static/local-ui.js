@@ -90,6 +90,11 @@ const sendButtonFontColor = "#FFFFFF";          // White text
 const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
 let chatHistory = "";
 let chatHistoryJson = [];
+let handoverStylesInjected = false;
+
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 // Apply styles
 document.body.style.fontFamily = "'Arial', sans-serif";
@@ -234,8 +239,7 @@ async function sendMessage() {
                 
                 // Add system message AFTER the first message in handoff scenario
                 if (isHandoff && i === 0) {
-                    addSystemMessage("🔄 Handing off → Recommendation Agent");
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await showHandoffSequence();
                 }
             }
         } else {
@@ -256,7 +260,7 @@ async function sendMessage() {
 function addSystemMessage(message) {
     const chatWindow = document.getElementById('chat-window');
     const systemMessageDiv = document.createElement('div');
-    
+
     systemMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
     systemMessageDiv.style.fontStyle = 'italic';
     systemMessageDiv.style.color = '#666';
@@ -272,6 +276,157 @@ function addSystemMessage(message) {
     systemMessageDiv.innerHTML = `<em>${message}</em>`;
     chatWindow.appendChild(systemMessageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function injectHandoverStyles() {
+    if (handoverStylesInjected) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+        .handover-sequence {
+            align-self: center;
+            max-width: 75%;
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: clamp(12px, 3vw, 16px);
+            background: rgba(60, 58, 189, 0.08);
+            border: 1px solid rgba(60, 58, 189, 0.2);
+            box-shadow: 0 12px 24px rgba(60, 58, 189, 0.12);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: handoverFadeIn 0.35s ease;
+        }
+        .handover-title {
+            font-weight: 600;
+            font-size: clamp(0.9rem, 2.4vw, 1.05rem);
+            text-align: center;
+            color: #2c2a75;
+            letter-spacing: 0.01em;
+        }
+        .handover-subtitle {
+            text-align: center;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+            color: rgba(44, 42, 117, 0.75);
+        }
+        .handover-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .handover-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.75);
+            color: #1d1c31;
+            font-size: clamp(0.8rem, 2.3vw, 0.95rem);
+            opacity: 0.25;
+            transform: translateY(6px);
+            transition: opacity 0.4s ease, transform 0.4s ease, box-shadow 0.4s ease;
+            box-shadow: inset 0 0 0 1px rgba(60, 58, 189, 0.06);
+        }
+        .handover-step-icon {
+            font-size: 1.15rem;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.12));
+        }
+        .handover-step.active {
+            opacity: 1;
+            transform: translateY(0);
+            box-shadow: 0 6px 18px rgba(60, 58, 189, 0.18);
+        }
+        .handover-step.completed {
+            opacity: 0.55;
+            box-shadow: none;
+        }
+        .handover-sequence.handover-exit {
+            animation: handoverFadeOut 0.35s ease forwards;
+        }
+        @keyframes handoverFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes handoverFadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+    handoverStylesInjected = true;
+}
+
+async function showHandoffSequence() {
+    injectHandoverStyles();
+
+    const chatWindow = document.getElementById('chat-window');
+    const sequenceContainer = document.createElement('div');
+    sequenceContainer.className = 'handover-sequence';
+
+    const title = document.createElement('div');
+    title.className = 'handover-title';
+    title.textContent = '🤝 Handing over';
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'handover-subtitle';
+    subtitle.textContent = 'Information Agent → Recommendation Agent';
+
+    const stepsWrapper = document.createElement('div');
+    stepsWrapper.className = 'handover-steps';
+
+    const steps = [
+        { label: 'Thinking', icon: '💭' },
+        { label: 'Checking', icon: '🧮' },
+        { label: 'Getting Top Recommendations', icon: '🏆' }
+    ];
+
+    const stepElements = steps.map(step => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'handover-step';
+        stepElement.innerHTML = `<span class="handover-step-icon">${step.icon}</span><span>${step.label}</span>`;
+        stepsWrapper.appendChild(stepElement);
+        return stepElement;
+    });
+
+    sequenceContainer.appendChild(title);
+    sequenceContainer.appendChild(subtitle);
+    sequenceContainer.appendChild(stepsWrapper);
+    chatWindow.appendChild(sequenceContainer);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    for (let i = 0; i < stepElements.length; i++) {
+        await wait(i === 0 ? 100 : 650);
+        stepElements[i].classList.add('active');
+
+        if (i > 0) {
+            stepElements[i - 1].classList.remove('active');
+            stepElements[i - 1].classList.add('completed');
+        }
+    }
+
+    await wait(650);
+
+    const lastStep = stepElements[stepElements.length - 1];
+    lastStep.classList.remove('active');
+    lastStep.classList.add('completed');
+
+    await wait(450);
+    sequenceContainer.classList.add('handover-exit');
+
+    await wait(350);
+    sequenceContainer.remove();
 }
 
 function createBotMessage(content, agentType = 'collector') {
