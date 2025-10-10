@@ -108,11 +108,16 @@ function injectGlobalStyles() {
             --chat-shadow: 0 32px 60px rgba(15, 23, 42, 0.15);
             --accent-primary: #3c3abd;
             --accent-secondary: #4f4cd7;
+            --accent-tertiary: #2976dd;
             --text-primary: #111322;
             --text-secondary: rgba(17, 19, 34, 0.72);
             --bot-message-surface: rgba(60, 58, 189, 0.06);
+            --handover-message-surface: linear-gradient(140deg, rgba(60, 58, 189, 0.08), rgba(41, 118, 221, 0.12));
+            --handover-border: rgba(60, 58, 189, 0.28);
+            --recommendation-surface: linear-gradient(135deg, rgba(41, 118, 221, 0.08), rgba(30, 147, 255, 0.12));
             --system-message-surface: rgba(17, 19, 34, 0.06);
             --step-background: rgba(255, 255, 255, 0.82);
+            --label-pill-radius: 999px;
         }
 
         body.chatgpt-inspired-body {
@@ -212,6 +217,12 @@ function injectGlobalStyles() {
             animation: messageIn 0.35s ease;
             position: relative;
             isolation: isolate;
+            z-index: 0;
+        }
+
+        .message > * {
+            position: relative;
+            z-index: 1;
         }
 
         .user-message {
@@ -224,11 +235,30 @@ function injectGlobalStyles() {
             align-self: flex-start;
             background: var(--bot-message-surface);
             color: var(--text-primary);
+            border: 1px solid rgba(60, 58, 189, 0.08);
+        }
+
+        .bot-message::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(145deg, rgba(60, 58, 189, 0.08), transparent 62%);
+            mix-blend-mode: multiply;
+            opacity: 0.45;
         }
 
         .bot-message.recommendation {
-            background: linear-gradient(135deg, rgba(60, 58, 189, 0.08), rgba(30, 147, 255, 0.1));
-            border: 1px solid rgba(60, 58, 189, 0.12);
+            background: var(--recommendation-surface);
+            border: 1px solid rgba(41, 118, 221, 0.22);
+            box-shadow: 0 24px 48px rgba(41, 118, 221, 0.18);
+        }
+
+        .bot-message.recommendation::before {
+            background: linear-gradient(160deg, rgba(41, 118, 221, 0.18), transparent 58%);
+            mix-blend-mode: normal;
+            opacity: 0.4;
         }
 
         .system-message {
@@ -241,15 +271,47 @@ function injectGlobalStyles() {
         }
 
         .message-label {
-            font-size: 0.75rem;
-            letter-spacing: 0.08em;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: var(--label-pill-radius);
+            background: rgba(17, 19, 34, 0.06);
+            color: var(--text-secondary);
+            align-self: flex-start;
+        }
+
+        .message-label::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
             opacity: 0.7;
         }
 
         .user-message .message-label {
-            opacity: 0.9;
+            background: rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+        }
+
+        .bot-message .message-label {
+            background: rgba(60, 58, 189, 0.12);
+            color: var(--accent-primary);
+        }
+
+        .bot-message.recommendation .message-label {
+            background: rgba(41, 118, 221, 0.18);
+            color: var(--accent-tertiary);
+        }
+
+        .handover-message .message-label {
+            background: rgba(60, 58, 189, 0.2);
+            color: var(--accent-primary);
         }
 
         .message-body {
@@ -392,8 +454,33 @@ function injectGlobalStyles() {
         }
 
         .handover-message {
-            background: rgba(60, 58, 189, 0.05);
-            border: 1px solid rgba(60, 58, 189, 0.12);
+            background: var(--handover-message-surface);
+            border: 1px solid var(--handover-border);
+            box-shadow: 0 28px 60px rgba(60, 58, 189, 0.18);
+            overflow: hidden;
+        }
+
+        .handover-message::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary));
+            mix-blend-mode: normal;
+            pointer-events: none;
+            opacity: 1;
+        }
+
+        .handover-message::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at -20% 0%, rgba(60, 58, 189, 0.18), transparent 50%);
+            opacity: 0.3;
+            pointer-events: none;
+            mix-blend-mode: normal;
         }
 
         .handover-sequence {
