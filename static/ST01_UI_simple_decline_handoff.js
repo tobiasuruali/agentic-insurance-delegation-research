@@ -562,8 +562,8 @@ function injectGlobalStyles() {
 
         .handover-message .message-label {
             align-self: center;
-            background: rgba(60, 58, 189, 0.16);
-            color: #3c3abd;
+            background: rgba(50, 88, 200, 0.14);
+            color: #3855c8;
             letter-spacing: 0.14em;
         }
 
