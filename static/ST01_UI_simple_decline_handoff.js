@@ -743,7 +743,8 @@ function injectGlobalStyles() {
 }
 
 function escapeHTML(value) {
-    return String(value ?? '')
+    const safeValue = value === undefined || value === null ? '' : value;
+    return String(safeValue)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
@@ -802,7 +803,8 @@ function sanitizeHTML(value) {
 }
 
 function formatMessageContent(value) {
-    const normalized = String(value ?? '').replace(/\r\n?/g, '\n');
+    const safeValue = value === undefined || value === null ? '' : value;
+    const normalized = String(safeValue).replace(/\r\n?/g, '\n');
     if (!normalized.trim()) {
         return '';
     }
@@ -923,7 +925,8 @@ function setupLayout() {
 
 function addChatHeader() {
     const chatWindow = document.getElementById('chat-window');
-    if (!chatWindow || chatWindow.previousElementSibling?.classList.contains('chat-header')) {
+    const previousElement = chatWindow ? chatWindow.previousElementSibling : null;
+    if (!chatWindow || (previousElement && previousElement.classList.contains('chat-header'))) {
         return;
     }
 
