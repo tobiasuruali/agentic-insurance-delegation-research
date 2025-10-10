@@ -137,9 +137,22 @@ function getQualtricsEmbeddedData(key) {
     return undefined;
 }
 
+function stampQualtricsTimestampOnce(key) {
+    var existingValue = getQualtricsEmbeddedData(key);
+    if (existingValue !== undefined && existingValue !== null && existingValue !== '') {
+        return existingValue;
+    }
+
+    var timestamp = new Date().toISOString();
+    setQualtricsEmbeddedData(key, timestamp);
+    return timestamp;
+}
+
 // Recommendation tracking variables
 var originalRecommendation = null;
 var recommendationType = null;
+
+stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
 
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
@@ -958,7 +971,9 @@ async function sendMessage() {
     console.log("Send button clicked");
     var userInput = document.getElementById('user-input').value;
     if (!userInput.trim()) return;
-    
+
+    stampQualtricsTimestampOnce('FIRST_MSG_TS');
+
     // Clear input field immediately
     document.getElementById('user-input').value = '';
     
@@ -1290,6 +1305,23 @@ try {
     // Hide NextButton during chat interaction
     Qualtrics.SurveyEngine.addOnload(function () {
         this.hideNextButton();      // built‑in helper
+        stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
+
+        var nextButton = document.getElementById('NextButton');
+        if (nextButton) {
+            var handleNextClick = function () {
+                stampQualtricsTimestampOnce('NEXT_CLICK_TS');
+            };
+
+            if (typeof nextButton.addEventListener === 'function') {
+                nextButton.addEventListener('click', handleNextClick, { once: true });
+            } else {
+                nextButton.onclick = function () {
+                    handleNextClick();
+                    nextButton.onclick = null;
+                };
+            }
+        }
         //  … any other per‑page setup
       });
 
