@@ -695,6 +695,11 @@ function formatMessageContent(value) {
             return '';
         }
 
+        const containsHTML = /<[^>]+>/.test(trimmed);
+        if (containsHTML) {
+            return trimmed;
+        }
+
         const lines = trimmed.split(/\n/);
         const bulletLines = lines.every(line => /^[-*]\s+/.test(line.trim()));
 
