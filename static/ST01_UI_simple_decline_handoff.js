@@ -277,8 +277,8 @@ function injectGlobalStyles() {
         #chat-window.chat-scroll-region {
             display: flex;
             flex-direction: column;
-            gap: clamp(12px, 2.6vw, 18px);
-            padding: clamp(18px, 4vw, 32px);
+            gap: clamp(8px, 1.8vw, 12px);
+            padding: clamp(4px, 1vw, 8px);
             background: #ffffff;
             overflow-y: auto;
         }
@@ -295,7 +295,7 @@ function injectGlobalStyles() {
         #input-row.chat-input-row {
             display: flex;
             gap: 12px;
-            padding: clamp(16px, 4vw, 24px);
+            padding: clamp(6px, 1.5vw, 10px);
             background: rgba(60, 58, 189, 0.03);
             border-top: 1px solid rgba(60, 58, 189, 0.08);
         }
@@ -305,8 +305,8 @@ function injectGlobalStyles() {
             min-width: 0;
             border-radius: 14px;
             border: 1px solid rgba(17, 19, 34, 0.12);
-            padding: 14px 18px;
-            font-size: 1rem;
+            padding: 8px 12px;
+            font-size: 0.85rem;
             line-height: 1.4;
             background: #ffffff;
             color: #111322;
@@ -330,15 +330,15 @@ function injectGlobalStyles() {
             background: linear-gradient(135deg, #3c3abd, #4f4cd7);
             color: #ffffff;
             border: none;
-            padding: 0 clamp(18px, 3vw, 26px);
-            font-size: 1rem;
+            padding: 0 clamp(12px, 2vw, 18px);
+            font-size: 0.85rem;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             cursor: pointer;
-            min-height: 48px;
+            min-height: 36px;
             transition: transform 0.18s ease, box-shadow 0.2s ease;
             position: relative;
         }
@@ -358,9 +358,9 @@ function injectGlobalStyles() {
         .message {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding: clamp(14px, 3vw, 18px);
-            border-radius: 18px;
+            gap: 5px;
+            padding: clamp(8px, 2vw, 12px);
+            border-radius: 12px;
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
             max-width: min(640px, 92%);
             animation: messageIn 0.35s ease;
@@ -412,46 +412,46 @@ function injectGlobalStyles() {
         }
 
         .message-label {
-            font-size: 0.72rem;
+            font-size: clamp(0.5rem, 1.8vw, 0.65rem);
             letter-spacing: 0.12em;
             text-transform: uppercase;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
+            gap: clamp(3px, 1.2vw, 5px);
+            padding: clamp(2px, 0.8vw, 6px) clamp(6px, 2.5vw, 10px);
             border-radius: 999px;
-            background: rgba(17, 19, 34, 0.06);
+            background: rgba(17, 19, 34, 0.04);
             color: rgba(17, 19, 34, 0.72);
             align-self: flex-start;
         }
 
         .message-label::before {
             content: '';
-            width: 6px;
-            height: 6px;
+            width: clamp(4px, 1vw, 5px);
+            height: clamp(4px, 1vw, 5px);
             border-radius: 50%;
             background: currentColor;
             opacity: 0.7;
         }
 
         .user-message .message-label {
-            background: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.15);
             color: #ffffff;
         }
 
         .bot-message .message-label {
-            background: rgba(60, 58, 189, 0.12);
+            background: rgba(60, 58, 189, 0.08);
             color: #3c3abd;
         }
 
         .bot-message.recommendation .message-label {
-            background: rgba(41, 118, 221, 0.18);
+            background: rgba(41, 118, 221, 0.12);
             color: #2976dd;
         }
 
         .message-body {
-            font-size: clamp(0.9rem, 2.6vw, 1.05rem) !important;
+            font-size: clamp(0.8rem, 2vw, 0.9rem) !important;
             line-height: 1.6 !important;
             color: inherit !important;
         }
@@ -503,23 +503,32 @@ function injectGlobalStyles() {
             align-self: flex-start;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            border-radius: 14px;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 12px;
             background: rgba(60, 58, 189, 0.08);
             box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
             color: rgba(17, 19, 34, 0.72);
+            font-size: 0.75rem;
+        }
+
+        .typing-label {
+            font-size: 0.75rem;
+            color: rgba(17, 19, 34, 0.72);
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .typing-dots {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
         .typing-dot {
-            width: 8px;
-            height: 8px;
+            width: 5px;
+            height: 5px;
             border-radius: 999px;
             background: #3c3abd;
             opacity: 0.2;
@@ -540,8 +549,8 @@ function injectGlobalStyles() {
             background: transparent;
             border: none;
             box-shadow: none;
-            padding-block: clamp(6px, 1.5vw, 10px);
-            padding-inline: clamp(10px, 2vw, 14px);
+            padding-block: clamp(4px, 1vw, 6px);
+            padding-inline: clamp(8px, 1.5vw, 10px);
             max-width: min(420px, 92%);
             text-align: center;
         }
@@ -562,19 +571,19 @@ function injectGlobalStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             animation: handoverFadeIn 0.32s ease;
         }
 
         .handover-title {
             font-weight: 600;
-            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+            font-size: clamp(0.75rem, 1.8vw, 0.85rem);
             color: #3c3abd;
             letter-spacing: 0.02em;
         }
 
         .handover-subtitle {
-            font-size: clamp(0.72rem, 2vw, 0.82rem);
+            font-size: clamp(0.65rem, 1.6vw, 0.72rem);
             color: rgba(17, 19, 34, 0.68);
             max-width: 32ch;
         }
@@ -584,9 +593,9 @@ function injectGlobalStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             width: 100%;
-            padding-block: 6px 3px;
+            padding-block: 4px 2px;
         }
 
         .handover-steps::before {
@@ -606,19 +615,19 @@ function injectGlobalStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             opacity: 0;
-            transform: translateY(6px);
+            transform: translateY(4px);
             transition: opacity 0.35s ease, transform 0.35s ease;
             color: rgba(17, 19, 34, 0.72);
-            font-size: clamp(0.78rem, 2vw, 0.88rem);
-            min-height: 32px;
+            font-size: clamp(0.68rem, 1.6vw, 0.78rem);
+            min-height: 24px;
         }
 
         .handover-step-marker {
             position: relative;
-            width: 12px;
-            height: 12px;
+            width: 9px;
+            height: 9px;
             border-radius: 999px;
             border: 2px solid rgba(60, 58, 189, 0.28);
             background: rgba(255, 255, 255, 0.82);
@@ -688,7 +697,7 @@ function injectGlobalStyles() {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -52%);
-            font-size: 0.48rem;
+            font-size: 0.4rem;
             font-weight: 600;
         }
 
@@ -789,9 +798,9 @@ function addChatHeader() {
     var chatHeader = document.createElement('div');
     chatHeader.style.backgroundColor = chatHeaderBackgroundColor;
     chatHeader.style.color = chatHeaderFontColor;
-    chatHeader.style.padding = "clamp(8px, 2vw, 12px)";
+    chatHeader.style.padding = "clamp(4px, 1vw, 8px)";
     chatHeader.style.textAlign = "center";
-    chatHeader.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
+    chatHeader.style.fontSize = "clamp(0.7rem, 2vw, 0.85rem)";
     chatHeader.style.fontWeight = "bold";
     chatHeader.style.borderTopLeftRadius = "10px";
     chatHeader.style.borderTopRightRadius = "10px";
@@ -802,9 +811,9 @@ function addChatHeader() {
     var avatar = document.createElement('img');
     avatar.src = avatarImageURL;
     avatar.alt = botName + 'Avatar';
-    avatar.style.width = "clamp(50px, 8vw, 80px)"; // Responsive avatar size
-    avatar.style.height = "clamp(50px, 8vw, 80px)"; // Responsive avatar size
-    avatar.style.marginRight = "clamp(8px, 2vw, 12px)"; // Responsive space between avatar and text
+    avatar.style.width = "clamp(35px, 5vw, 50px)"; // Responsive avatar size
+    avatar.style.height = "clamp(35px, 5vw, 50px)"; // Responsive avatar size
+    avatar.style.marginRight = "clamp(4px, 1vw, 8px)"; // Responsive space between avatar and text
     avatar.style.borderRadius = "50%"; // Make it circular if not already
 
     // Create the text element
@@ -881,7 +890,9 @@ function createTypingIndicator() {
     indicator.className = 'typing-indicator';
 
     const label = document.createElement('span');
-    label.textContent = `${botName} is thinking`;
+    label.className = 'typing-label';
+    // label.textContent = `${botName} is thinking`;
+    label.textContent = `Information Agent is thinking`;
 
     const dots = document.createElement('div');
     dots.className = 'typing-dots';
