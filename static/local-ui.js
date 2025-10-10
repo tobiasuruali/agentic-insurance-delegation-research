@@ -271,42 +271,42 @@ function injectGlobalStyles() {
         }
 
         .message-label {
-            font-size: 0.72rem;
-            letter-spacing: 0.12em;
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            font-weight: 600;
+            font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
+            gap: 4px;
+            padding: 2px 8px;
             border-radius: var(--label-pill-radius);
-            background: rgba(17, 19, 34, 0.06);
+            background: rgba(17, 19, 34, 0.025);
             color: var(--text-secondary);
             align-self: flex-start;
         }
 
         .message-label::before {
             content: '';
-            width: 6px;
-            height: 6px;
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
             background: currentColor;
             opacity: 0.7;
         }
 
         .user-message .message-label {
-            background: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.16);
             color: #ffffff;
         }
 
         .bot-message .message-label {
-            background: rgba(60, 58, 189, 0.12);
-            color: var(--accent-primary);
+            background: rgba(60, 58, 189, 0.025);
+            color: var(--text-secondary);
         }
 
         .bot-message.recommendation .message-label {
-            background: rgba(41, 118, 221, 0.18);
-            color: var(--accent-tertiary);
+            background: rgba(41, 118, 221, 0.03);
+            color: var(--text-secondary);
         }
 
         .handover-message .message-label {
