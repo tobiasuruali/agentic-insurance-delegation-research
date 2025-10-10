@@ -412,42 +412,42 @@ function injectGlobalStyles() {
         }
 
         .message-label {
-            font-size: clamp(0.5rem, 1.8vw, 0.65rem);
-            letter-spacing: 0.12em;
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            font-weight: 600;
+            font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: clamp(3px, 1.2vw, 5px);
-            padding: clamp(2px, 0.8vw, 6px) clamp(6px, 2.5vw, 10px);
+            gap: 4px;
+            padding: 2px 8px;
             border-radius: 999px;
-            background: rgba(17, 19, 34, 0.04);
-            color: rgba(17, 19, 34, 0.72);
+            background: rgba(17, 19, 34, 0.025);
+            color: #6E6E6E;
             align-self: flex-start;
         }
 
         .message-label::before {
             content: '';
-            width: clamp(4px, 1vw, 5px);
-            height: clamp(4px, 1vw, 5px);
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
             background: currentColor;
             opacity: 0.7;
         }
 
         .user-message .message-label {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.16);
             color: #ffffff;
         }
 
         .bot-message .message-label {
-            background: rgba(60, 58, 189, 0.08);
-            color: #3c3abd;
+            background: rgba(60, 58, 189, 0.025);
+            color: #6E6E6E;
         }
 
         .bot-message.recommendation .message-label {
-            background: rgba(41, 118, 221, 0.12);
-            color: #2976dd;
+            background: rgba(41, 118, 221, 0.03);
+            color: #6E6E6E;
         }
 
         .message-body {
