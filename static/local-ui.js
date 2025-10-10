@@ -458,8 +458,8 @@ function injectGlobalStyles() {
             background: transparent;
             border: none;
             box-shadow: none;
-            padding-block: clamp(12px, 2.8vw, 18px);
-            padding-inline: clamp(16px, 4vw, 24px);
+            padding-block: clamp(6px, 1.5vw, 10px);
+            padding-inline: clamp(10px, 2vw, 14px);
             max-width: min(420px, 92%);
             text-align: center;
         }
@@ -480,19 +480,19 @@ function injectGlobalStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 18px;
+            gap: 10px;
             animation: handoverFadeIn 0.32s ease;
         }
 
         .handover-title {
             font-weight: 600;
-            font-size: clamp(0.95rem, 2.6vw, 1.08rem);
+            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
             color: var(--accent-primary);
             letter-spacing: 0.02em;
         }
 
         .handover-subtitle {
-            font-size: clamp(0.8rem, 2.3vw, 0.92rem);
+            font-size: clamp(0.72rem, 2vw, 0.82rem);
             color: rgba(17, 19, 34, 0.68);
             max-width: 32ch;
         }
@@ -502,9 +502,9 @@ function injectGlobalStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
             width: 100%;
-            padding-block: 8px 4px;
+            padding-block: 6px 3px;
         }
 
         .handover-steps::before {
@@ -524,19 +524,19 @@ function injectGlobalStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            opacity: 0.35;
+            gap: 6px;
+            opacity: 0;
             transform: translateY(6px);
             transition: opacity 0.35s ease, transform 0.35s ease;
             color: var(--text-secondary);
-            font-size: clamp(0.84rem, 2.2vw, 0.95rem);
-            min-height: 54px;
+            font-size: clamp(0.78rem, 2vw, 0.88rem);
+            min-height: 32px;
         }
 
         .handover-step-marker {
             position: relative;
-            width: 16px;
-            height: 16px;
+            width: 12px;
+            height: 12px;
             border-radius: 999px;
             border: 2px solid rgba(60, 58, 189, 0.28);
             background: var(--step-background);
@@ -545,7 +545,7 @@ function injectGlobalStyles() {
             justify-content: center;
             transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
             z-index: 1;
-            box-shadow: 0 6px 18px rgba(60, 58, 189, 0.15);
+            box-shadow: 0 4px 12px rgba(60, 58, 189, 0.15);
         }
 
         .handover-step-marker::after {
@@ -553,10 +553,11 @@ function injectGlobalStyles() {
             position: absolute;
             inset: -6px;
             border-radius: 999px;
-            border: 2px solid rgba(60, 58, 189, 0.22);
+            border: 2px solid transparent;
+            border-top-color: rgba(60, 58, 189, 0.6);
+            border-right-color: rgba(60, 58, 189, 0.4);
             opacity: 0;
-            transform: scale(0.7);
-            transition: opacity 0.35s ease, transform 0.35s ease;
+            transition: opacity 0.35s ease;
         }
 
         .handover-step-label {
@@ -573,13 +574,12 @@ function injectGlobalStyles() {
             border-color: var(--accent-primary);
             background: var(--accent-primary);
             color: #ffffff;
-            box-shadow: 0 0 0 8px rgba(60, 58, 189, 0.16);
+            box-shadow: 0 0 0 4px rgba(60, 58, 189, 0.16);
         }
 
         .handover-step.active .handover-step-marker::after {
             opacity: 1;
-            transform: scale(1);
-            animation: handoverPulse 1.8s ease-in-out infinite;
+            animation: handoverSpinner 1.2s linear infinite;
         }
 
         .handover-step.completed {
@@ -606,7 +606,7 @@ function injectGlobalStyles() {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -52%);
-            font-size: 0.55rem;
+            font-size: 0.48rem;
             font-weight: 600;
         }
 
@@ -614,20 +614,12 @@ function injectGlobalStyles() {
             background: linear-gradient(180deg, rgba(60, 58, 189, 0.1), rgba(41, 118, 221, 0.12));
         }
 
-        @keyframes handoverPulse {
+        @keyframes handoverSpinner {
             0% {
-                opacity: 1;
-                transform: scale(1);
+                transform: rotate(0deg);
             }
-
-            50% {
-                opacity: 0;
-                transform: scale(1.3);
-            }
-
             100% {
-                opacity: 1;
-                transform: scale(1);
+                transform: rotate(360deg);
             }
         }
 
@@ -1098,7 +1090,7 @@ async function showHandoffSequence(chatWindowOverride) {
 
     const subtitle = document.createElement('div');
     subtitle.className = 'handover-subtitle';
-    subtitle.textContent = "We're routing your conversation to the right specialist.";
+    subtitle.textContent = "Routing to specialist...";
 
     const stepsWrapper = document.createElement('div');
     stepsWrapper.className = 'handover-steps';
@@ -1140,7 +1132,7 @@ async function showHandoffSequence(chatWindowOverride) {
 
     for (let i = 0; i < stepElements.length; i++) {
         const currentStep = stepElements[i];
-        await wait(i === 0 ? 200 : 850);
+        await wait(i === 0 ? 200 : 1500);
         currentStep.element.classList.add('active');
 
         if (i > 0) {
