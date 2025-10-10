@@ -92,9 +92,67 @@ var sessionId = 'session_' + crypto.randomUUID();
 var chatHistory = "";
 var chatHistoryJson = [];
 
+function setQualtricsEmbeddedData(key, value) {
+    try {
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.setEmbeddedData === 'function') {
+            Qualtrics.SurveyEngine.setEmbeddedData(key, value);
+            return;
+        }
+
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.setJSEmbeddedData === 'function') {
+            Qualtrics.SurveyEngine.setJSEmbeddedData(key, value);
+            return;
+        }
+    } catch (error) {
+        console.error('Error setting Qualtrics embedded data for key:', key, error);
+    }
+
+    // No-op fallback for local testing when Qualtrics is unavailable
+    console.debug('Qualtrics embedded data unavailable. Skipping set for key:', key);
+}
+
+function getQualtricsEmbeddedData(key) {
+    try {
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.getEmbeddedData === 'function') {
+            return Qualtrics.SurveyEngine.getEmbeddedData(key);
+        }
+
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.getJSEmbeddedData === 'function') {
+            return Qualtrics.SurveyEngine.getJSEmbeddedData(key);
+        }
+    } catch (error) {
+        console.error('Error getting Qualtrics embedded data for key:', key, error);
+    }
+
+    // No-op fallback for local testing when Qualtrics is unavailable
+    console.debug('Qualtrics embedded data unavailable. Returning undefined for key:', key);
+    return undefined;
+}
+
+function stampQualtricsTimestampOnce(key) {
+    var existingValue = getQualtricsEmbeddedData(key);
+    if (existingValue !== undefined && existingValue !== null && existingValue !== '') {
+        return existingValue;
+    }
+
+    var timestamp = new Date().toISOString();
+    setQualtricsEmbeddedData(key, timestamp);
+    return timestamp;
+}
+
 // Recommendation tracking variables
 var originalRecommendation = null;
 var recommendationType = null;
+
+stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
 
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
@@ -913,7 +971,9 @@ async function sendMessage() {
     console.log("Send button clicked");
     var userInput = document.getElementById('user-input').value;
     if (!userInput.trim()) return;
-    
+
+    stampQualtricsTimestampOnce('FIRST_MSG_TS');
+
     // Clear input field immediately
     document.getElementById('user-input').value = '';
     
@@ -1016,10 +1076,10 @@ async function sendMessage() {
         }
         
         try{
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-            Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+            setQualtricsEmbeddedData('ChatHistory', chatHistory);
+            setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+            setQualtricsEmbeddedData('SessionId', sessionId);
+            setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
         } catch(error) {
             console.error("Error from Qualtrics: ", error);
             sessionId = "DEBUG"
@@ -1180,19 +1240,19 @@ function logEvent(eventType, details) {
         chatHistoryJson.push(logEntry);
         
         // Set standard embedded data
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-        
+        setQualtricsEmbeddedData('ChatHistory', chatHistory);
+        setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+        setQualtricsEmbeddedData('SessionId', sessionId);
+        setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+
         // Initialize all variables to ensure consistent data structure
-        var currentRecommended = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendedProduct') || "";
-        var currentAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProduct') || "";
-        var currentWasAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('WasRecommendationAccepted') || "";
-        var currentUserJourney = Qualtrics.SurveyEngine.getJSEmbeddedData('UserJourney') || "";
-        var currentRecommendationType = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendationType') || "";
-        var currentRejected = Qualtrics.SurveyEngine.getJSEmbeddedData('RejectedRecommendation') || "";
-        var currentDeclined = Qualtrics.SurveyEngine.getJSEmbeddedData('DeclinedProduct') || "";
+        var currentRecommended = getQualtricsEmbeddedData('RecommendedProduct') || "";
+        var currentAccepted = getQualtricsEmbeddedData('AcceptedProduct') || "";
+        var currentWasAccepted = getQualtricsEmbeddedData('WasRecommendationAccepted') || "";
+        var currentUserJourney = getQualtricsEmbeddedData('UserJourney') || "";
+        var currentRecommendationType = getQualtricsEmbeddedData('RecommendationType') || "";
+        var currentRejected = getQualtricsEmbeddedData('RejectedRecommendation') || "";
+        var currentDeclined = getQualtricsEmbeddedData('DeclinedProduct') || "";
         
         // Set specific values based on event type, keeping others as current or empty
         if (eventType.startsWith("recommended-product-")) {
@@ -1218,13 +1278,13 @@ function logEvent(eventType, details) {
         }
         
         // Always set ALL variables to ensure consistent data structure
-        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendedProduct', currentRecommended);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProduct', currentAccepted);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('UserJourney', currentUserJourney);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendationType', currentRecommendationType);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('RejectedRecommendation', currentRejected);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('DeclinedProduct', currentDeclined);
+        setQualtricsEmbeddedData('RecommendedProduct', currentRecommended);
+        setQualtricsEmbeddedData('AcceptedProduct', currentAccepted);
+        setQualtricsEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
+        setQualtricsEmbeddedData('UserJourney', currentUserJourney);
+        setQualtricsEmbeddedData('RecommendationType', currentRecommendationType);
+        setQualtricsEmbeddedData('RejectedRecommendation', currentRejected);
+        setQualtricsEmbeddedData('DeclinedProduct', currentDeclined);
         
     } catch(error) {
         console.error("Error logging event: ", error);
@@ -1245,6 +1305,23 @@ try {
     // Hide NextButton during chat interaction
     Qualtrics.SurveyEngine.addOnload(function () {
         this.hideNextButton();      // built‑in helper
+        stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
+
+        var nextButton = document.getElementById('NextButton');
+        if (nextButton) {
+            var handleNextClick = function () {
+                stampQualtricsTimestampOnce('NEXT_CLICK_TS');
+            };
+
+            if (typeof nextButton.addEventListener === 'function') {
+                nextButton.addEventListener('click', handleNextClick, { once: true });
+            } else {
+                nextButton.onclick = function () {
+                    handleNextClick();
+                    nextButton.onclick = null;
+                };
+            }
+        }
         //  … any other per‑page setup
       });
 
