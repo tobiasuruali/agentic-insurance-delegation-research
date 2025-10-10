@@ -269,6 +269,19 @@ function injectGlobalStyles() {
             margin: 0;
         }
 
+        .message-body a {
+            color: var(--accent-primary);
+            text-decoration: underline;
+            font-weight: 500;
+            transition: color 0.2s ease, text-decoration-color 0.2s ease;
+        }
+
+        .message-body a:hover,
+        .message-body a:focus {
+            color: var(--accent-secondary);
+            text-decoration: none;
+        }
+
         .typing-indicator {
             align-self: flex-start;
             display: flex;
@@ -379,165 +392,160 @@ function injectGlobalStyles() {
         }
 
         .handover-message {
-            background: linear-gradient(135deg, rgba(60, 58, 189, 0.08), rgba(41, 118, 221, 0.08));
-            border: 1px solid rgba(60, 58, 189, 0.14);
+            background: rgba(60, 58, 189, 0.05);
+            border: 1px solid rgba(60, 58, 189, 0.12);
         }
 
         .handover-sequence {
-            width: 100%;
-            padding: clamp(18px, 4vw, 26px);
-            border-radius: 20px;
-            background: linear-gradient(145deg, rgba(60, 58, 189, 0.12), rgba(41, 118, 221, 0.1));
-            border: 1px solid rgba(60, 58, 189, 0.18);
-            box-shadow: 0 30px 50px rgba(33, 43, 75, 0.18);
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            position: relative;
-            overflow: hidden;
+            gap: 12px;
             animation: handoverFadeIn 0.32s ease;
-        }
-
-        .handover-sequence::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(120deg, rgba(255, 255, 255, 0.18) 20%, rgba(255, 255, 255, 0) 50%);
-            mix-blend-mode: soft-light;
-            opacity: 0.55;
-            animation: shimmer 2.4s ease-in-out infinite;
         }
 
         .handover-title {
             font-weight: 600;
-            font-size: clamp(1rem, 2.8vw, 1.15rem);
-            text-align: center;
+            font-size: clamp(0.95rem, 2.8vw, 1.1rem);
             color: var(--accent-primary);
-            letter-spacing: 0.01em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .handover-title::before {
+            content: '🤝';
+            font-size: 1.1rem;
         }
 
         .handover-subtitle {
-            text-align: center;
-            font-size: clamp(0.82rem, 2.4vw, 0.95rem);
-            color: rgba(17, 19, 34, 0.68);
+            font-size: clamp(0.82rem, 2.3vw, 0.94rem);
+            color: rgba(17, 19, 34, 0.7);
         }
 
         .handover-steps {
+            position: relative;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            position: relative;
-            z-index: 1;
+            gap: 18px;
+            padding-left: 32px;
+        }
+
+        .handover-steps::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background: rgba(60, 58, 189, 0.14);
         }
 
         .handover-step {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            background: var(--step-background);
+            position: relative;
+            opacity: 0.35;
+            transform: translateY(4px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
             color: var(--text-secondary);
             font-size: clamp(0.85rem, 2.2vw, 0.95rem);
-            box-shadow: inset 0 0 0 1px rgba(60, 58, 189, 0.04);
-            opacity: 0.3;
-            transform: translateY(6px);
-            transition: opacity 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
-            position: relative;
         }
 
-        .handover-step-icon {
-            font-size: 1.2rem;
-            filter: drop-shadow(0 6px 12px rgba(15, 23, 42, 0.18));
+        .handover-step-marker {
+            position: absolute;
+            left: -32px;
+            top: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            border: 2px solid rgba(60, 58, 189, 0.28);
+            background: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .handover-step-marker::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 999px;
+            border: 2px solid rgba(60, 58, 189, 0.22);
+            opacity: 0;
+            transform: scale(0.7);
+            transition: opacity 0.35s ease, transform 0.35s ease;
         }
 
         .handover-step-label {
             flex: 1 1 auto;
-            display: block;
-        }
-
-        .handover-step::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            right: 16px;
-            width: 20px;
-            height: 20px;
-            border-radius: 999px;
-            border: 2px solid rgba(60, 58, 189, 0.18);
-            background: rgba(255, 255, 255, 0.8);
-            color: var(--accent-primary);
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: grid;
-            place-items: center;
-            transform: translateY(-50%) scale(0.6);
-            opacity: 0;
-            transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-        }
-
-        .handover-step::after {
-            content: '';
-            position: absolute;
-            left: 16px;
-            right: 16px;
-            bottom: 6px;
-            height: 2px;
-            background: linear-gradient(90deg, rgba(60, 58, 189, 0.0), rgba(60, 58, 189, 0.5));
-            transform-origin: left;
-            transform: scaleX(0);
-            transition: transform 0.35s ease;
-            border-radius: 999px;
         }
 
         .handover-step.active {
             opacity: 1;
             transform: translateY(0);
-            box-shadow: 0 18px 32px rgba(60, 58, 189, 0.22);
             color: var(--text-primary);
-            background: linear-gradient(120deg, rgba(60, 58, 189, 0.12), rgba(41, 118, 221, 0.2));
-            background-size: 220% 220%;
-            animation: carouselGlow 1.6s ease-in-out infinite;
         }
 
-        .handover-step.active::before {
-            opacity: 0.4;
+        .handover-step.active .handover-step-marker {
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            box-shadow: 0 0 0 6px rgba(60, 58, 189, 0.08);
         }
 
-        .handover-step.active::after {
-            transform: scaleX(1);
+        .handover-step.active .handover-step-marker::after {
+            opacity: 1;
+            transform: scale(1);
+            animation: handoverPulse 1.8s ease-in-out infinite;
         }
 
         .handover-step.completed {
-            opacity: 0.75;
-            box-shadow: none;
+            opacity: 0.9;
             transform: translateY(0);
-            background: rgba(60, 58, 189, 0.06);
-            color: var(--text-secondary);
         }
 
-        .handover-step.completed .handover-step-icon {
-            filter: none;
-        }
-
-        .handover-step.completed::before {
-            content: '✓';
-            opacity: 1;
-            transform: translateY(-50%) scale(1);
-            background: var(--accent-primary);
+        .handover-step.completed .handover-step-marker {
             border-color: var(--accent-primary);
-            color: #ffffff;
-            box-shadow: 0 12px 20px rgba(60, 58, 189, 0.26);
+            background: var(--accent-primary);
+            box-shadow: none;
         }
 
-        .handover-sequence.handover-finished::after {
+        .handover-step.completed .handover-step-marker::after {
             opacity: 0;
             animation: none;
         }
 
+        .handover-step.completed .handover-step-marker::before {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -54%);
+            color: #ffffff;
+            font-size: 0.55rem;
+            font-weight: 600;
+        }
+
         .handover-message.handover-complete {
-            background: linear-gradient(135deg, rgba(60, 58, 189, 0.05), rgba(30, 147, 255, 0.06));
-            border-color: rgba(60, 58, 189, 0.12);
+            background: rgba(60, 58, 189, 0.04);
+        }
+
+        @keyframes handoverPulse {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0;
+                transform: scale(1.3);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         @keyframes messageIn {
@@ -623,29 +631,87 @@ function escapeHTML(value) {
         .replace(/>/g, '&gt;');
 }
 
+function sanitizeHTML(value) {
+    const template = document.createElement('template');
+    template.innerHTML = value;
+
+    const allowedElements = new Set(['P', 'BR', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'B', 'I', 'A', 'SPAN']);
+    const allowedAnchorAttributes = new Set(['href', 'target', 'rel', 'onclick', 'title']);
+
+    const walk = node => {
+        const childNodes = Array.from(node.childNodes);
+        for (const child of childNodes) {
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                if (!allowedElements.has(child.tagName)) {
+                    while (child.firstChild) {
+                        node.insertBefore(child.firstChild, child);
+                    }
+                    child.remove();
+                    continue;
+                }
+
+                if (child.tagName === 'A') {
+                    const href = child.getAttribute('href');
+                    if (href && /^\s*javascript:/i.test(href)) {
+                        child.removeAttribute('href');
+                    }
+
+                    if (href && /^https?:/i.test(href) && !child.hasAttribute('target')) {
+                        child.setAttribute('target', '_blank');
+                        child.setAttribute('rel', 'noopener');
+                    }
+
+                    Array.from(child.attributes).forEach(attr => {
+                        if (!allowedAnchorAttributes.has(attr.name)) {
+                            child.removeAttribute(attr.name);
+                        }
+                    });
+                } else {
+                    Array.from(child.attributes).forEach(attr => {
+                        child.removeAttribute(attr.name);
+                    });
+                }
+
+                walk(child);
+            } else if (child.nodeType === Node.COMMENT_NODE) {
+                child.remove();
+            }
+        }
+    };
+
+    walk(template.content);
+    return template.innerHTML;
+}
+
 function formatMessageContent(value) {
-    const sanitized = escapeHTML(value);
-    if (!sanitized.trim()) {
+    const normalized = String(value ?? '').replace(/\r\n?/g, '\n');
+    if (!normalized.trim()) {
         return '';
     }
 
-    const paragraphs = sanitized.split(/\n{2,}/).map(paragraph => {
-        const lines = paragraph.split(/\n/);
+    const paragraphs = normalized.split(/\n{2,}/).map(paragraph => {
+        const trimmed = paragraph.trim();
+        if (!trimmed) {
+            return '';
+        }
+
+        const lines = trimmed.split(/\n/);
         const bulletLines = lines.every(line => /^[-*]\s+/.test(line.trim()));
 
         if (bulletLines) {
             const items = lines
                 .map(line => line.trim().replace(/^[-*]\s+/, ''))
                 .filter(Boolean)
-                .map(item => `<li>${item}</li>`)
+                .map(item => `<li>${escapeHTML(item)}</li>`)
                 .join('');
             return `<ul>${items}</ul>`;
         }
 
-        return `<p>${lines.join('<br>')}</p>`;
-    });
+        const escapedLines = lines.map(line => escapeHTML(line));
+        return `<p>${escapedLines.join('<br>')}</p>`;
+    }).filter(Boolean);
 
-    return paragraphs.join('');
+    return sanitizeHTML(paragraphs.join(''));
 }
 
 function createMessageElement(role, content, agentType) {
@@ -940,7 +1006,7 @@ async function showHandoffSequence(chatWindowOverride) {
 
     const title = document.createElement('div');
     title.className = 'handover-title';
-    title.textContent = '🤝 Handing over';
+    title.textContent = 'Handing over';
 
     const subtitle = document.createElement('div');
     subtitle.className = 'handover-subtitle';
@@ -950,30 +1016,28 @@ async function showHandoffSequence(chatWindowOverride) {
     stepsWrapper.className = 'handover-steps';
 
     const steps = [
-        { label: 'Handing over to Insurance Specialist', icon: '🤝' },
-        { label: 'Thinking', icon: '💭' },
-        { label: 'Getting top recommendation', icon: '🏆' }
+        { label: 'Handing over to Insurance Specialist' },
+        { label: 'Thinking' },
+        { label: 'Getting top recommendation' }
     ];
 
     const stepElements = steps.map(step => {
         const stepElement = document.createElement('div');
         stepElement.className = 'handover-step';
-        const iconSpan = document.createElement('span');
-        iconSpan.className = 'handover-step-icon';
-        iconSpan.textContent = step.icon;
+        const marker = document.createElement('span');
+        marker.className = 'handover-step-marker';
+        marker.setAttribute('aria-hidden', 'true');
 
         const labelSpan = document.createElement('span');
         labelSpan.className = 'handover-step-label';
         labelSpan.textContent = step.label;
 
-        stepElement.appendChild(iconSpan);
+        stepElement.appendChild(marker);
         stepElement.appendChild(labelSpan);
         stepsWrapper.appendChild(stepElement);
 
         return {
-            element: stepElement,
-            iconSpan,
-            defaultIcon: step.icon
+            element: stepElement
         };
     });
 
@@ -990,7 +1054,6 @@ async function showHandoffSequence(chatWindowOverride) {
         const currentStep = stepElements[i];
         await wait(i === 0 ? 200 : 850);
         currentStep.element.classList.add('active');
-        currentStep.iconSpan.textContent = currentStep.defaultIcon;
 
         if (i > 0) {
             const previousStep = stepElements[i - 1];
