@@ -454,104 +454,98 @@ function injectGlobalStyles() {
         }
 
         .handover-message {
-            background: var(--handover-message-surface);
-            border: 1px solid var(--handover-border);
-            box-shadow: 0 28px 60px rgba(60, 58, 189, 0.18);
-            overflow: hidden;
+            align-self: center;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding-block: clamp(12px, 2.8vw, 18px);
+            padding-inline: clamp(16px, 4vw, 24px);
+            max-width: min(420px, 92%);
+            text-align: center;
         }
 
-        .handover-message::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary));
-            mix-blend-mode: normal;
-            pointer-events: none;
-            opacity: 1;
-        }
-
+        .handover-message::before,
         .handover-message::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at -20% 0%, rgba(60, 58, 189, 0.18), transparent 50%);
-            opacity: 0.3;
-            pointer-events: none;
-            mix-blend-mode: normal;
+            display: none;
+        }
+
+        .handover-message .message-label {
+            align-self: center;
+            background: rgba(60, 58, 189, 0.16);
+            color: var(--accent-primary);
+            letter-spacing: 0.14em;
         }
 
         .handover-sequence {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            align-items: center;
+            gap: 18px;
             animation: handoverFadeIn 0.32s ease;
         }
 
         .handover-title {
             font-weight: 600;
-            font-size: clamp(0.95rem, 2.8vw, 1.1rem);
+            font-size: clamp(0.95rem, 2.6vw, 1.08rem);
             color: var(--accent-primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .handover-title::before {
-            content: '🤝';
-            font-size: 1.1rem;
+            letter-spacing: 0.02em;
         }
 
         .handover-subtitle {
-            font-size: clamp(0.82rem, 2.3vw, 0.94rem);
-            color: rgba(17, 19, 34, 0.7);
+            font-size: clamp(0.8rem, 2.3vw, 0.92rem);
+            color: rgba(17, 19, 34, 0.68);
+            max-width: 32ch;
         }
 
         .handover-steps {
             position: relative;
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            padding-left: 32px;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            padding-block: 8px 4px;
         }
 
         .handover-steps::before {
             content: '';
             position: absolute;
-            left: 8px;
-            top: 6px;
-            bottom: 6px;
+            top: 22px;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
             width: 2px;
-            background: rgba(60, 58, 189, 0.14);
+            background: linear-gradient(180deg, rgba(60, 58, 189, 0.22), rgba(41, 118, 221, 0.18));
+            pointer-events: none;
         }
 
         .handover-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
             opacity: 0.35;
-            transform: translateY(4px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(6px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
             color: var(--text-secondary);
-            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+            font-size: clamp(0.84rem, 2.2vw, 0.95rem);
+            min-height: 54px;
         }
 
         .handover-step-marker {
-            position: absolute;
-            left: -32px;
-            top: 2px;
+            position: relative;
             width: 16px;
             height: 16px;
             border-radius: 999px;
             border: 2px solid rgba(60, 58, 189, 0.28);
-            background: #ffffff;
+            background: var(--step-background);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            z-index: 1;
+            box-shadow: 0 6px 18px rgba(60, 58, 189, 0.15);
         }
 
         .handover-step-marker::after {
@@ -566,7 +560,7 @@ function injectGlobalStyles() {
         }
 
         .handover-step-label {
-            flex: 1 1 auto;
+            max-width: 26ch;
         }
 
         .handover-step.active {
@@ -578,7 +572,8 @@ function injectGlobalStyles() {
         .handover-step.active .handover-step-marker {
             border-color: var(--accent-primary);
             background: var(--accent-primary);
-            box-shadow: 0 0 0 6px rgba(60, 58, 189, 0.08);
+            color: #ffffff;
+            box-shadow: 0 0 0 8px rgba(60, 58, 189, 0.16);
         }
 
         .handover-step.active .handover-step-marker::after {
@@ -588,13 +583,15 @@ function injectGlobalStyles() {
         }
 
         .handover-step.completed {
-            opacity: 0.9;
+            opacity: 0.92;
             transform: translateY(0);
+            color: var(--text-secondary);
         }
 
         .handover-step.completed .handover-step-marker {
             border-color: var(--accent-primary);
             background: var(--accent-primary);
+            color: #ffffff;
             box-shadow: none;
         }
 
@@ -608,14 +605,13 @@ function injectGlobalStyles() {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -54%);
-            color: #ffffff;
+            transform: translate(-50%, -52%);
             font-size: 0.55rem;
             font-weight: 600;
         }
 
-        .handover-message.handover-complete {
-            background: rgba(60, 58, 189, 0.04);
+        .handover-message.handover-complete .handover-steps::before {
+            background: linear-gradient(180deg, rgba(60, 58, 189, 0.1), rgba(41, 118, 221, 0.12));
         }
 
         @keyframes handoverPulse {
@@ -1084,7 +1080,7 @@ async function showHandoffSequence(chatWindowOverride) {
     }
 
     const handoverMessage = document.createElement('div');
-    handoverMessage.className = 'message bot-message handover-message';
+    handoverMessage.className = 'message handover-message';
 
     const label = document.createElement('div');
     label.className = 'message-label';
