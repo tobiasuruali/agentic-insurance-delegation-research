@@ -27,6 +27,12 @@ recommendation_agent = RecommendationAgent(system_prompts['recommendation_agent'
 bucket_name = os.getenv('GCS_BUCKET_NAME', 'insurance-chatbot-logs')
 enable_storage = os.getenv('ENABLE_CONVERSATION_STORAGE', 'false').lower() == 'true'
 
+# Firestore conversation storage toggle
+enable_firestore = os.getenv('ENABLE_FIRESTORE_STORAGE', 'true').lower() == 'true'
+
+# In-memory conversation storage (fallback when Firestore disabled)
+conversation_histories = {}
+
 def store_conversation_log(session_id: str, qualtrics_response_id: str, conversation_history: List[Dict], chatbot_id: str):
     """Store conversation log in Google Cloud Storage (optional)"""
     if not enable_storage or not gcs_client:
@@ -76,12 +82,14 @@ def store_error_log(session_id: str, qualtrics_response_id: str, error: str, req
         logger.error(f"Error storing error log: {str(e)}")
 
 def get_conversation_history(conversation_key: str) -> List[Dict]:
-    """Retrieve conversation history from Firestore"""
-    if not firestore_client:
-        # Fallback to in-memory if Firestore not available
-        logger.warning("Firestore not available, returning empty conversation history")
-        return []
+    """Retrieve conversation history from Firestore or in-memory fallback"""
+    # Check if Firestore is enabled and available
+    if not enable_firestore or not firestore_client:
+        # Fallback to in-memory storage
+        logger.debug(f"Using in-memory storage for: {conversation_key}")
+        return conversation_histories.get(conversation_key, [])
 
+    # Use Firestore
     try:
         doc_ref = firestore_client.collection('conversations').document(conversation_key)
         doc = doc_ref.get()
@@ -91,15 +99,19 @@ def get_conversation_history(conversation_key: str) -> List[Dict]:
             return data.get('history', [])
         return []
     except Exception as e:
-        logger.error(f"Error retrieving conversation from Firestore: {str(e)}")
-        return []
+        logger.error(f"Error retrieving from Firestore: {str(e)}, falling back to in-memory")
+        return conversation_histories.get(conversation_key, [])
 
 def save_conversation_history(conversation_key: str, conversation_history: List[Dict]):
-    """Save conversation history to Firestore"""
-    if not firestore_client:
-        logger.warning("Firestore not available, skipping save")
+    """Save conversation history to Firestore or in-memory fallback"""
+    # Check if Firestore is enabled and available
+    if not enable_firestore or not firestore_client:
+        # Fallback to in-memory storage
+        logger.debug(f"Saving to in-memory storage: {conversation_key}")
+        conversation_histories[conversation_key] = conversation_history
         return
 
+    # Use Firestore
     try:
         doc_ref = firestore_client.collection('conversations').document(conversation_key)
         doc_ref.set({
@@ -109,7 +121,8 @@ def save_conversation_history(conversation_key: str, conversation_history: List[
         })
         logger.debug(f"Saved conversation to Firestore: {conversation_key}")
     except Exception as e:
-        logger.error(f"Error saving conversation to Firestore: {str(e)}")
+        logger.error(f"Error saving to Firestore: {str(e)}, falling back to in-memory")
+        conversation_histories[conversation_key] = conversation_history
 
 async def process_with_information_collector(conversation_history: List[Dict], gpt_model: str) -> Dict:
     """Process conversation with Information Collector Agent"""
