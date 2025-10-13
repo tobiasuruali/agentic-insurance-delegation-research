@@ -45,15 +45,17 @@ Your application has been optimized to handle **1000+ concurrent requests** on G
 
 ### Phase 3: Uvicorn Worker Configuration ✅
 **Problem:** Single worker process cannot utilize multiple CPU cores
-**Solution:** Configured 4 workers in Dockerfile
+**Solution:** Made worker count configurable via WORKERS environment variable in Dockerfile
 
 **Files Modified:**
-- `Dockerfile` - Updated CMD with `--workers 4 --timeout-keep-alive 65`
+- `Dockerfile` - Updated CMD with `--workers ${WORKERS:-1} --timeout-keep-alive 65`
 
 **Benefits:**
-- Utilizes multiple CPU cores
-- 4 workers × 80 concurrent requests = 320 requests per instance
+- Configurable via environment variable (defaults to 1 for debugging)
+- Utilizes multiple CPU cores in production (set WORKERS=4 or higher)
+- Recommended: 4 workers × 80 concurrent requests = 320 requests per instance
 - Keep-alive prevents connection churn
+- Single Dockerfile for all environments (dev + prod)
 
 ---
 
@@ -136,9 +138,13 @@ gcloud run deploy agentic-insurance-chatbot \
   --min-instances=1 \
   --timeout=300 \
   --cpu-throttling=false \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,WORKERS=4,ENABLE_FIRESTORE_STORAGE=true" \
   --set-secrets="OPENAI_API_KEY=openai-api-key:latest"
 ```
+
+**Note:** The `WORKERS` environment variable controls the number of uvicorn worker processes:
+- **Development/Debugging**: Use `WORKERS=1` (default) for easier debugging and lower resource usage
+- **Production**: Use `WORKERS=4` or `(2 × CPU cores) + 1` for optimal performance
 
 ---
 

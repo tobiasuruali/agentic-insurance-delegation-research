@@ -64,12 +64,14 @@ flowchart TB
 
 ## ✨ Features
 
-🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI  
-🔄 **Seamless Handoff**: Smooth transitions with system messages like "🔄 Handing off → Recommendation Agent"  
-📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation  
-🎯 **Personalized Recommendations**: Advanced matching based on deductible preferences and coverage needs  
-⚡ **Real-time Processing**: Multi-message responses with appropriate delays for natural conversation flow  
-🔗 **Direct Product Links**: Actionable recommendations with immediate purchase options  
+🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI
+🔄 **Animated Handoff Sequence**: Beautiful step-by-step visualization showing agent transition progress
+📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation
+🎯 **Personalized Recommendations**: Advanced matching based on deductible, coverage, and water backup preferences
+⚡ **Session Persistence**: Firestore-backed conversation storage that survives page refreshes and instance restarts
+💾 **Smart Session Management**: Three-tier system (Qualtrics → localStorage → generated) for reliable session tracking
+🔗 **Direct Product Links**: Actionable recommendations with immediate purchase options
+🎨 **Responsive UI**: Modern design with smooth animations and mobile-friendly interface  
 
 ---
 
@@ -134,8 +136,10 @@ FastAPI Application
 
 For comprehensive information about this system:
 
-📋 **[WORKFLOW.md](WORKFLOW.md)** - Complete workflow documentation with detailed diagrams and UI features  
-🔧 **[TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md)** - Extensive technical documentation covering all functions, API calls, and data flows  
+📋 **[WORKFLOW.md](docs/WORKFLOW.md)** - Complete workflow documentation with detailed diagrams and UI features
+🔧 **[TECHNICAL_REFERENCE.md](docs/TECHNICAL_REFERENCE.md)** - Extensive technical documentation covering all functions, API calls, and data flows
+🤖 **[AGENT_SYSTEM.md](docs/AGENT_SYSTEM.md)** - Detailed agent system reference with prompts and handoff mechanisms
+📈 **[SCALING_GUIDE.md](SCALING_GUIDE.md)** - Production deployment and scaling guide for 1000+ concurrent requests
 📖 **API Documentation** - Available at `/docs` when running the application  
 
 ---
@@ -144,27 +148,33 @@ For comprehensive information about this system:
 
 ### Qualtrics Integration
 This system is designed for seamless Qualtrics integration:
-- Upload `static/UI_for_qualtrics.js` as an embedded code block
-- Configure embedded data fields for conversation storage
-- Update `chatbotURL` with your deployment endpoint
+- Upload `static/ST01_UI_simple_decline_handoff.js` (simple accept/decline) or `static/UI_for_qualtrics.js` (with product gallery) as an embedded code block
+- Configure embedded data fields for conversation storage and analytics
+- Update `chatbotURL` variable in the script with your deployment endpoint
 
 #### Required Embedded Data Variables
 Add these variables to your Qualtrics Survey Flow before the chatbot question:
 
 **Core Variables:**
-- `ChatHistory` - Conversation log
-- `ChatHistoryJson` - Structured conversation data
-- `SessionId` - Session identifier
+- `ChatHistory` - Conversation log (text format)
+- `ChatHistoryJson` - Structured conversation data (JSON)
+- `SessionId` - Session identifier (auto-managed by 3-tier system)
 - `ResponseID` - Qualtrics response ID
 
 **Analytics Variables:**
 - `RecommendedProduct` - Initially recommended product number
 - `AcceptedProduct` - Product user accepted
-- `WasRecommendationAccepted` - "true"/"false" 
-- `UserJourney` - User interaction flow
-- `RecommendationType` - Interaction type
+- `WasRecommendationAccepted` - "true"/"false"
+- `UserJourney` - User interaction flow (e.g., "direct-accept", "decline-only")
+- `RecommendationType` - Interaction type (e.g., "single", "gallery")
 - `RejectedRecommendation` - Rejected product number
 - `DeclinedProduct` - Declined product number
+
+**Timestamp Variables (optional but recommended):**
+- `WINDOW_OPEN_TS` - When the chatbot page loaded
+- `INIT_MSG_TS` - When initial message was sent
+- `FIRST_MSG_TS` - When user sent first message
+- `NEXT_CLICK_TS` - When user clicked Next button
 
 *Leave all values empty - JavaScript will populate them automatically.*
 
@@ -194,7 +204,9 @@ gcloud run deploy agentic-insurance-chatbot \
   --platform managed \
   --region europe-west1 \
   --set-env-vars OPENAI_API_KEY=your_key \
+  --set-env-vars WORKERS=4 \
   --set-env-vars ENABLE_CONVERSATION_STORAGE=false \
+  --set-env-vars ENABLE_FIRESTORE_STORAGE=true \
   --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID \
   --allow-unauthenticated
 ```
@@ -204,10 +216,15 @@ gcloud run deploy agentic-insurance-chatbot \
 # CRITICAL - Required for application to function
 OPENAI_API_KEY=your_openai_api_key
 
-# OPTIONAL - Enable conversation logging to Google Cloud Storage
-ENABLE_CONVERSATION_STORAGE=false
+# OPTIONAL - Conversation Storage
+ENABLE_CONVERSATION_STORAGE=false  # Enable GCS logging for analysis
+ENABLE_FIRESTORE_STORAGE=true      # Enable Firestore for session persistence (recommended)
 GOOGLE_CLOUD_PROJECT=your_project_id
-GCS_BUCKET_NAME=your_bucket_name  # defaults to "insurance-chatbot-logs"
+GCS_BUCKET_NAME=your_bucket_name   # defaults to "insurance-chatbot-logs"
+
+# OPTIONAL - Performance Configuration
+WORKERS=1   # Number of uvicorn workers (1 for debugging, 4+ for production)
+PORT=8080   # Application port (default: 8080)
 ```
 
 ---

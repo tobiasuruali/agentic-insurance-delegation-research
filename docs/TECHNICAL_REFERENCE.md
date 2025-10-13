@@ -34,6 +34,44 @@ result = request_handler.process_prompt_request(request_data, "/InsuranceRecomme
 
 ### 2. Request Handler Layer (`core/request_handler.py`)
 
+#### `get_conversation_history(conversation_key: str) -> List[Dict]`
+**Conversation Retrieval with Firestore**
+- **Input**: Conversation key (format: `"{chatbot_id}_{session_id}"`)
+- **Process**:
+  1. Checks if Firestore is enabled (`ENABLE_FIRESTORE_STORAGE`)
+  2. If enabled: Retrieves conversation from Firestore document
+  3. If disabled or error: Falls back to in-memory dictionary
+  4. Returns empty list if conversation doesn't exist
+- **Output**: List of message dictionaries with role, content, timestamp, agent_type
+- **Firestore Path**: `conversations/{conversation_key}/history`
+
+```python
+# Usage example
+conversation_key = f"{chatbot_id}_{session_id}"
+history = get_conversation_history(conversation_key)
+# Returns: [{"role": "user", "content": "...", "timestamp": "...", "agent_type": "collector"}, ...]
+```
+
+#### `save_conversation_history(conversation_key: str, conversation_history: List[Dict])`
+**Conversation Persistence with Firestore**
+- **Input**: Conversation key and full conversation history
+- **Process**:
+  1. Checks if Firestore is enabled
+  2. If enabled: Saves/updates conversation document in Firestore
+  3. If disabled or error: Falls back to in-memory storage
+  4. Includes timestamp and session_id metadata
+- **Output**: None (side effect: updates Firestore/memory)
+- **Error Handling**: Graceful fallback to in-memory storage on Firestore errors
+
+```python
+# Firestore document structure
+{
+  'history': conversation_history,
+  'updated_at': datetime.utcnow(),
+  'session_id': conversation_key
+}
+```
+
 #### `process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str)`
 **Main Orchestrator Function**
 - **Input**: Request data, endpoint path, GPT model name
@@ -283,10 +321,56 @@ P16,37,250,50000,High,High,Included,2,3,D250_P50_WB1
 ```
 
 ### Conversation History Management
-- **Storage**: In-memory dictionary `conversation_histories[session_key]`
+
+#### Storage Systems
+- **Primary (Production)**: Firestore database for persistent, distributed storage
+- **Fallback (Development)**: In-memory dictionary `conversation_histories[session_key]`
 - **Key Format**: `f"{chatbot_id}_{session_id}"`
-- **Structure**: List of message dictionaries with role, content, timestamp
-- **Handoff Data**: Customer data attached to assistant messages during handoff
+- **Toggle**: Controlled by `ENABLE_FIRESTORE_STORAGE` environment variable
+
+#### Message Structure
+Each message in conversation history contains:
+- **role**: "user", "assistant", or "system"
+- **content**: Message text content
+- **timestamp**: ISO 8601 timestamp string
+- **agent_type** (assistant messages only): "collector" or "recommendation"
+- **customer_data** (handoff only): Customer information attached to collector's final message
+
+```python
+# Example conversation history
+[
+  {
+    "role": "user",
+    "content": "I need insurance for my apartment",
+    "timestamp": "2025-01-13T10:00:00Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Great! Let me help you...",
+    "timestamp": "2025-01-13T10:00:05Z",
+    "agent_type": "collector"
+  },
+  {
+    "role": "assistant",
+    "content": "Perfect! I have everything I need...",
+    "timestamp": "2025-01-13T10:05:00Z",
+    "agent_type": "collector",
+    "customer_data": {
+      "customer_age": 30,
+      "deductible_preference": "low",
+      "belongings_value": 25000,
+      "water_backup_preference": "yes",
+      ...
+    }
+  },
+  {
+    "role": "assistant",
+    "content": "Based on your information, here's your recommendation: [LINK]",
+    "timestamp": "2025-01-13T10:05:08Z",
+    "agent_type": "recommendation"
+  }
+]
+```
 
 ### Response Formatting
 ```python
@@ -549,5 +633,175 @@ logEvent("recommended-product-3", {
 - **Cloud Run Connectivity**: Check CORS settings and network connectivity
 
 This enhanced logging system provides rich analytics capabilities while maintaining full compatibility with the existing agentic architecture and ensuring consistent data structure for reliable analysis.
+
+---
+
+## Frontend Session Management and Handoff Visualization
+
+### Session ID Management System
+
+#### Three-Tier Session ID Strategy
+The frontend implements a robust three-tier fallback system for session ID management in `ST01_UI_simple_decline_handoff.js` and other UI files:
+
+```javascript
+var sessionId = (function () {
+    // Tier 1: Check Qualtrics embedded data (highest priority)
+    var qualtricsSessionId = getQualtricsEmbeddedData('SessionId');
+    if (qualtricsSessionId) {
+        setStored(qualtricsSessionId);
+        return qualtricsSessionId;
+    }
+
+    // Tier 2: Check localStorage
+    var stored = getStored();
+    if (stored) {
+        return stored;
+    }
+
+    // Tier 3: Generate new session ID
+    var generated = 'session_' + (crypto.randomUUID() || fallback);
+    setStored(generated);
+    setQualtricsEmbeddedData('SessionId', generated);
+    return generated;
+})();
+```
+
+**Priority Order:**
+1. **Qualtrics Embedded Data** - Uses existing SessionId from Qualtrics survey flow
+2. **localStorage** - Uses previously stored session from browser storage
+3. **Generated UUID** - Creates new session using `crypto.randomUUID()` or timestamp-based fallback
+
+**Benefits:**
+- Ensures session continuity across page refreshes
+- Works in Qualtrics environment with proper embedded data integration
+- Falls back gracefully when Qualtrics is unavailable (local testing)
+- Synchronized between localStorage and Qualtrics for consistency
+
+### Conversation History Loading
+
+#### `loadConversationHistory()`
+**Purpose**: Loads and renders previous conversation from backend on page load
+
+**Process**:
+1. Constructs history endpoint: `{chatbotURL}/conversation/{sessionId}`
+2. Fetches conversation history from backend
+3. Populates `chatHistoryJson` and `chatHistory` variables
+4. Renders each message with appropriate styling based on `agent_type`
+5. Detects handoff points and inserts static dividers
+6. If empty history: sends initialization request for welcome message
+
+**Handoff Detection Logic**:
+```javascript
+// Check if current message has customer_data AND next message is recommendation
+if (msg.customer_data && i + 1 < history.length) {
+    var nextMsg = history[i + 1];
+    var nextAgentType = nextMsg.agent_type ||
+        (nextMsg.content.indexOf('showRecommendation(') !== -1 ? 'recommendation' : 'collector');
+
+    if (nextAgentType === 'recommendation') {
+        // Insert static handoff divider
+        var handoffDivider = createStaticHandoffDivider();
+        chatWindow.appendChild(handoffDivider);
+    }
+}
+```
+
+**Key Features:**
+- ES5 compatible (uses `indexOf()` instead of `.includes()`)
+- Explicit `agent_type` field with backward-compatible fallback
+- Comprehensive debug logging for troubleshooting
+
+### Handoff Divider Visualization
+
+#### `createStaticHandoffDivider()`
+**Purpose**: Creates a static, completed handoff divider for conversation history
+
+**Returns**: DOM element representing completed handoff sequence
+
+**Visual Structure**:
+- Title: "Handoff Complete"
+- Subtitle: "Routed to Insurance Specialist"
+- Three completed steps with checkmarks:
+  1. "Handing over to Insurance Specialist" ✓
+  2. "Thinking" ✓
+  3. "Getting top recommendation" ✓
+
+```javascript
+function createStaticHandoffDivider() {
+    var handoverMessage = document.createElement('div');
+    handoverMessage.className = 'message handover-message handover-complete';
+
+    // ... creates step elements with completed state ...
+
+    return handoverMessage;
+}
+```
+
+#### `showHandoffSequence(chatWindow)`
+**Purpose**: Shows animated handoff sequence during live agent transitions
+
+**Process**:
+1. Creates handoff message container with steps
+2. Sequentially animates each step (200ms → 1500ms delays)
+3. Shows active state with spinning indicator
+4. Marks previous steps as completed with checkmarks
+5. Total duration: ~4 seconds for full sequence
+
+**Animation Stages**:
+```javascript
+// Step 1: Activate immediately (200ms delay)
+Step 1: ACTIVE (spinning) → "Handing over to Insurance Specialist"
+
+// Step 2: After 1.5s delay
+Step 1: COMPLETED (checkmark) ✓
+Step 2: ACTIVE (spinning) → "Thinking"
+
+// Step 3: After 1.5s delay
+Step 2: COMPLETED (checkmark) ✓
+Step 3: ACTIVE (spinning) → "Getting top recommendation"
+
+// Final: After 850ms
+Step 3: COMPLETED (checkmark) ✓
+All steps completed
+```
+
+**CSS Classes Used**:
+- `.handover-step` - Base step styling
+- `.handover-step.active` - Active step with spinner
+- `.handover-step.completed` - Completed step with checkmark
+- `.handover-complete` - Final state styling
+
+### Message Rendering with Agent Types
+
+#### `createMessageElement(role, content, agentType)`
+**Purpose**: Creates styled message element with agent-specific colors and labels
+
+**Parameters**:
+- `role`: "user" or "assistant"
+- `content`: Message text (may contain HTML links)
+- `agentType`: "collector" or "recommendation" (optional, defaults to "collector")
+
+**Visual Styling**:
+```javascript
+// Information Agent (collector)
+Background: #F0F1F9 (light gray)
+Border: rgba(60, 58, 189, 0.2) (purple)
+Label: "Information Agent"
+
+// Recommendation Agent
+Background: #E8F4F8 (light blue)
+Border: rgba(41, 118, 221, 0.3) (blue)
+Label: "Recommendation Agent"
+```
+
+**ES5 Compatibility**:
+- Uses `var` instead of `const/let`
+- Uses `indexOf()` instead of `.includes()`
+- Uses `document.createElement()` instead of template literals
+- Manual DOM manipulation instead of `innerHTML` (Qualtrics safety)
+
+This comprehensive session management and visualization system ensures reliable conversation continuity and clear agent transitions across all environments (Qualtrics, local development, production).
+
+---
 
 This technical reference provides a complete map of the system's internal operations, making it easy to understand where each process occurs and how data flows through the entire agentic architecture.
