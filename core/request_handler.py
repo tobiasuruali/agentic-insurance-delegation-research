@@ -305,10 +305,16 @@ async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: s
     session_id = request_data.get('session_id')
     chatbot_id = endpoint.lstrip("/")
     qualtrics_response_id = request_data.get('qualtrics_response_id')
-    
-    if not user_input or not session_id or not qualtrics_response_id:
+
+    # Validate required parameters (allow empty list for user_input in initialization case)
+    if user_input is None or not session_id or not qualtrics_response_id:
         logger.warning("Missing required parameters in request")
         return {'error': 'Missing required parameters', 'status_code': 400}
+
+    # Validate user_input is a list
+    if not isinstance(user_input, list):
+        logger.warning("user_input must be a list")
+        return {'error': 'Invalid user_input format', 'status_code': 400}
     
     logger.info(f"Processing chat for chatbot: {chatbot_id}, session: {session_id}")
 
@@ -316,13 +322,20 @@ async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: s
     conversation_key = f"{chatbot_id}_{session_id}"
     conversation_history = get_conversation_history(conversation_key)
 
-    # Only add NEW messages from the request (skip ones we already have)
-    # This prevents duplication when frontend sends full history after refresh
-    existing_count = len(conversation_history)
-    new_messages = user_input[existing_count:]
+    # Check if this is an initialization request (empty history + empty input)
+    is_initialization = len(conversation_history) == 0 and len(user_input) == 0
 
-    # Add only new messages to conversation history
-    conversation_history.extend(new_messages)
+    if is_initialization:
+        logger.info(f"Initialization request detected for session: {session_id}")
+        # Keep conversation_history empty - info collector will generate welcome message
+    else:
+        # Only add NEW messages from the request (skip ones we already have)
+        # This prevents duplication when frontend sends full history after refresh
+        existing_count = len(conversation_history)
+        new_messages = user_input[existing_count:]
+
+        # Add only new messages to conversation history
+        conversation_history.extend(new_messages)
     
     try:
         # Check if we need to process with recommendation agent

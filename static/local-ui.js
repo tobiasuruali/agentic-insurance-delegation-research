@@ -78,7 +78,54 @@ const productImageData = [
 const chatHeaderFontColor = "#FFFFFF";          // White text
 
 // Internal variables
-const sessionId = 'session_' + "tobias-test-01";
+const SESSION_STORAGE_KEY = 'localUI.sessionId';
+
+function getPersistentSessionId() {
+    const params = new URLSearchParams(window.location.search);
+    const override = (params.get('sessionId') || params.get('session_id') || '').trim();
+
+    if (override) {
+        persistSessionId(override);
+        return override;
+    }
+
+    const stored = readStoredSessionId();
+    if (stored) {
+        return stored;
+    }
+
+    const generated = `session_${generateSessionSuffix()}`;
+    persistSessionId(generated);
+    return generated;
+}
+
+function readStoredSessionId() {
+    try {
+        return (window.localStorage.getItem(SESSION_STORAGE_KEY) || '').trim();
+    } catch (error) {
+        console.warn('Local storage unavailable, session will reset on reload.', error);
+        return '';
+    }
+}
+
+function persistSessionId(value) {
+    try {
+        window.localStorage.setItem(SESSION_STORAGE_KEY, value);
+    } catch (error) {
+        console.warn('Local storage unavailable, session persistence disabled.', error);
+    }
+}
+
+function generateSessionSuffix() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+
+    const random = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    return random.slice(0, 32);
+}
+
+const sessionId = getPersistentSessionId();
 let chatHistory = "";
 let chatHistoryJson = [];
 let handoverStylesInjected = false;
@@ -931,11 +978,6 @@ async function loadConversationHistory() {
 
         console.log(`Retrieved ${history.length} messages from backend`);
 
-        if (history.length === 0) {
-            console.log("No conversation history to load");
-            return;
-        }
-
         const chatWindow = document.getElementById('chat-window');
         if (!chatWindow) {
             console.error("Chat window not found");
@@ -987,9 +1029,81 @@ async function loadConversationHistory() {
         chatWindow.scrollTop = chatWindow.scrollHeight;
         console.log(`Successfully loaded and rendered ${history.length} messages`);
 
+        // Auto-initialize conversation if history is empty
+        if (history.length === 0) {
+            console.log("Empty conversation detected, sending initialization request");
+            await sendInitializationMessage();
+        }
+
     } catch (error) {
         console.error("Error loading conversation history:", error);
         // Fail silently - start fresh conversation
+    }
+}
+
+async function sendInitializationMessage() {
+    try {
+        console.log("Initializing conversation with welcome message");
+
+        const chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error("Chat window not found");
+            return;
+        }
+
+        // Show typing indicator
+        const typingIndicator = createTypingIndicator();
+        chatWindow.appendChild(typingIndicator);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        const requestData = {
+            message: [],  // Empty array signals initialization
+            session_id: sessionId,
+            qualtrics_response_id: "LOCAL_DEBUG"
+        };
+
+        const response = await fetch(chatbotURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        // Remove typing indicator
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
+
+        if (response.ok) {
+            const data = await response.json();
+            const responses = Array.isArray(data.response) ? data.response : [data.response];
+
+            for (const messageContent of responses) {
+                const botTimestamp = new Date().toISOString();
+
+                // Add to history
+                chatHistory += "Agent: " + messageContent + "\n";
+                chatHistoryJson.push({
+                    role: "assistant",
+                    content: messageContent,
+                    timestamp: botTimestamp,
+                    agent_type: "collector"
+                });
+
+                // Display in UI
+                const botMessageDiv = createMessageElement('assistant', messageContent, 'collector');
+                chatWindow.appendChild(botMessageDiv);
+            }
+
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            console.log("Initialization complete");
+        } else {
+            console.error("Failed to initialize conversation:", response.status);
+        }
+    } catch (error) {
+        console.error("Error initializing conversation:", error);
+        // Fail silently - user can still start conversation manually
     }
 }
 
