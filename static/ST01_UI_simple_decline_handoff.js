@@ -141,6 +141,14 @@ var sessionId = (function () {
         return sessionComponent + '__PROLIFIC__' + prolificComponent;
     }
 
+    function generateUniqueSuffix() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+
+        return (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32);
+    }
+
     var qualtricsSessionId = getQualtricsEmbeddedData('SessionId');
     var qualtricsProlificPid = getQualtricsEmbeddedData('PROLIFIC_PID');
     var storedValue = getStored();
@@ -158,21 +166,25 @@ var sessionId = (function () {
     }
 
     if (!sessionComponent) {
-        var uniqueSuffix = ((typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-            ? crypto.randomUUID()
-            : (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32));
-        var generated = 'missing_sessionID_' + uniqueSuffix;
-        sessionComponent = sanitizeComponent(generated, 'missing_sessionID_' + uniqueSuffix);
+        var sessionPlaceholder = 'missing_sessionID_' + generateUniqueSuffix();
+        sessionComponent = sanitizeComponent(sessionPlaceholder, sessionPlaceholder);
     }
 
     if (!prolificComponent) {
-        prolificComponent = 'missing_prolific_pid';
+        var prolificPlaceholder = 'missing_PROLIFIC_PID_' + generateUniqueSuffix();
+        prolificComponent = sanitizeComponent(prolificPlaceholder, prolificPlaceholder);
     }
 
     var combined = buildSessionName(sessionComponent, prolificComponent);
 
     setStored(combined);
     setQualtricsEmbeddedData('SessionId', combined);
+
+    console.log('Persisted ST01 session identifier', {
+        sessionComponent: sessionComponent,
+        prolificComponent: prolificComponent,
+        combined: combined
+    });
 
     return combined;
 })();
