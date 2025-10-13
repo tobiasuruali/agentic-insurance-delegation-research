@@ -132,6 +132,27 @@ async def insurance_recommendation(request: ChatRequest):
             detail=result.get('error', 'Unknown error')
         )
 
+# Get conversation history endpoint
+@app.get("/conversation/{session_id}")
+async def get_conversation(session_id: str):
+    """Retrieve conversation history for a session"""
+    try:
+        chatbot_id = "InsuranceRecommendation"
+        conversation_key = f"{chatbot_id}_{session_id}"
+
+        conversation_history = request_handler.get_conversation_history(conversation_key)
+
+        logger.info(f"Retrieved {len(conversation_history)} messages for session: {session_id}")
+
+        return {
+            "session_id": session_id,
+            "history": conversation_history,
+            "count": len(conversation_history)
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving conversation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve conversation")
+
 # Local UI endpoint for development
 @app.get("/ui", response_class=HTMLResponse)
 async def local_ui():

@@ -78,7 +78,7 @@ const productImageData = [
 const chatHeaderFontColor = "#FFFFFF";          // White text
 
 // Internal variables
-const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+const sessionId = 'session_' + "tobias-test-01";
 let chatHistory = "";
 let chatHistoryJson = [];
 let handoverStylesInjected = false;
@@ -915,6 +915,84 @@ function addChatHeader() {
     chatWindow.parentNode.insertBefore(chatHeader, chatWindow);
 }
 
+async function loadConversationHistory() {
+    try {
+        console.log(`Loading conversation history for session: ${sessionId}`);
+
+        const response = await fetch(`/conversation/${sessionId}`);
+
+        if (!response.ok) {
+            console.log("No previous conversation found or error loading history");
+            return;
+        }
+
+        const data = await response.json();
+        const history = data.history || [];
+
+        console.log(`Retrieved ${history.length} messages from backend`);
+
+        if (history.length === 0) {
+            console.log("No conversation history to load");
+            return;
+        }
+
+        const chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error("Chat window not found");
+            return;
+        }
+
+        // Populate chatHistoryJson with loaded history
+        chatHistoryJson = [...history];
+
+        // Build chatHistory string
+        for (const msg of history) {
+            if (msg.role === 'user') {
+                chatHistory += "User: " + msg.content + "\n";
+            } else if (msg.role === 'assistant') {
+                chatHistory += "Agent: " + msg.content + "\n";
+            }
+        }
+
+        // Render messages in UI
+        for (let i = 0; i < history.length; i++) {
+            const msg = history[i];
+
+            if (msg.role === 'user') {
+                const userMessageDiv = createMessageElement('user', msg.content);
+                chatWindow.appendChild(userMessageDiv);
+            } else if (msg.role === 'assistant') {
+                // Use explicit agent_type from backend, with fallback for backward compatibility
+                const agentType = msg.agent_type ||
+                    (msg.content.includes('showRecommendation(') ? 'recommendation' : 'collector');
+
+                const botMessageDiv = createMessageElement('assistant', msg.content, agentType);
+                chatWindow.appendChild(botMessageDiv);
+
+                // Check if handoff occurred: current message has customer_data AND next message is recommendation
+                if (msg.customer_data && i + 1 < history.length) {
+                    const nextMsg = history[i + 1];
+                    const nextAgentType = nextMsg.agent_type ||
+                        (nextMsg.content.includes('showRecommendation(') ? 'recommendation' : 'collector');
+
+                    if (nextAgentType === 'recommendation') {
+                        // Insert static handoff divider
+                        const handoffDivider = createStaticHandoffDivider();
+                        chatWindow.appendChild(handoffDivider);
+                    }
+                }
+            }
+        }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        console.log(`Successfully loaded and rendered ${history.length} messages`);
+
+    } catch (error) {
+        console.error("Error loading conversation history:", error);
+        // Fail silently - start fresh conversation
+    }
+}
+
 async function sendMessage() {
     if (isSending) {
         return;
@@ -1155,6 +1233,64 @@ async function showHandoffSequence(chatWindowOverride) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function createStaticHandoffDivider() {
+    const handoverMessage = document.createElement('div');
+    handoverMessage.className = 'message handover-message handover-complete';
+
+    const label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = 'Agent Handoff';
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+
+    const sequenceContainer = document.createElement('div');
+    sequenceContainer.className = 'handover-sequence handover-finished';
+
+    const title = document.createElement('div');
+    title.className = 'handover-title';
+    title.textContent = 'Handoff Complete';
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'handover-subtitle';
+    subtitle.textContent = "Routed to Insurance Specialist";
+
+    const stepsWrapper = document.createElement('div');
+    stepsWrapper.className = 'handover-steps';
+
+    const steps = [
+        { label: 'Handing over to Insurance Specialist' },
+        { label: 'Thinking' },
+        { label: 'Getting top recommendation' }
+    ];
+
+    steps.forEach(step => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'handover-step completed';
+
+        const marker = document.createElement('span');
+        marker.className = 'handover-step-marker';
+        marker.setAttribute('aria-hidden', 'true');
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'handover-step-label';
+        labelSpan.textContent = step.label;
+
+        stepElement.appendChild(marker);
+        stepElement.appendChild(labelSpan);
+        stepsWrapper.appendChild(stepElement);
+    });
+
+    sequenceContainer.appendChild(title);
+    sequenceContainer.appendChild(subtitle);
+    sequenceContainer.appendChild(stepsWrapper);
+    body.appendChild(sequenceContainer);
+    handoverMessage.appendChild(label);
+    handoverMessage.appendChild(body);
+
+    return handoverMessage;
+}
+
 function createBotMessage(content, agentType = 'collector') {
     return createMessageElement('assistant', content, agentType);
 }
@@ -1256,6 +1392,13 @@ function showAllProducts(message) {
 try {
     setupLayout();
     addChatHeader();
+
+    // Load existing conversation history from backend
+    loadConversationHistory().then(() => {
+        console.log("Conversation history load attempt completed");
+    }).catch(err => {
+        console.error("Failed to load conversation history:", err);
+    });
 
     const sendButton = document.getElementById('send-button');
     if (sendButton) {

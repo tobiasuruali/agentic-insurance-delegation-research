@@ -311,13 +311,18 @@ async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: s
         return {'error': 'Missing required parameters', 'status_code': 400}
     
     logger.info(f"Processing chat for chatbot: {chatbot_id}, session: {session_id}")
-    
+
     # Get or create conversation history
     conversation_key = f"{chatbot_id}_{session_id}"
     conversation_history = get_conversation_history(conversation_key)
-    
-    # Add user input to conversation history
-    conversation_history.extend(user_input)
+
+    # Only add NEW messages from the request (skip ones we already have)
+    # This prevents duplication when frontend sends full history after refresh
+    existing_count = len(conversation_history)
+    new_messages = user_input[existing_count:]
+
+    # Add only new messages to conversation history
+    conversation_history.extend(new_messages)
     
     try:
         # Check if we need to process with recommendation agent
@@ -351,14 +356,15 @@ async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: s
         # Handle both single response and multiple responses
         if isinstance(response_content, list):
             # For multiple responses, add each as a separate message
-            for msg_content in response_content:
+            for i, msg_content in enumerate(response_content):
                 assistant_msg = {
                     "role": "assistant",
                     "content": msg_content,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "agent_type": "recommendation" if (result.get('handoff') and i == 1) else "collector"
                 }
                 # Add customer data only to the first message if handoff occurred
-                if result.get('handoff') and result.get('customer_data') and msg_content == response_content[0]:
+                if result.get('handoff') and result.get('customer_data') and i == 0:
                     assistant_msg['customer_data'] = result['customer_data']
                 conversation_history.append(assistant_msg)
         else:
@@ -366,7 +372,8 @@ async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: s
             assistant_msg = {
                 "role": "assistant",
                 "content": response_content,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
+                "agent_type": "collector"  # Default to collector for single messages
             }
             # Add customer data if handoff occurred
             if result.get('handoff') and result.get('customer_data'):
