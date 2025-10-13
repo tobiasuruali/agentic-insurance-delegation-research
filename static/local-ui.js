@@ -77,55 +77,36 @@ const productImageData = [
 // Colors - Professional Palette
 const chatHeaderFontColor = "#FFFFFF";          // White text
 
-// Internal variables
+// Session ID management (compact version)
 const SESSION_STORAGE_KEY = 'localUI.sessionId';
 
-function getPersistentSessionId() {
+const sessionId = (() => {
+    // Helper: Read from localStorage with silent fallback
+    const getStored = () => {
+        try { return localStorage.getItem(SESSION_STORAGE_KEY)?.trim() || ''; }
+        catch { return ''; }
+    };
+
+    // Helper: Save to localStorage with silent fallback
+    const setStored = (val) => {
+        try { localStorage.setItem(SESSION_STORAGE_KEY, val); }
+        catch { console.warn('localStorage unavailable, session will not persist.'); }
+    };
+
+    // Check URL params first (supports both sessionId and session_id)
     const params = new URLSearchParams(window.location.search);
     const override = (params.get('sessionId') || params.get('session_id') || '').trim();
+    if (override) { setStored(override); return override; }
 
-    if (override) {
-        persistSessionId(override);
-        return override;
-    }
+    // Check localStorage second
+    const stored = getStored();
+    if (stored) return stored;
 
-    const stored = readStoredSessionId();
-    if (stored) {
-        return stored;
-    }
-
-    const generated = `session_${generateSessionSuffix()}`;
-    persistSessionId(generated);
+    // Generate new session third
+    const generated = `session_${crypto?.randomUUID?.() || (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32)}`;
+    setStored(generated);
     return generated;
-}
-
-function readStoredSessionId() {
-    try {
-        return (window.localStorage.getItem(SESSION_STORAGE_KEY) || '').trim();
-    } catch (error) {
-        console.warn('Local storage unavailable, session will reset on reload.', error);
-        return '';
-    }
-}
-
-function persistSessionId(value) {
-    try {
-        window.localStorage.setItem(SESSION_STORAGE_KEY, value);
-    } catch (error) {
-        console.warn('Local storage unavailable, session persistence disabled.', error);
-    }
-}
-
-function generateSessionSuffix() {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return crypto.randomUUID();
-    }
-
-    const random = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    return random.slice(0, 32);
-}
-
-const sessionId = getPersistentSessionId();
+})();
 let chatHistory = "";
 let chatHistoryJson = [];
 let handoverStylesInjected = false;
