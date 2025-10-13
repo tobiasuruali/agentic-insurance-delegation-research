@@ -192,7 +192,7 @@ docker push GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chat
 gcloud run deploy agentic-insurance-chatbot \
   --image GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest \
   --platform managed \
-  --region us-central1 \
+  --region europe-west1 \
   --set-env-vars OPENAI_API_KEY=your_key \
   --set-env-vars ENABLE_CONVERSATION_STORAGE=false \
   --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID \

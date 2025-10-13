@@ -33,5 +33,7 @@ EXPOSE 8080
 # HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 #     CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
-# Run the application
-CMD ["sh","-c","uvicorn core.application:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# Run the application with multiple workers for better concurrency
+# Workers = (2 x CPU cores) + 1 is a good starting point
+# Cloud Run provides 1-8 CPUs depending on configuration
+CMD ["sh","-c","uvicorn core.application:app --host 0.0.0.0 --port ${PORT:-8080} --workers 4 --timeout-keep-alive 65"]

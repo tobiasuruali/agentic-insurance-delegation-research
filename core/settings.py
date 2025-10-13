@@ -1,13 +1,14 @@
 import os
-from openai import OpenAI
+from openai import AsyncOpenAI
 from google.cloud import storage
+from google.cloud import firestore
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# OpenAI client
-openai_client = OpenAI(
+# OpenAI async client for better concurrency
+openai_client = AsyncOpenAI(
     api_key=os.getenv('OPENAI_API_KEY')
 )
 
@@ -19,3 +20,16 @@ if os.getenv('ENABLE_CONVERSATION_STORAGE', 'false').lower() == 'true':
     except Exception as e:
         print(f"Warning: Could not initialize GCS client: {e}")
         gcs_client = None
+
+# Firestore client for conversation storage
+firestore_client = None
+try:
+    firestore_client = firestore.Client(
+        project=os.getenv('GOOGLE_CLOUD_PROJECT'),
+        database=os.getenv('FIRESTORE_DATABASE', '(default)')
+    )
+    print(f"Firestore client initialized successfully (database: {os.getenv('FIRESTORE_DATABASE', '(default)')})")
+except Exception as e:
+    print(f"Warning: Could not initialize Firestore client: {e}")
+    print("Falling back to in-memory conversation storage")
+    firestore_client = None

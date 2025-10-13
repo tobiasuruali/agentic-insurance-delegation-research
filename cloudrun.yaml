@@ -1,0 +1,80 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: agentic-insurance-chatbot
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Maximum concurrent requests per instance
+        # Each instance can handle 80-100 concurrent requests with async
+        autoscaling.knative.dev/maxScale: '15'  # Max 15 instances = 1200+ concurrent requests
+        autoscaling.knative.dev/minScale: '1'   # Keep 1 instance warm
+
+        # CPU allocation - "always" means CPU is always allocated (better for consistent performance)
+        run.googleapis.com/cpu-throttling: 'false'
+
+        # Request timeout (5 minutes for long OpenAI calls)
+        run.googleapis.com/request-timeout: '300'
+
+        # Startup probe to prevent premature traffic
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      # Concurrency: number of concurrent requests per container instance
+      # With async code, 80-100 is safe. Conservative: 80, Aggressive: 100
+      containerConcurrency: 80
+
+      # Request timeout at container level
+      timeoutSeconds: 300
+
+      containers:
+      - name: chatbot
+        image: REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/agentic-insurance-chatbot:latest
+
+        ports:
+        - name: http1
+          containerPort: 8080
+
+        # Resource limits
+        resources:
+          limits:
+            cpu: '2000m'      # 2 CPU cores
+            memory: '4Gi'     # 4GB RAM (handles conversation history + OpenAI responses)
+          requests:
+            cpu: '1000m'      # Request 1 CPU minimum
+            memory: '2Gi'     # Request 2GB RAM minimum
+
+        # Environment variables
+        env:
+        - name: PORT
+          value: '8080'
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-api-key
+              key: api-key
+        - name: GOOGLE_CLOUD_PROJECT
+          value: 'YOUR_PROJECT_ID'
+        - name: ENABLE_CONVERSATION_STORAGE
+          value: 'false'  # Set to 'true' if you want GCS logging
+
+        # Health check
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 10

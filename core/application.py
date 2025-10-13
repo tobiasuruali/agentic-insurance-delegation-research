@@ -110,9 +110,9 @@ async def insurance_recommendation(request: ChatRequest):
     }
     
     gpt_model = "gpt-4.1"
-    
-    # Process the request
-    result = request_handler.process_prompt_request(request_data, "/InsuranceRecommendation", gpt_model)
+
+    # Process the request (now async for better concurrency)
+    result = await request_handler.process_prompt_request(request_data, "/InsuranceRecommendation", gpt_model)
     
     # Handle the response
     if result.get('status_code') == 200:
