@@ -88,7 +88,43 @@ sendButtonColor             = "#3c3abd";    // Accent button color
 sendButtonFontColor         = "#FFFFFF";    // White text
 
 // Internal variables
-var sessionId = 'session_' + crypto.randomUUID();
+// Session ID management (Qualtrics-first with localStorage fallback)
+var sessionId = (function () {
+    function getStored() {
+        try {
+            var item = localStorage.getItem('ST01_sessionId');
+            return (item && item.trim()) || '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function setStored(val) {
+        try {
+            localStorage.setItem('ST01_sessionId', val);
+        } catch (e) {
+            console.warn('localStorage unavailable, session will not persist.');
+        }
+    }
+
+    var qualtricsSessionId = getQualtricsEmbeddedData('SessionId');
+    if (qualtricsSessionId) {
+        setStored(qualtricsSessionId);
+        return qualtricsSessionId;
+    }
+
+    var stored = getStored();
+    if (stored) {
+        return stored;
+    }
+
+    var generated = 'session_' + ((typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32));
+    setStored(generated);
+    setQualtricsEmbeddedData('SessionId', generated);
+    return generated;
+})();
 var chatHistory = "";
 var chatHistoryJson = [];
 
@@ -160,7 +196,9 @@ document.body.style.backgroundColor = documentBackgroundColor
 
 // Helper function for delays
 function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
+    });
 }
 
 // HTML escaping for security
@@ -967,6 +1005,154 @@ function createTypingIndicator() {
     return indicator;
 }
 
+async function loadConversationHistory() {
+    try {
+        console.log('Loading conversation history for session: ' + sessionId);
+
+        var historyEndpoint = chatbotURL.replace('/InsuranceRecommendation', '') + '/conversation/' + sessionId;
+        var response = await fetch(historyEndpoint);
+
+        if (!response.ok) {
+            console.log('No previous conversation found or error loading history');
+            return;
+        }
+
+        var data = await response.json();
+        var history = data.history || [];
+
+        console.log('Retrieved ' + history.length + ' messages from backend');
+
+        var chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error('Chat window not found');
+            return;
+        }
+
+        chatHistoryJson = history.slice();
+
+        for (var h = 0; h < history.length; h++) {
+            var msg = history[h];
+            if (msg.role === 'user') {
+                chatHistory += 'User: ' + msg.content + '\n';
+            } else if (msg.role === 'assistant') {
+                chatHistory += 'Agent: ' + msg.content + '\n';
+            }
+        }
+
+        // Render messages in UI (matching local-ui.js proven logic)
+        for (var i = 0; i < history.length; i++) {
+            var msg = history[i];
+
+            if (msg.role === 'user') {
+                var userMessageDiv = createMessageElement('user', msg.content);
+                chatWindow.appendChild(userMessageDiv);
+            } else if (msg.role === 'assistant') {
+                // Use explicit agent_type from backend, with fallback for backward compatibility
+                var agentType = msg.agent_type ||
+                    (msg.content.indexOf('showRecommendation(') !== -1 ? 'recommendation' : 'collector');
+
+                console.log('Rendering assistant message ' + i + ': agent_type=' + agentType + ', has_customer_data=' + (!!msg.customer_data));
+
+                var botMessageDiv = createMessageElement('assistant', msg.content, agentType);
+                chatWindow.appendChild(botMessageDiv);
+
+                // Check if handoff occurred: current message has customer_data AND next message is recommendation
+                if (msg.customer_data && i + 1 < history.length) {
+                    var nextMsg = history[i + 1];
+                    var nextAgentType = nextMsg.agent_type ||
+                        (nextMsg.content.indexOf('showRecommendation(') !== -1 ? 'recommendation' : 'collector');
+
+                    console.log('Handoff check: next message at ' + (i + 1) + ' has agent_type=' + nextAgentType);
+
+                    if (nextAgentType === 'recommendation') {
+                        // Insert static handoff divider
+                        console.log('Inserting static handoff divider after message ' + i);
+                        var handoffDivider = createStaticHandoffDivider();
+                        chatWindow.appendChild(handoffDivider);
+                    }
+                }
+            }
+        }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        console.log('Successfully loaded and rendered ' + history.length + ' messages');
+
+        if (history.length === 0) {
+            console.log('Empty conversation detected, sending initialization request');
+            await sendInitializationMessage();
+        }
+
+    } catch (error) {
+        console.error('Error loading conversation history:', error);
+    }
+}
+
+async function sendInitializationMessage() {
+    try {
+        console.log('Initializing conversation with welcome message');
+        stampQualtricsTimestampOnce('INIT_MSG_TS');
+
+        var chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error('Chat window not found');
+            return;
+        }
+
+        var typingIndicator = createTypingIndicator();
+        chatWindow.appendChild(typingIndicator);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        var requestData = {
+            message: [],
+            session_id: sessionId,
+            qualtrics_response_id: "${e://Field/ResponseID}"
+        };
+
+        var response = await fetch(chatbotURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
+
+        if (response.ok) {
+            var data = await response.json();
+            var responses = Array.isArray(data.response) ? data.response : [data.response];
+
+            for (var r = 0; r < responses.length; r++) {
+                var messageContent = responses[r];
+                var botTimestamp = new Date().toISOString();
+
+                chatHistory += 'Agent: ' + messageContent + '\n';
+                chatHistoryJson.push({
+                    role: 'assistant',
+                    content: messageContent,
+                    timestamp: botTimestamp,
+                    agent_type: 'collector'
+                });
+
+                var botMessageDiv = createMessageElement('assistant', messageContent, 'collector');
+                chatWindow.appendChild(botMessageDiv);
+            }
+
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            console.log('Initialization complete');
+
+            setQualtricsEmbeddedData('ChatHistory', chatHistory);
+            setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+        } else {
+            console.error('Failed to initialize conversation:', response.status);
+        }
+    } catch (error) {
+        console.error('Error initializing conversation:', error);
+    }
+}
+
 async function sendMessage() {
     console.log("Send button clicked");
     var userInput = document.getElementById('user-input').value;
@@ -1205,6 +1391,65 @@ async function showHandoffSequence(chatWindowOverride) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+// Static handoff divider (for loading conversation history)
+function createStaticHandoffDivider() {
+    var handoverMessage = document.createElement('div');
+    handoverMessage.className = 'message handover-message handover-complete';
+
+    var label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = 'Agent Handoff';
+
+    var body = document.createElement('div');
+    body.className = 'message-body';
+
+    var sequenceContainer = document.createElement('div');
+    sequenceContainer.className = 'handover-sequence handover-finished';
+
+    var title = document.createElement('div');
+    title.className = 'handover-title';
+    title.textContent = 'Handoff Complete';
+
+    var subtitle = document.createElement('div');
+    subtitle.className = 'handover-subtitle';
+    subtitle.textContent = "Routed to Insurance Specialist";
+
+    var stepsWrapper = document.createElement('div');
+    stepsWrapper.className = 'handover-steps';
+
+    var steps = [
+        { label: 'Handing over to Insurance Specialist' },
+        { label: 'Thinking' },
+        { label: 'Getting top recommendation' }
+    ];
+
+    for (var s = 0; s < steps.length; s++) {
+        var stepElement = document.createElement('div');
+        stepElement.className = 'handover-step completed';
+
+        var marker = document.createElement('span');
+        marker.className = 'handover-step-marker';
+        marker.setAttribute('aria-hidden', 'true');
+
+        var labelSpan = document.createElement('span');
+        labelSpan.className = 'handover-step-label';
+        labelSpan.textContent = steps[s].label;
+
+        stepElement.appendChild(marker);
+        stepElement.appendChild(labelSpan);
+        stepsWrapper.appendChild(stepElement);
+    }
+
+    sequenceContainer.appendChild(title);
+    sequenceContainer.appendChild(subtitle);
+    sequenceContainer.appendChild(stepsWrapper);
+    body.appendChild(sequenceContainer);
+    handoverMessage.appendChild(label);
+    handoverMessage.appendChild(body);
+
+    return handoverMessage;
+}
+
 function addSystemMessage(message) {
     var chatWindow = document.getElementById('chat-window');
     var systemMessageDiv = document.createElement('div');
@@ -1294,16 +1539,25 @@ function logEvent(eventType, details) {
 }
 
 try {
-    // Inject modern CSS styles first
-    injectGlobalStyles();
-
-    // Add CSS classes to HTML elements
-    setupLayout();
-
-    addChatHeader();
-
     // Hide NextButton during chat interaction
     Qualtrics.SurveyEngine.addOnload(function () {
+        // Inject modern CSS styles first (inside Qualtrics callback)
+        injectGlobalStyles();
+
+        // Add CSS classes to HTML elements (inside Qualtrics callback)
+        setupLayout();
+
+        // Add chat header (inside Qualtrics callback)
+        addChatHeader();
+
+        // Load conversation history when page loads (inside Qualtrics callback - DOM is now ready)
+        loadConversationHistory().then(function () {
+            console.log("Conversation history load attempt completed");
+        }).catch(function (err) {
+            console.error("Failed to load conversation history:", err);
+        });
+
+        // Hide next button
         this.hideNextButton();      // built‑in helper
         stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
 
@@ -1322,25 +1576,28 @@ try {
                 };
             }
         }
-        //  … any other per‑page setup
-      });
 
-    // Add event listeners (styling now handled by CSS classes)
-    var sendButton = document.getElementById('send-button');
-    sendButton.addEventListener('click', sendMessage);
+        // Add event listeners (styling now handled by CSS classes) - inside Qualtrics callback
+        var sendButton = document.getElementById('send-button');
+        if (sendButton) {
+            sendButton.addEventListener('click', sendMessage);
+        }
 
-    // Handle Enter key to send message and prevent default behavior
-    document.getElementById('user-input').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();  // Prevent default behavior like form submission
-            if (document.getElementById('user-input').value.trim() !== "") {  // Ensure input is not empty
-                sendMessage();
-            }
+        // Handle Enter key to send message and prevent default behavior - inside Qualtrics callback
+        var userInput = document.getElementById('user-input');
+        if (userInput) {
+            userInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();  // Prevent default behavior like form submission
+                    if (document.getElementById('user-input').value.trim() !== "") {  // Ensure input is not empty
+                        sendMessage();
+                    }
+                }
+            });
         }
     });
 } catch (error) {
-    showErrorMessage("Error setting up event listeners. Error", error);
-    console.error("Error setting up event listeners: ", error);
+    console.error("Error in Qualtrics initialization: ", error);
 }
 
 
