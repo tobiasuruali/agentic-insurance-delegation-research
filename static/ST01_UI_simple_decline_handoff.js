@@ -87,8 +87,18 @@ botMessageBackgroundColor   = "#F8F9FA";    // Light gray card background
 sendButtonColor             = "#3c3abd";    // Accent button color
 sendButtonFontColor         = "#FFFFFF";    // White text
 
+// Persistence keys and runtime state
+const SESSION_STORAGE_KEY = 'ST01.sessionId';
+const HISTORY_STORAGE_KEY = 'ST01.chatHistoryJson';
+const HISTORY_TEXT_STORAGE_KEY = 'ST01.chatHistoryText';
+
+let initializationInProgress = false;
+let initializationCompleted = false;
+let isSending = false;
+let sendButtonElement = null;
+
 // Internal variables
-var sessionId = 'session_' + crypto.randomUUID();
+var sessionId = determineSessionId();
 var chatHistory = "";
 var chatHistoryJson = [];
 
@@ -146,6 +156,168 @@ function stampQualtricsTimestampOnce(key) {
     var timestamp = new Date().toISOString();
     setQualtricsEmbeddedData(key, timestamp);
     return timestamp;
+}
+
+function safeGetLocalStorage(key) {
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage.getItem(key);
+        }
+    } catch (error) {
+        console.warn('Unable to read localStorage key:', key, error);
+    }
+    return null;
+}
+
+function safeSetLocalStorage(key, value) {
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(key, value);
+        }
+    } catch (error) {
+        console.warn('Unable to write localStorage key:', key, error);
+    }
+}
+
+function safeParseJSON(value) {
+    if (!value || typeof value !== 'string') {
+        return null;
+    }
+
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.warn('Failed to parse JSON from storage value:', value.slice(0, 64), error);
+        return null;
+    }
+}
+
+function persistSessionId(id) {
+    if (!id) {
+        return;
+    }
+
+    safeSetLocalStorage(SESSION_STORAGE_KEY, id);
+    setQualtricsEmbeddedData('SessionId', id);
+}
+
+function determineSessionId() {
+    let override = '';
+
+    try {
+        const params = new URLSearchParams(window.location.search || '');
+        override = (params.get('sessionId') || params.get('session_id') || '').trim();
+    } catch (error) {
+        console.warn('Failed to read sessionId from URL parameters:', error);
+    }
+
+    if (override) {
+        persistSessionId(override);
+        return override;
+    }
+
+    const qualtricsStored = (getQualtricsEmbeddedData('SessionId') || '').trim();
+    if (qualtricsStored) {
+        persistSessionId(qualtricsStored);
+        return qualtricsStored;
+    }
+
+    const localStored = (safeGetLocalStorage(SESSION_STORAGE_KEY) || '').trim();
+    if (localStored) {
+        persistSessionId(localStored);
+        return localStored;
+    }
+
+    const generated = `session_${crypto?.randomUUID?.() || (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32)}`;
+    persistSessionId(generated);
+    return generated;
+}
+
+function loadStoredConversationFromClient() {
+    const qualtricsValue = getQualtricsEmbeddedData('ChatHistoryJson');
+    const parsedQualtrics = safeParseJSON(qualtricsValue);
+
+    if (Array.isArray(parsedQualtrics) && parsedQualtrics.length > 0) {
+        return parsedQualtrics;
+    }
+
+    const localValue = safeGetLocalStorage(HISTORY_STORAGE_KEY);
+    const parsedLocal = safeParseJSON(localValue);
+
+    if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+        return parsedLocal;
+    }
+
+    return [];
+}
+
+function rebuildChatHistoryString(historyArray) {
+    if (!Array.isArray(historyArray)) {
+        return '';
+    }
+
+    let buffer = '';
+
+    for (const entry of historyArray) {
+        if (!entry || typeof entry !== 'object') {
+            continue;
+        }
+
+        const role = (entry.role || '').toLowerCase();
+        const prefix = role === 'user' ? 'User' : role === 'assistant' ? 'Agent' : 'System';
+        buffer += `${prefix}: ${entry.content || ''}\n`;
+    }
+
+    return buffer;
+}
+
+function resolveQualtricsResponseId() {
+    const templatedValue = "${e://Field/ResponseID}";
+
+    if (templatedValue && typeof templatedValue === 'string' && !templatedValue.includes('${')) {
+        return templatedValue;
+    }
+
+    const embeddedValue = getQualtricsEmbeddedData('ResponseID');
+    if (embeddedValue && typeof embeddedValue === 'string' && embeddedValue.trim()) {
+        return embeddedValue;
+    }
+
+    return 'LOCAL_DEBUG';
+}
+
+function persistConversationState(optionalResponseId) {
+    try {
+        const serializedHistory = JSON.stringify(chatHistoryJson || []);
+        const historyText = chatHistory || '';
+
+        safeSetLocalStorage(HISTORY_STORAGE_KEY, serializedHistory);
+        safeSetLocalStorage(HISTORY_TEXT_STORAGE_KEY, historyText);
+
+        setQualtricsEmbeddedData('ChatHistory', historyText);
+        setQualtricsEmbeddedData('ChatHistoryJson', serializedHistory);
+        persistSessionId(sessionId);
+
+        if (optionalResponseId && typeof optionalResponseId === 'string' && optionalResponseId.trim() && !optionalResponseId.includes('${')) {
+            setQualtricsEmbeddedData('ResponseID', optionalResponseId.trim());
+        }
+    } catch (error) {
+        console.error('Error persisting conversation state:', error);
+    }
+}
+
+function getConversationEndpoint(sessionIdentifier) {
+    if (!sessionIdentifier) {
+        return '';
+    }
+
+    try {
+        const base = new URL(chatbotURL, window.location.origin);
+        return new URL(`/conversation/${encodeURIComponent(sessionIdentifier)}`, base).toString();
+    } catch (error) {
+        console.warn('Falling back to relative conversation endpoint:', error);
+        return `/conversation/${encodeURIComponent(sessionIdentifier)}`;
+    }
 }
 
 // Recommendation tracking variables
@@ -967,47 +1139,129 @@ function createTypingIndicator() {
     return indicator;
 }
 
-async function sendMessage() {
-    console.log("Send button clicked");
-    var userInput = document.getElementById('user-input').value;
-    if (!userInput.trim()) return;
+async function loadConversationHistory() {
+    const chatWindow = document.getElementById('chat-window');
+    if (!chatWindow) {
+        console.error('Chat window not found when attempting to load history');
+        return;
+    }
 
-    stampQualtricsTimestampOnce('FIRST_MSG_TS');
+    let history = [];
+    const conversationEndpoint = getConversationEndpoint(sessionId);
 
-    // Clear input field immediately
-    document.getElementById('user-input').value = '';
-    
-    // Disable send button with visual feedback
-    const sendButton = document.getElementById('send-button');
-    sendButton.disabled = true;
-    sendButton.style.opacity = '0.6';
-    
-    var chatWindow = document.getElementById('chat-window');
-    var timestamp = new Date().toISOString();
-    chatHistory += "User: " + userInput + "\n";
-    chatHistoryJson.push({ role: "user", content: userInput, timestamp: timestamp });
+    if (conversationEndpoint) {
+        try {
+            const response = await fetch(conversationEndpoint);
+            if (response.ok) {
+                const data = await response.json();
+                history = Array.isArray(data.history) ? data.history : [];
+                console.log(`Retrieved ${history.length} messages from backend history endpoint`);
+            } else if (response.status !== 404) {
+                console.warn('Failed to load conversation history from backend:', response.status);
+            }
+        } catch (error) {
+            console.error('Error fetching conversation history:', error);
+        }
+    }
 
-    // User message with modern styling
-    const userMessageDiv = createMessageElement('user', userInput);
-    chatWindow.appendChild(userMessageDiv);
+    if (!Array.isArray(history) || history.length === 0) {
+        history = loadStoredConversationFromClient();
+        if (history.length > 0) {
+            console.log(`Loaded ${history.length} messages from client-side storage`);
+        }
+    }
+
+    chatWindow.innerHTML = '';
+
+    if (!Array.isArray(history) || history.length === 0) {
+        chatHistoryJson = [];
+        chatHistory = '';
+        persistConversationState(resolveQualtricsResponseId());
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        await sendInitializationMessage();
+        return;
+    }
+
+    chatHistoryJson = history.map(entry => ({ ...entry }));
+    chatHistory = rebuildChatHistoryString(chatHistoryJson);
+
+    const assistantPresent = chatHistoryJson.some(entry => (entry.role || '').toLowerCase() === 'assistant');
+    if (assistantPresent) {
+        initializationCompleted = true;
+    }
+
+    for (let i = 0; i < chatHistoryJson.length; i++) {
+        const entry = chatHistoryJson[i];
+        if (!entry) {
+            continue;
+        }
+
+        const normalizedRole = (entry.role || '').toLowerCase();
+
+        if (normalizedRole === 'user') {
+            const userMessageDiv = createMessageElement('user', entry.content);
+            chatWindow.appendChild(userMessageDiv);
+        } else if (normalizedRole === 'assistant') {
+            const agentType = entry.agent_type || (entry.content && entry.content.includes('showRecommendation(') ? 'recommendation' : 'collector');
+            const botMessageDiv = createMessageElement('assistant', entry.content, agentType);
+            chatWindow.appendChild(botMessageDiv);
+
+            if (entry.customer_data && i + 1 < chatHistoryJson.length) {
+                const nextEntry = chatHistoryJson[i + 1];
+                const nextRole = (nextEntry.role || '').toLowerCase();
+                if (nextRole === 'assistant') {
+                    const nextAgentType = nextEntry.agent_type || (nextEntry.content && nextEntry.content.includes('showRecommendation(') ? 'recommendation' : 'collector');
+                    if (nextAgentType === 'recommendation') {
+                        const handoffDivider = createStaticHandoffDivider();
+                        chatWindow.appendChild(handoffDivider);
+                    }
+                }
+            }
+        } else if (normalizedRole === 'system') {
+            addSystemMessage(entry.content || '', { suppressScroll: true });
+        }
+    }
+
     chatWindow.scrollTop = chatWindow.scrollHeight;
+    persistConversationState(resolveQualtricsResponseId());
+}
 
-    // Modern typing indicator
+async function sendInitializationMessage() {
+    if (initializationInProgress || initializationCompleted) {
+        return;
+    }
+
+    const chatWindow = document.getElementById('chat-window');
+    if (!chatWindow) {
+        console.error('Chat window not found during initialization');
+        return;
+    }
+
+    initializationInProgress = true;
+
     const typingIndicator = createTypingIndicator();
     chatWindow.appendChild(typingIndicator);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
+    if (!sendButtonElement) {
+        sendButtonElement = document.getElementById('send-button');
+    }
+
+    if (sendButtonElement) {
+        sendButtonElement.disabled = true;
+        sendButtonElement.style.opacity = '0.6';
+    }
+
+    const qualtricsResponseId = resolveQualtricsResponseId();
+
     try {
-        var qualtricsResponseId = "${e://Field/ResponseID}";
-        var requestData = {
-            message: chatHistoryJson,
+        const requestData = {
+            message: [],
             session_id: sessionId,
             qualtrics_response_id: qualtricsResponseId
         };
-        
-        console.log("Sending request:", JSON.stringify(requestData, null, 2));
-        
-        var response = await fetch(chatbotURL, {
+
+        const response = await fetch(chatbotURL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1015,97 +1269,167 @@ async function sendMessage() {
             body: JSON.stringify(requestData)
         });
 
-        // Remove typing indicator
+        if (response.ok) {
+            const data = await response.json();
+            const responses = Array.isArray(data.response) ? data.response : [data.response];
+            const botTimestamp = new Date().toISOString();
+
+            for (const messageContent of responses) {
+                chatHistoryJson.push({
+                    role: 'assistant',
+                    content: messageContent,
+                    timestamp: botTimestamp,
+                    agent_type: 'collector'
+                });
+                const botMessageDiv = createMessageElement('assistant', messageContent, 'collector');
+                chatWindow.appendChild(botMessageDiv);
+            }
+
+            if (responses.length > 0) {
+                initializationCompleted = true;
+            }
+
+            chatHistory = rebuildChatHistoryString(chatHistoryJson);
+            persistConversationState(qualtricsResponseId);
+        } else {
+            console.error('Failed to initialize conversation:', response.status);
+        }
+    } catch (error) {
+        console.error('Error initializing conversation:', error);
+    } finally {
         if (typingIndicator.parentNode) {
             typingIndicator.remove();
         }
 
+        if (sendButtonElement) {
+            sendButtonElement.disabled = false;
+            sendButtonElement.style.opacity = '1';
+        }
+
+        initializationInProgress = false;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+}
+
+async function sendMessage() {
+    if (isSending) {
+        return;
+    }
+
+    const inputField = document.getElementById('user-input');
+    const chatWindow = document.getElementById('chat-window');
+
+    if (!inputField || !chatWindow) {
+        return;
+    }
+
+    const userInput = inputField.value.trim();
+    if (!userInput) {
+        return;
+    }
+
+    stampQualtricsTimestampOnce('FIRST_MSG_TS');
+
+    const qualtricsResponseId = resolveQualtricsResponseId();
+
+    inputField.value = '';
+    if (typeof inputField.focus === 'function') {
+        inputField.focus();
+    }
+
+    if (!sendButtonElement) {
+        sendButtonElement = document.getElementById('send-button');
+    }
+
+    if (sendButtonElement) {
+        sendButtonElement.disabled = true;
+        sendButtonElement.style.opacity = '0.6';
+    }
+
+    isSending = true;
+
+    const timestamp = new Date().toISOString();
+
+    chatHistoryJson.push({ role: 'user', content: userInput, timestamp: timestamp });
+    chatHistory = rebuildChatHistoryString(chatHistoryJson);
+    persistConversationState(qualtricsResponseId);
+
+    const userMessageDiv = createMessageElement('user', userInput);
+    chatWindow.appendChild(userMessageDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    const typingIndicator = createTypingIndicator();
+    chatWindow.appendChild(typingIndicator);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    try {
+        const requestData = {
+            message: chatHistoryJson,
+            session_id: sessionId,
+            qualtrics_response_id: qualtricsResponseId
+        };
+
+        const response = await fetch(chatbotURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+
         if (response.ok) {
-            var data = await response.json();
-            var botTimestamp = new Date().toISOString();
-            
-            // Handle multiple messages
-            var responses = Array.isArray(data.response) ? data.response : [data.response];
-            var isHandoff = responses.length > 1; // Multi-message response indicates handoff
-            
-            console.log("Received response:", data.response);
-            console.log("Processed responses:", responses);
-            console.log("Is handoff:", isHandoff);
-            
-            // Display each message with a delay
+            const data = await response.json();
+            const botTimestamp = new Date().toISOString();
+            const responses = Array.isArray(data.response) ? data.response : [data.response];
+            const isHandoff = responses.length > 1;
+
             for (let i = 0; i < responses.length; i++) {
-                var messageContent = responses[i];
-                // For handoff: first message is Information Agent, second is Recommendation Agent
-                var agentType = isHandoff && i === 1 ? 'recommendation' : 'collector';
-                
-                console.log(`Message ${i}:`, messageContent, "Type:", typeof messageContent, "Agent:", agentType);
-                
-                // Add delay for non-first messages
+                const messageContent = responses[i];
+                const agentType = isHandoff && i === 1 ? 'recommendation' : 'collector';
+
                 if (i > 0) {
                     await wait(800);
                 }
 
-                chatHistory += "Agent: " + messageContent + "\n";
                 chatHistoryJson.push({
-                    role: "assistant",
+                    role: 'assistant',
                     content: messageContent,
-                    timestamp: botTimestamp
+                    timestamp: botTimestamp,
+                    agent_type: agentType
                 });
+                chatHistory = rebuildChatHistoryString(chatHistoryJson);
 
-                console.log("Added to chatHistoryJson:", {
-                    role: "assistant",
-                    content: messageContent,
-                    timestamp: botTimestamp
-                });
-
-                // Create bot message with agent-specific styling
-                var botMessageDiv = createBotMessage(messageContent, agentType);
+                const botMessageDiv = createBotMessage(messageContent, agentType);
                 chatWindow.appendChild(botMessageDiv);
-
-                // Scroll to bottom after each message
                 chatWindow.scrollTop = chatWindow.scrollHeight;
 
-                // Show animated handoff sequence AFTER the first message
                 if (isHandoff && i === 0) {
                     await showHandoffSequence(chatWindow);
                 }
             }
+
+            initializationCompleted = initializationCompleted || responses.length > 0;
+            persistConversationState(qualtricsResponseId);
         } else {
             showErrorMessage("Error from server.<br>Status code: " + response.status);
             console.error("Error from server: " + response.status);
         }
-        
-        try{
-            setQualtricsEmbeddedData('ChatHistory', chatHistory);
-            setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-            setQualtricsEmbeddedData('SessionId', sessionId);
-            setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
-        } catch(error) {
-            console.error("Error from Qualtrics: ", error);
-            sessionId = "DEBUG"
-            qualtricsResponseId = "DEBUG"
-        }
-        
-        // Re-enable send button
-        const sendButton = document.getElementById('send-button');
-        sendButton.disabled = false;
-        sendButton.style.opacity = '1';
     } catch (error) {
-        // Remove typing indicator on error
+        showErrorMessage("Network error: " + error.message);
+        console.error("Network error: ", error);
+    } finally {
         if (typingIndicator.parentNode) {
             typingIndicator.remove();
         }
-        showErrorMessage("Network error: " + error.message);
-        console.error("Network error: ", error);
 
-        // Re-enable send button on error
-        const sendButton = document.getElementById('send-button');
-        sendButton.disabled = false;
-        sendButton.style.opacity = '1';
+        if (sendButtonElement) {
+            sendButtonElement.disabled = false;
+            sendButtonElement.style.opacity = '1';
+        }
+
+        isSending = false;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
-
-    // Final scroll (input already cleared earlier)
-    chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function createBotMessage(content, agentType = 'collector') {
@@ -1205,10 +1529,72 @@ async function showHandoffSequence(chatWindowOverride) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-function addSystemMessage(message) {
-    var chatWindow = document.getElementById('chat-window');
-    var systemMessageDiv = document.createElement('div');
-    
+function createStaticHandoffDivider() {
+    const handoverMessage = document.createElement('div');
+    handoverMessage.className = 'message handover-message handover-complete';
+
+    const label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = 'Agent Handoff';
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+
+    const sequenceContainer = document.createElement('div');
+    sequenceContainer.className = 'handover-sequence handover-finished';
+
+    const title = document.createElement('div');
+    title.className = 'handover-title';
+    title.textContent = 'Handoff Complete';
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'handover-subtitle';
+    subtitle.textContent = 'Routed to Insurance Specialist';
+
+    const stepsWrapper = document.createElement('div');
+    stepsWrapper.className = 'handover-steps';
+
+    const steps = [
+        { label: 'Handing over to Insurance Specialist' },
+        { label: 'Thinking' },
+        { label: 'Getting top recommendation' }
+    ];
+
+    for (const step of steps) {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'handover-step completed';
+
+        const marker = document.createElement('span');
+        marker.className = 'handover-step-marker';
+        marker.setAttribute('aria-hidden', 'true');
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'handover-step-label';
+        labelSpan.textContent = step.label;
+
+        stepElement.appendChild(marker);
+        stepElement.appendChild(labelSpan);
+        stepsWrapper.appendChild(stepElement);
+    }
+
+    sequenceContainer.appendChild(title);
+    sequenceContainer.appendChild(subtitle);
+    sequenceContainer.appendChild(stepsWrapper);
+    body.appendChild(sequenceContainer);
+    handoverMessage.appendChild(label);
+    handoverMessage.appendChild(body);
+
+    return handoverMessage;
+}
+
+function addSystemMessage(message, options) {
+    const chatWindow = document.getElementById('chat-window');
+    if (!chatWindow) {
+        return;
+    }
+
+    const systemMessageDiv = document.createElement('div');
+
     systemMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
     systemMessageDiv.style.fontStyle = 'italic';
     systemMessageDiv.style.color = '#6E6E6E';
@@ -1220,10 +1606,16 @@ function addSystemMessage(message) {
     systemMessageDiv.style.alignSelf = 'center';
     systemMessageDiv.style.border = '1px solid #DADADA';
     systemMessageDiv.style.textAlign = 'center';
-    
-    systemMessageDiv.innerHTML = '<em>' + message + '</em>';
+
+    const emphasis = document.createElement('em');
+    emphasis.textContent = message || '';
+    systemMessageDiv.appendChild(emphasis);
+
     chatWindow.appendChild(systemMessageDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    if (!options || !options.suppressScroll) {
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
 }
 
 function logEvent(eventType, details) {
@@ -1235,15 +1627,10 @@ function logEvent(eventType, details) {
             timestamp: timestamp,
             details: details || {}
         };
-        
-        chatHistory += "System: " + eventType + "\n";
+
         chatHistoryJson.push(logEntry);
-        
-        // Set standard embedded data
-        setQualtricsEmbeddedData('ChatHistory', chatHistory);
-        setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        setQualtricsEmbeddedData('SessionId', sessionId);
-        setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+        chatHistory = rebuildChatHistoryString(chatHistoryJson);
+        persistConversationState(resolveQualtricsResponseId());
 
         // Initialize all variables to ensure consistent data structure
         var currentRecommended = getQualtricsEmbeddedData('RecommendedProduct') || "";
@@ -1285,11 +1672,9 @@ function logEvent(eventType, details) {
         setQualtricsEmbeddedData('RecommendationType', currentRecommendationType);
         setQualtricsEmbeddedData('RejectedRecommendation', currentRejected);
         setQualtricsEmbeddedData('DeclinedProduct', currentDeclined);
-        
+
     } catch(error) {
         console.error("Error logging event: ", error);
-        sessionId = "DEBUG";
-        qualtricsResponseId = "DEBUG";
     }
 }
 
@@ -1302,28 +1687,50 @@ try {
 
     addChatHeader();
 
-    // Hide NextButton during chat interaction
-    Qualtrics.SurveyEngine.addOnload(function () {
-        this.hideNextButton();      // built‑in helper
-        stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
+    const bootstrapConversation = () => {
+        loadConversationHistory().catch(error => {
+            console.error('Failed to load conversation history:', error);
+        });
+    };
 
-        var nextButton = document.getElementById('NextButton');
-        if (nextButton) {
-            var handleNextClick = function () {
-                stampQualtricsTimestampOnce('NEXT_CLICK_TS');
-            };
-
-            if (typeof nextButton.addEventListener === 'function') {
-                nextButton.addEventListener('click', handleNextClick, { once: true });
-            } else {
-                nextButton.onclick = function () {
-                    handleNextClick();
-                    nextButton.onclick = null;
-                };
-            }
+    const scheduleConversationBootstrap = () => {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrapConversation, { once: true });
+        } else {
+            bootstrapConversation();
         }
-        //  … any other per‑page setup
-      });
+    };
+
+    if (typeof Qualtrics !== 'undefined' &&
+        Qualtrics.SurveyEngine &&
+        typeof Qualtrics.SurveyEngine.addOnload === 'function') {
+        Qualtrics.SurveyEngine.addOnload(function () {
+            if (typeof this.hideNextButton === 'function') {
+                this.hideNextButton();
+            }
+            stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
+
+            var nextButton = document.getElementById('NextButton');
+            if (nextButton) {
+                var handleNextClick = function () {
+                    stampQualtricsTimestampOnce('NEXT_CLICK_TS');
+                };
+
+                if (typeof nextButton.addEventListener === 'function') {
+                    nextButton.addEventListener('click', handleNextClick, { once: true });
+                } else {
+                    nextButton.onclick = function () {
+                        handleNextClick();
+                        nextButton.onclick = null;
+                    };
+                }
+            }
+
+            scheduleConversationBootstrap();
+        });
+    } else {
+        scheduleConversationBootstrap();
+    }
 
     // Add event listeners (styling now handled by CSS classes)
     var sendButton = document.getElementById('send-button');
