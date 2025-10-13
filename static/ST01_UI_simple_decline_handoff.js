@@ -158,10 +158,11 @@ var sessionId = (function () {
     }
 
     if (!sessionComponent) {
-        var generated = 'session_' + ((typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        var uniqueSuffix = ((typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
             ? crypto.randomUUID()
             : (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32));
-        sessionComponent = sanitizeComponent(generated, 'missing_session_id');
+        var generated = 'missing_sessionID_' + uniqueSuffix;
+        sessionComponent = sanitizeComponent(generated, 'missing_sessionID_' + uniqueSuffix);
     }
 
     if (!prolificComponent) {
