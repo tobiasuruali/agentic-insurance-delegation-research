@@ -107,23 +107,86 @@ var sessionId = (function () {
         }
     }
 
+    function sanitizeComponent(value, placeholder) {
+        var normalized = (value === undefined || value === null) ? '' : String(value).trim();
+        if (!normalized) {
+            return placeholder;
+        }
+
+        return normalized.replace(/\s+/g, '_');
+    }
+
+    function extractStoredComponents(storedValue) {
+        var marker = '__PROLIFIC__';
+        var result = { session: '', prolific: '' };
+
+        if (!storedValue) {
+            return result;
+        }
+
+        var strValue = String(storedValue);
+        var markerIndex = strValue.indexOf(marker);
+
+        if (markerIndex === -1) {
+            result.session = sanitizeComponent(strValue, '');
+            return result;
+        }
+
+        result.session = sanitizeComponent(strValue.slice(0, markerIndex), '');
+        result.prolific = sanitizeComponent(strValue.slice(markerIndex + marker.length), '');
+        return result;
+    }
+
+    function buildSessionName(sessionComponent, prolificComponent) {
+        return sessionComponent + '__PROLIFIC__' + prolificComponent;
+    }
+
+    function generateUniqueSuffix() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+
+        return (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32);
+    }
+
     var qualtricsSessionId = getQualtricsEmbeddedData('SessionId');
-    if (qualtricsSessionId) {
-        setStored(qualtricsSessionId);
-        return qualtricsSessionId;
+    var qualtricsProlificPid = getQualtricsEmbeddedData('PROLIFIC_PID');
+    var storedValue = getStored();
+    var storedComponents = extractStoredComponents(storedValue);
+
+    var sessionComponent = sanitizeComponent(qualtricsSessionId, '');
+    var prolificComponent = sanitizeComponent(qualtricsProlificPid, '');
+
+    if (!sessionComponent && storedComponents.session) {
+        sessionComponent = storedComponents.session;
     }
 
-    var stored = getStored();
-    if (stored) {
-        return stored;
+    if (!prolificComponent && storedComponents.prolific) {
+        prolificComponent = storedComponents.prolific;
     }
 
-    var generated = 'session_' + ((typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-        ? crypto.randomUUID()
-        : (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32));
-    setStored(generated);
-    setQualtricsEmbeddedData('SessionId', generated);
-    return generated;
+    if (!sessionComponent) {
+        var sessionPlaceholder = 'missing_sessionID_' + generateUniqueSuffix();
+        sessionComponent = sanitizeComponent(sessionPlaceholder, sessionPlaceholder);
+    }
+
+    if (!prolificComponent) {
+        var prolificPlaceholder = 'missing_PROLIFIC_PID_' + generateUniqueSuffix();
+        prolificComponent = sanitizeComponent(prolificPlaceholder, prolificPlaceholder);
+    }
+
+    var combined = buildSessionName(sessionComponent, prolificComponent);
+
+    setStored(combined);
+    setQualtricsEmbeddedData('SessionId', combined);
+
+    console.log('Persisted ST01 session identifier', {
+        sessionComponent: sessionComponent,
+        prolificComponent: prolificComponent,
+        combined: combined
+    });
+
+    return combined;
 })();
 var chatHistory = "";
 var chatHistoryJson = [];
