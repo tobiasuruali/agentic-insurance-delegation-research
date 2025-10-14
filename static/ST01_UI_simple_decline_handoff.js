@@ -6,6 +6,9 @@ var botName = 'Comparabot';
 var chatTitle = 'Comparabot Insurance Finder';
 var avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Replace with your actual image URL (square image)
 
+// Study identifier for cross-study analysis
+var STUDY_ID = 'ST01';
+
 const productImageData = [
     {
         src: 'https://storage.googleapis.com/images-mobilab/product_sheet_01.jpg',
@@ -89,7 +92,8 @@ sendButtonFontColor         = "#FFFFFF";    // White text
 
 // Internal variables
 // Session ID management (Qualtrics-first with localStorage fallback)
-var sessionId = (function () {
+// Creates a composite session ID from Qualtrics SessionId and PROLIFIC_PID
+var compositeSessionId = (function () {
     function getStored() {
         try {
             var item = localStorage.getItem('ST01_sessionId');
@@ -149,6 +153,7 @@ var sessionId = (function () {
         return (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32);
     }
 
+    // Read from standard Qualtrics fields (never overwrite these)
     var qualtricsSessionId = getQualtricsEmbeddedData('SessionId');
     var qualtricsProlificPid = getQualtricsEmbeddedData('PROLIFIC_PID');
     var storedValue = getStored();
@@ -166,27 +171,44 @@ var sessionId = (function () {
     }
 
     if (!sessionComponent) {
-        var sessionPlaceholder = 'missing_sessionID_' + generateUniqueSuffix();
+        var sessionPlaceholder = 'AUTO_' + generateUniqueSuffix().substring(0, 8);
         sessionComponent = sanitizeComponent(sessionPlaceholder, sessionPlaceholder);
     }
 
     if (!prolificComponent) {
-        var prolificPlaceholder = 'missing_PROLIFIC_PID_' + generateUniqueSuffix();
+        var prolificPlaceholder = 'AUTO_' + generateUniqueSuffix().substring(0, 8);
         prolificComponent = sanitizeComponent(prolificPlaceholder, prolificPlaceholder);
+    }
+
+    // Add prefixes to distinguish real from generated values
+    if (sessionComponent && sessionComponent.indexOf('AUTO_') !== 0) {
+        sessionComponent = 'SES_' + sessionComponent;
+    }
+
+    if (prolificComponent && prolificComponent.indexOf('AUTO_') !== 0) {
+        prolificComponent = 'PID_' + prolificComponent;
     }
 
     var combined = buildSessionName(sessionComponent, prolificComponent);
 
-    setStored(combined);
-    setQualtricsEmbeddedData('SessionId', combined);
+    // Prepend study identifier for cross-study analysis
+    var compositeId = STUDY_ID + '_' + combined;
 
-    console.log('Persisted ST01 session identifier', {
+    // Store in localStorage for persistence
+    setStored(compositeId);
+
+    // Store in NEW custom Qualtrics field (not standard SessionId)
+    setQualtricsEmbeddedData('CompositeSessionId', compositeId);
+
+    console.log('Persisted composite session identifier with study prefix', {
+        studyId: STUDY_ID,
         sessionComponent: sessionComponent,
         prolificComponent: prolificComponent,
-        combined: combined
+        compositeSessionId: compositeId,
+        note: 'Stored in CompositeSessionId field, standard SessionId preserved'
     });
 
-    return combined;
+    return compositeId;
 })();
 var chatHistory = "";
 var chatHistoryJson = [];
@@ -1070,9 +1092,9 @@ function createTypingIndicator() {
 
 async function loadConversationHistory() {
     try {
-        console.log('Loading conversation history for session: ' + sessionId);
+        console.log('Loading conversation history for session: ' + compositeSessionId);
 
-        var historyEndpoint = chatbotURL.replace('/InsuranceRecommendation', '') + '/conversation/' + sessionId;
+        var historyEndpoint = chatbotURL.replace('/InsuranceRecommendation', '') + '/conversation/' + compositeSessionId;
         var response = await fetch(historyEndpoint);
 
         if (!response.ok) {
@@ -1167,7 +1189,7 @@ async function sendInitializationMessage() {
 
         var requestData = {
             message: [],
-            session_id: sessionId,
+            session_id: compositeSessionId,
             qualtrics_response_id: "${e://Field/ResponseID}"
         };
 
@@ -1250,10 +1272,10 @@ async function sendMessage() {
         var qualtricsResponseId = "${e://Field/ResponseID}";
         var requestData = {
             message: chatHistoryJson,
-            session_id: sessionId,
+            session_id: compositeSessionId,
             qualtrics_response_id: qualtricsResponseId
         };
-        
+
         console.log("Sending request:", JSON.stringify(requestData, null, 2));
         
         var response = await fetch(chatbotURL, {
@@ -1327,11 +1349,11 @@ async function sendMessage() {
         try{
             setQualtricsEmbeddedData('ChatHistory', chatHistory);
             setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-            setQualtricsEmbeddedData('SessionId', sessionId);
+            setQualtricsEmbeddedData('CompositeSessionId', compositeSessionId);
             setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
         } catch(error) {
             console.error("Error from Qualtrics: ", error);
-            sessionId = "DEBUG"
+            compositeSessionId = "DEBUG"
             qualtricsResponseId = "DEBUG"
         }
         
@@ -1550,7 +1572,7 @@ function logEvent(eventType, details) {
         // Set standard embedded data
         setQualtricsEmbeddedData('ChatHistory', chatHistory);
         setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        setQualtricsEmbeddedData('SessionId', sessionId);
+        setQualtricsEmbeddedData('CompositeSessionId', compositeSessionId);
         setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
 
         // Initialize all variables to ensure consistent data structure
@@ -1596,7 +1618,7 @@ function logEvent(eventType, details) {
         
     } catch(error) {
         console.error("Error logging event: ", error);
-        sessionId = "DEBUG";
+        compositeSessionId = "DEBUG";
         qualtricsResponseId = "DEBUG";
     }
 }
