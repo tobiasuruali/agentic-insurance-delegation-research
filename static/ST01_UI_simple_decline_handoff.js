@@ -153,9 +153,9 @@ var compositeSessionId = (function () {
         return (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32);
     }
 
-    // Read from standard Qualtrics fields (never overwrite these)
-    var qualtricsSessionId = getQualtricsEmbeddedData('SessionId');
-    var qualtricsProlificPid = getQualtricsEmbeddedData('PROLIFIC_PID');
+    // Read from standard Qualtrics fields using piped text (never overwrite these)
+    var qualtricsSessionId = "${e://Field/SessionID}";
+    var qualtricsProlificPid = "${e://Field/PROLIFIC_PID}";
     var storedValue = getStored();
     var storedComponents = extractStoredComponents(storedValue);
 
@@ -273,7 +273,7 @@ function stampQualtricsTimestampOnce(key) {
 var originalRecommendation = null;
 var recommendationType = null;
 
-stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
+stampQualtricsTimestampOnce('PAGE_LOAD_TS');
 
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
@@ -1175,7 +1175,7 @@ async function loadConversationHistory() {
 async function sendInitializationMessage() {
     try {
         console.log('Initializing conversation with welcome message');
-        stampQualtricsTimestampOnce('INIT_MSG_TS');
+        stampQualtricsTimestampOnce('BOT_WELCOME_TS');
 
         var chatWindow = document.getElementById('chat-window');
         if (!chatWindow) {
@@ -1243,7 +1243,7 @@ async function sendMessage() {
     var userInput = document.getElementById('user-input').value;
     if (!userInput.trim()) return;
 
-    stampQualtricsTimestampOnce('FIRST_MSG_TS');
+    stampQualtricsTimestampOnce('USER_FIRST_MSG_TS');
 
     // Clear input field immediately
     document.getElementById('user-input').value = '';
@@ -1339,6 +1339,8 @@ async function sendMessage() {
                 // Show animated handoff sequence AFTER the first message
                 if (isHandoff && i === 0) {
                     await showHandoffSequence(chatWindow);
+                    // Stamp timestamp AFTER handoff animations complete
+                    stampQualtricsTimestampOnce('RECOMMENDATION_RECEIVED_TS');
                 }
             }
         } else {
@@ -1644,12 +1646,12 @@ try {
 
         // Hide next button
         this.hideNextButton();      // built‑in helper
-        stampQualtricsTimestampOnce('WINDOW_OPEN_TS');
+        stampQualtricsTimestampOnce('PAGE_LOAD_TS');
 
         var nextButton = document.getElementById('NextButton');
         if (nextButton) {
             var handleNextClick = function () {
-                stampQualtricsTimestampOnce('NEXT_CLICK_TS');
+                stampQualtricsTimestampOnce('NEXT_BUTTON_TS');
             };
 
             if (typeof nextButton.addEventListener === 'function') {
@@ -1777,11 +1779,14 @@ function showProductOverlay(){
 }
 
 
-function showRecommendation(productNumber) {    
+function showRecommendation(productNumber) {
+    // Stamp timestamp when product popup is shown
+    stampQualtricsTimestampOnce('PRODUCT_POPUP_TS');
+
     // Set tracking variables
     originalRecommendation = productNumber;
     recommendationType = "single";
-    
+
     showProductOverlay()
     message = "Here is your recommended product: " + productNumber 
     // Adapt message
