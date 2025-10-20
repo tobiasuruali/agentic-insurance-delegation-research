@@ -1305,7 +1305,7 @@ async function showHandoffSequence(chatWindowOverride) {
 
     for (let i = 0; i < stepElements.length; i++) {
         const currentStep = stepElements[i];
-        await wait(i === 0 ? 200 : 1500);
+        await wait(i === 0 ? 200 : (i === 1 ? 1750 : 4000));
         currentStep.element.classList.add('active');
 
         if (i > 0) {
