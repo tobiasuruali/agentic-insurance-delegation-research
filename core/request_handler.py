@@ -37,21 +37,19 @@ def store_conversation_log(session_id: str, qualtrics_response_id: str, conversa
     """Store conversation log in Google Cloud Storage (optional)"""
     if not enable_storage or not gcs_client:
         return
-    
+
     try:
-        clean_qualtrics_id = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", qualtrics_response_id)
-        
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "session_id": session_id,
             "qualtrics_response_id": qualtrics_response_id,
             "conversation_history": conversation_history
         }
-        
+
         bucket = gcs_client.bucket(bucket_name)
-        blob = bucket.blob(f"chat_logs_{chatbot_id}_{clean_qualtrics_id}_{session_id}.json")
+        blob = bucket.blob(f"chat_logs/{session_id}.json")
         blob.upload_from_string(json.dumps(log_entry))
-        
+
         logger.info(f"Stored conversation log for session: {session_id}")
     except Exception as e:
         logger.error(f"Error storing conversation log: {str(e)}")
@@ -60,10 +58,8 @@ def store_error_log(session_id: str, qualtrics_response_id: str, error: str, req
     """Store error log in Google Cloud Storage (optional)"""
     if not enable_storage or not gcs_client:
         return
-    
+
     try:
-        clean_qualtrics_id = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", qualtrics_response_id)
-        
         error_log = {
             "timestamp": datetime.utcnow().isoformat(),
             "session_id": session_id,
@@ -72,11 +68,11 @@ def store_error_log(session_id: str, qualtrics_response_id: str, error: str, req
             "traceback": traceback.format_exc(),
             "request_data": request_data
         }
-        
+
         bucket = gcs_client.bucket(bucket_name)
-        blob = bucket.blob(f"error_logs_{chatbot_id}_{clean_qualtrics_id}_{session_id}.json")
+        blob = bucket.blob(f"error_logs/{session_id}.json")
         blob.upload_from_string(json.dumps(error_log))
-        
+
         logger.info(f"Stored error log for session: {session_id}")
     except Exception as e:
         logger.error(f"Error storing error log: {str(e)}")
