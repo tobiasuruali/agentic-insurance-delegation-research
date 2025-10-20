@@ -94,6 +94,17 @@ var chatHistoryJson = [];
 // Recommendation tracking variables
 var originalRecommendation = null;
 var recommendationType = null;
+var shuffledProductOrder = null; // Stores the randomized display order
+
+// Fisher-Yates shuffle algorithm
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
 
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
@@ -400,14 +411,26 @@ function logEvent(eventType, details) {
             currentRecommendationType = details.type || "gallery";
         }
         
+        // Store display position if available in details
+        var currentDisplayPosition = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProductDisplayPosition') || "";
+        if (details.displayPosition) {
+            currentDisplayPosition = details.displayPosition;
+        }
+
         // Always set ALL variables to ensure consistent data structure
         Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendedProduct', currentRecommended);
         Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProduct', currentAccepted);
+        Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProductDisplayPosition', currentDisplayPosition);
         Qualtrics.SurveyEngine.setJSEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
         Qualtrics.SurveyEngine.setJSEmbeddedData('UserJourney', currentUserJourney);
         Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendationType', currentRecommendationType);
         Qualtrics.SurveyEngine.setJSEmbeddedData('RejectedRecommendation', currentRejected);
         Qualtrics.SurveyEngine.setJSEmbeddedData('DeclinedProduct', currentDeclined);
+
+        // Store randomized product order when gallery is shown
+        if (eventType === "showed-product-gallery" && shuffledProductOrder) {
+            Qualtrics.SurveyEngine.setJSEmbeddedData('RandomizedProductOrder', JSON.stringify(shuffledProductOrder));
+        }
         
     } catch(error) {
         console.error("Error logging event: ", error);
@@ -672,11 +695,24 @@ function showAllProducts(message) {
   const track = document.createElement("div");
   track.className = "slides";
 
-  productImageData.forEach((data, i) => {
+  // Create shuffled indexes for randomized display order
+  const shuffledIndexes = shuffleArray(productImageData.map((_, i) => i));
+  shuffledProductOrder = shuffledIndexes.map(idx => idx + 1); // Store as product numbers (1-16)
+
+  console.log("Randomized product order:", shuffledProductOrder);
+
+  shuffledIndexes.forEach((originalIndex, displayPosition) => {
+    const data = productImageData[originalIndex];
+    const originalProductNumber = originalIndex + 1;
+
     const slide = document.createElement("div");
     slide.className = "slide";
 
-    if (originalRecommendation && i + 1 === originalRecommendation) {
+    // Store original product number as data attribute
+    slide.setAttribute('data-original-index', originalProductNumber);
+    slide.setAttribute('data-display-position', displayPosition + 1);
+
+    if (originalRecommendation && originalProductNumber === originalRecommendation) {
       slide.classList.add("highlighted");
     }
 
@@ -685,7 +721,7 @@ function showAllProducts(message) {
     img.alt = data.alertText;
 
     // img.addEventListener("click", () => {
-    //   console.log(`Slide ${i+1} clicked:`, data.alertText);
+    //   console.log(`Slide ${displayPosition+1} clicked:`, data.alertText);
     //   alert(data.alertText);
     //   const nb = document.getElementById("NextButton");
     //   if (nb) nb.click();
@@ -763,36 +799,51 @@ function showAllProducts(message) {
   acceptButton.className = "custom-recommendation-button";
   acceptButton.onclick = function() {
     var track = document.querySelector('.carousel .slides');
-    var currentSlide = 1; // default fallback
+    var displayPosition = 0; // default fallback (0-indexed)
     if (track) {
       var width = track.clientWidth || 1;
-      currentSlide = Math.round(track.scrollLeft / width) + 1;
+      displayPosition = Math.round(track.scrollLeft / width);
     }
-    
+
+    // Get the actual slide element at this display position
+    var currentSlideElement = track.children[displayPosition];
+
+    // Retrieve the original product number from data attribute
+    var originalProductNumber = parseInt(currentSlideElement.getAttribute('data-original-index'));
+    var displayPos = parseInt(currentSlideElement.getAttribute('data-display-position'));
+
+    console.log("Accepted product:", {
+      originalProductNumber: originalProductNumber,
+      displayPosition: displayPos,
+      wasRecommended: originalRecommendation === originalProductNumber
+    });
+
     // Determine if this matches the original recommendation
-    var wasRecommended = (originalRecommendation === currentSlide);
-    var eventType = wasRecommended ? 
-      "accepted-recommended-product-" + currentSlide : 
-      "accepted-alternative-product-" + currentSlide;
-    
-    // Log acceptance with full context
+    var wasRecommended = (originalRecommendation === originalProductNumber);
+    var eventType = wasRecommended ?
+      "accepted-recommended-product-" + originalProductNumber :
+      "accepted-alternative-product-" + originalProductNumber;
+
+    // Log acceptance with full context including display position
     logEvent(eventType, {
-      acceptedProduct: currentSlide,
+      acceptedProduct: originalProductNumber,
+      displayPosition: displayPos,
       originalRecommendation: originalRecommendation,
       wasRecommended: wasRecommended,
       recommendationType: recommendationType
     });
-    
+
     // If they chose alternative, also log the rejection of original
     if (!wasRecommended && originalRecommendation) {
       logEvent("rejected-recommended-product-" + originalRecommendation, {
         rejectedProduct: originalRecommendation,
-        chosenInstead: currentSlide,
+        chosenInstead: originalProductNumber,
+        chosenDisplayPosition: displayPos,
         recommendationType: recommendationType
       });
     }
-    
-    alert('You accepted product ' + currentSlide + '!');
+
+    alert('You accepted product ' + originalProductNumber + '!');
     var nb = document.getElementById("NextButton");
     if (nb) nb.click();
   };
