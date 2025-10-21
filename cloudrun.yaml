@@ -40,10 +40,10 @@ spec:
         # Resource limits
         resources:
           limits:
-            cpu: '2000m'      # 2 CPU cores
+            cpu: '4000m'      # 4 CPU cores (optimized for 800-1000 concurrent users at peak)
             memory: '4Gi'     # 4GB RAM (handles conversation history + OpenAI responses)
           requests:
-            cpu: '1000m'      # Request 1 CPU minimum
+            cpu: '2000m'      # Request 2 CPU minimum
             memory: '2Gi'     # Request 2GB RAM minimum
 
         # Environment variables
@@ -59,6 +59,8 @@ spec:
           value: 'YOUR_PROJECT_ID'
         - name: ENABLE_CONVERSATION_STORAGE
           value: 'false'  # Set to 'true' if you want GCS logging
+        - name: WORKERS
+          value: '1'  # Single worker optimal for async I/O-bound workload
 
         # Health check
         livenessProbe:

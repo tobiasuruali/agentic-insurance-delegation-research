@@ -91,6 +91,8 @@ sendButtonColor             = "#3c3abd";    // Accent button color
 sendButtonFontColor         = "#FFFFFF";    // White text
 
 // Internal variables
+var isSending = false; // Prevent double-send on rapid clicks
+
 // Session ID management (Qualtrics-first with localStorage fallback)
 // Creates a composite session ID from Qualtrics SessionId and PROLIFIC_PID
 var compositeSessionId = (function () {
@@ -1239,15 +1241,24 @@ async function sendInitializationMessage() {
 }
 
 async function sendMessage() {
+    // Immediate guard: prevent double-send on rapid clicks
+    if (isSending) {
+        console.log("Already sending, ignoring duplicate click");
+        return;
+    }
+
     console.log("Send button clicked");
     var userInput = document.getElementById('user-input').value;
     if (!userInput.trim()) return;
+
+    // Set flag immediately to block subsequent clicks
+    isSending = true;
 
     stampQualtricsTimestampOnce('USER_FIRST_MSG_TS');
 
     // Clear input field immediately
     document.getElementById('user-input').value = '';
-    
+
     // Disable send button with visual feedback
     const sendButton = document.getElementById('send-button');
     sendButton.disabled = true;
@@ -1359,10 +1370,11 @@ async function sendMessage() {
             qualtricsResponseId = "DEBUG"
         }
         
-        // Re-enable send button
+        // Re-enable send button and reset sending flag
         const sendButton = document.getElementById('send-button');
         sendButton.disabled = false;
         sendButton.style.opacity = '1';
+        isSending = false;
     } catch (error) {
         // Remove typing indicator on error
         if (typingIndicator.parentNode) {
@@ -1371,10 +1383,11 @@ async function sendMessage() {
         showErrorMessage("Network error: " + error.message);
         console.error("Network error: ", error);
 
-        // Re-enable send button on error
+        // Re-enable send button on error and reset sending flag
         const sendButton = document.getElementById('send-button');
         sendButton.disabled = false;
         sendButton.style.opacity = '1';
+        isSending = false;
     }
 
     // Final scroll (input already cleared earlier)

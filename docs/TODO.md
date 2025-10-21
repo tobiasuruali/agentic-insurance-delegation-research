@@ -37,7 +37,7 @@
 
 <details><summary>💻 Backend</summary>
 
-- [ ] **Agentic Autogen hand‑off:** refactor backend logic for full agentic flow with AutoGen 🧊💻 <!-- prio:low area:logic -->
+- [ ] **Agentic Autogen hand‑off:** refactor backend logic for full agentic flow with LangGraph 🧊💻 <!-- prio:low area:logic -->
 
 </details>
 
