@@ -15,13 +15,33 @@ from data.insurance_products import recommend_insurance_product
 # Configure module logger
 logger = logging.getLogger(__name__)
 
-# Load system prompts
+# Load system prompts (default with handoff)
 with open('data/system_prompts.yaml', 'r') as f:
     system_prompts = yaml.safe_load(f)
 
-# Initialize agents
+# Load system prompts without handoff
+with open('data/system_prompts_no_handoff.yaml', 'r') as f:
+    system_prompts_no_handoff = yaml.safe_load(f)
+
+# Initialize default agents (with handoff for backward compatibility)
 info_collector = InformationCollectorAgent(system_prompts['information_collector']['content'])
 recommendation_agent = RecommendationAgent(system_prompts['recommendation_agent']['content'])
+
+def get_agents(show_handoff: bool = True):
+    """
+    Get appropriate agents based on whether handoff should be shown.
+
+    Args:
+        show_handoff (bool): If True, use prompts with handoff mentions. If False, use seamless prompts.
+
+    Returns:
+        tuple: (info_collector, recommendation_agent) instances
+    """
+    prompts = system_prompts if show_handoff else system_prompts_no_handoff
+    return (
+        InformationCollectorAgent(prompts['information_collector']['content']),
+        RecommendationAgent(prompts['recommendation_agent']['content'])
+    )
 
 # Configuration
 bucket_name = os.getenv('GCS_BUCKET_NAME', 'insurance-chatbot-logs')
@@ -120,10 +140,10 @@ def save_conversation_history(conversation_key: str, conversation_history: List[
         logger.error(f"Error saving to Firestore: {str(e)}, falling back to in-memory")
         conversation_histories[conversation_key] = conversation_history
 
-async def process_with_information_collector(conversation_history: List[Dict], gpt_model: str) -> Dict:
+async def process_with_information_collector(conversation_history: List[Dict], gpt_model: str, info_collector_agent: InformationCollectorAgent, recommendation_agent_instance: RecommendationAgent) -> Dict:
     """Process conversation with Information Collector Agent"""
     try:
-        messages = info_collector.get_conversation_messages(conversation_history)
+        messages = info_collector_agent.get_conversation_messages(conversation_history)
 
         response = await openai_client.chat.completions.create(
             model=gpt_model,
@@ -136,11 +156,11 @@ async def process_with_information_collector(conversation_history: List[Dict], g
         logger.info(f"OpenAI response: {response_content}")
         
         # Check if agent wants to handoff
-        if info_collector.should_handoff(response_content):
-            customer_data = info_collector.extract_collected_data(response_content)
-            
+        if info_collector_agent.should_handoff(response_content):
+            customer_data = info_collector_agent.extract_collected_data(response_content)
+
             if customer_data:
-                is_valid, missing_fields = info_collector.validate_collected_data(customer_data)
+                is_valid, missing_fields = info_collector_agent.validate_collected_data(customer_data)
                 if is_valid:
                     # Clean the response for display (remove handoff signal)
                     display_response = response_content.split('HANDOFF_TO_RECOMMENDATION_AGENT')[0].strip()
@@ -151,7 +171,7 @@ async def process_with_information_collector(conversation_history: List[Dict], g
                     first_message = f"{display_response}"
                     
                     # Get recommendation from Recommendation Agent
-                    recommendation_result = await process_with_recommendation_agent(customer_data, gpt_model)
+                    recommendation_result = await process_with_recommendation_agent(customer_data, gpt_model, recommendation_agent_instance)
                     
                     if recommendation_result['success']:
                         # Return both messages
@@ -197,14 +217,14 @@ async def process_with_information_collector(conversation_history: List[Dict], g
             'error': str(e)
         }
 
-async def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Dict:
+async def process_with_recommendation_agent(customer_data: Dict, gpt_model: str, recommendation_agent_instance: RecommendationAgent) -> Dict:
     """Process recommendation with Recommendation Agent"""
     try:
         logger.info(f"Processing recommendation for customer age: {customer_data.get('customer_age', 'Unknown')}")
         logger.info(f"Customer preferences: deductible={customer_data.get('deductible_preference')}, belongings_value={customer_data.get('belongings_value')}")
 
         # Generate recommendation using existing logic
-        recommendation_result = recommendation_agent.process_customer_data(customer_data)
+        recommendation_result = recommendation_agent_instance.process_customer_data(customer_data)
         logger.info(f"Recommendation result: {recommendation_result}")
 
         # Create OpenAI function call for recommendation
@@ -254,7 +274,7 @@ async def process_with_recommendation_agent(customer_data: Dict, gpt_model: str)
             logger.info("Generating final recommendation response")
             final_response = await openai_client.chat.completions.create(
                 model=gpt_model,
-                messages=recommendation_agent.get_conversation_messages(customer_data, {'recommendation_link': result})
+                messages=recommendation_agent_instance.get_conversation_messages(customer_data, {'recommendation_link': result})
             )
             
             response_content = final_response.choices[0].message.content.strip()
@@ -293,10 +313,20 @@ async def process_with_recommendation_agent(customer_data: Dict, gpt_model: str)
             'error': str(e)
         }
 
-async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str):
+async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str, show_handoff: bool = True):
     """
     Main request processing function that orchestrates the 2-agent workflow
+
+    Args:
+        request_data: Request data dictionary
+        endpoint: API endpoint
+        gpt_model: GPT model to use
+        show_handoff: If True, use prompts with handoff mentions. If False, use seamless prompts. (Default: True for backward compatibility)
     """
+    # Get appropriate agents based on show_handoff flag
+    info_collector_agent, recommendation_agent_instance = get_agents(show_handoff)
+    logger.info(f"Using agents with show_handoff={show_handoff}")
+
     user_input = request_data.get('message')
     session_id = request_data.get('session_id')
     chatbot_id = endpoint.lstrip("/")
@@ -351,10 +381,10 @@ async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: s
         
         if should_use_recommendation and customer_data:
             # Process with Recommendation Agent
-            result = await process_with_recommendation_agent(customer_data, gpt_model)
+            result = await process_with_recommendation_agent(customer_data, gpt_model, recommendation_agent_instance)
         else:
             # Process with Information Collector Agent
-            result = await process_with_information_collector(conversation_history, gpt_model)
+            result = await process_with_information_collector(conversation_history, gpt_model, info_collector_agent, recommendation_agent_instance)
         
         if not result['success']:
             raise Exception(result['error'])

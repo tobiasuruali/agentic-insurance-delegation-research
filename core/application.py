@@ -56,6 +56,7 @@ class ChatRequest(BaseModel):
     message: List[ChatMessage]
     session_id: str
     qualtrics_response_id: str
+    show_handoff: bool = True  # Defaults to True for backward compatibility
 
 class ChatResponse(BaseModel):
     response: List[str]
@@ -108,11 +109,11 @@ async def insurance_recommendation(request: ChatRequest):
         "session_id": request.session_id,
         "qualtrics_response_id": request.qualtrics_response_id
     }
-    
+
     gpt_model = "gpt-4.1"
 
     # Process the request (now async for better concurrency)
-    result = await request_handler.process_prompt_request(request_data, "/InsuranceRecommendation", gpt_model)
+    result = await request_handler.process_prompt_request(request_data, "/InsuranceRecommendation", gpt_model, request.show_handoff)
     
     # Handle the response
     if result.get('status_code') == 200:

@@ -91,6 +91,7 @@ sendButtonColor             = "#3c3abd";    // Accent button color
 sendButtonFontColor         = "#FFFFFF";    // White text
 
 // Internal variables
+var isSending = false; // Prevent double-send on rapid clicks
 var sessionId = 'session_' + crypto.randomUUID();
 var chatHistory = "";
 var chatHistoryJson = [];
@@ -151,13 +152,22 @@ function addChatHeader() {
 }
 
 async function sendMessage() {
+    // Immediate guard: prevent double-send on rapid clicks
+    if (isSending) {
+        console.log("Already sending, ignoring duplicate click");
+        return;
+    }
+
     console.log("Send button clicked");
     var userInput = document.getElementById('user-input').value;
     if (!userInput.trim()) return;
-    
+
+    // Set flag immediately to block subsequent clicks
+    isSending = true;
+
     // Clear input field immediately
     document.getElementById('user-input').value = '';
-    
+
     // Disable send button with visual feedback
     const sendButton = document.getElementById('send-button');
     sendButton.disabled = true;
@@ -202,7 +212,8 @@ async function sendMessage() {
         var requestData = {
             message: chatHistoryJson,
             session_id: sessionId,
-            qualtrics_response_id: qualtricsResponseId
+            qualtrics_response_id: qualtricsResponseId,
+            show_handoff: true  // ST02 with handoff - show agent transition
         };
         
         console.log("Sending request:", JSON.stringify(requestData, null, 2));
@@ -285,20 +296,22 @@ async function sendMessage() {
             qualtricsResponseId = "DEBUG"
         }
         
-        // Re-enable send button
+        // Re-enable send button and reset sending flag
         const sendButton = document.getElementById('send-button');
         sendButton.disabled = false;
         sendButton.style.opacity = '1';
+        isSending = false;
     } catch (error) {
         var loadingDiv = document.getElementById('loading-message');
         if (loadingDiv) loadingDiv.remove();
         showErrorMessage("Network error: " + error.message);
         console.error("Network error: ", error);
-        
-        // Re-enable send button on error
+
+        // Re-enable send button on error and reset sending flag
         const sendButton = document.getElementById('send-button');
         sendButton.disabled = false;
         sendButton.style.opacity = '1';
+        isSending = false;
     }
 
     // Final scroll (input already cleared earlier)
