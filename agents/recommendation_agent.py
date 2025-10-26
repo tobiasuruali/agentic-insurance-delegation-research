@@ -62,8 +62,8 @@ class RecommendationAgent:
         - Age: {customer_data.get('customer_age', 'N/A')}
         
         Recommended Product Link: {recommendation_result['recommendation_link']}
-        
-        Please provide a personalized response to the customer based on this information and include the recommendation link.
+
+        Please provide a personalized response to the customer based on this information. Do NOT include the link in your response, it will be added automatically.
         """
         
         messages = [

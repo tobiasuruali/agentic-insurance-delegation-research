@@ -38,6 +38,8 @@ def get_agents(show_handoff: bool = True):
         tuple: (info_collector, recommendation_agent) instances
     """
     prompts = system_prompts if show_handoff else system_prompts_no_handoff
+    logger.info(f"get_agents called with show_handoff={show_handoff}")
+    logger.info(f"Recommendation Agent prompt (first 200 chars): {prompts['recommendation_agent']['content'][:200]}")
     return (
         InformationCollectorAgent(prompts['information_collector']['content']),
         RecommendationAgent(prompts['recommendation_agent']['content'])
@@ -272,11 +274,18 @@ async def process_with_recommendation_agent(customer_data: Dict, gpt_model: str,
             
             # Generate final response
             logger.info("Generating final recommendation response")
+            messages_for_openai = recommendation_agent_instance.get_conversation_messages(customer_data, {'recommendation_link': result})
+            logger.info(f"Messages being sent to OpenAI: {len(messages_for_openai)} messages")
+            for i, msg in enumerate(messages_for_openai):
+                logger.info(f"Message {i}: role={msg['role']}, content_length={len(msg['content'])}")
+                if msg['role'] == 'system':
+                    logger.info(f"System prompt content: {msg['content']}")
+
             final_response = await openai_client.chat.completions.create(
                 model=gpt_model,
-                messages=recommendation_agent_instance.get_conversation_messages(customer_data, {'recommendation_link': result})
+                messages=messages_for_openai
             )
-            
+
             response_content = final_response.choices[0].message.content.strip()
             logger.info(f"AI response: {response_content}")
             
@@ -290,7 +299,14 @@ async def process_with_recommendation_agent(customer_data: Dict, gpt_model: str,
             }
         else:
             # Fallback if no tool call
-            messages = recommendation_agent.get_conversation_messages(customer_data, recommendation_result)
+            logger.info("No tool call - using fallback path")
+            messages = recommendation_agent_instance.get_conversation_messages(customer_data, recommendation_result)
+            logger.info(f"Fallback messages being sent to OpenAI: {len(messages)} messages")
+            for i, msg in enumerate(messages):
+                logger.info(f"Fallback Message {i}: role={msg['role']}, content_length={len(msg['content'])}")
+                if msg['role'] == 'system':
+                    logger.info(f"Fallback System prompt content: {msg['content']}")
+
             fallback_response = await openai_client.chat.completions.create(
                 model=gpt_model,
                 messages=messages

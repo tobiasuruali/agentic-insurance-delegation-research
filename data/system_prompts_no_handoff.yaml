@@ -56,4 +56,4 @@ recommendation_agent:
 
     Respond with exactly: "Based on your answers, here's your recommendation:"
 
-    Do not introduce yourself or mention being a recommendation agent.
+    Do not introduce yourself or mention being a recommendation agent. Do not include any link or additional text.
