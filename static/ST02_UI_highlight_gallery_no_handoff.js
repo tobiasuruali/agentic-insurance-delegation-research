@@ -97,6 +97,12 @@ var originalRecommendation = null;
 var recommendationType = null;
 var shuffledProductOrder = null; // Stores the randomized display order
 
+// Timestamp tracking variables for duration calculations
+var currentPopupShownAt = null; // Track most recent popup show time for duration calc
+var currentGalleryShownAt = null; // Track most recent gallery show time
+var recommendationPopupOpenCount = 0; // Count how many times popup opened
+var galleryOpenCount = 0; // Count how many times gallery opened
+
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array) {
     const shuffled = [...array];
@@ -105,6 +111,63 @@ function shuffleArray(array) {
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
+}
+
+// Qualtrics helper functions for consistent data access
+function setQualtricsEmbeddedData(key, value) {
+    try {
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.setEmbeddedData === 'function') {
+            Qualtrics.SurveyEngine.setEmbeddedData(key, value);
+            return;
+        }
+
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.setJSEmbeddedData === 'function') {
+            Qualtrics.SurveyEngine.setJSEmbeddedData(key, value);
+            return;
+        }
+    } catch (error) {
+        console.error('Error setting Qualtrics embedded data for key:', key, error);
+    }
+
+    // No-op fallback for local testing when Qualtrics is unavailable
+    console.debug('Qualtrics embedded data unavailable. Skipping set for key:', key);
+}
+
+function getQualtricsEmbeddedData(key) {
+    try {
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.getEmbeddedData === 'function') {
+            return Qualtrics.SurveyEngine.getEmbeddedData(key);
+        }
+
+        if (typeof Qualtrics !== 'undefined' &&
+            Qualtrics.SurveyEngine &&
+            typeof Qualtrics.SurveyEngine.getJSEmbeddedData === 'function') {
+            return Qualtrics.SurveyEngine.getJSEmbeddedData(key);
+        }
+    } catch (error) {
+        console.error('Error getting Qualtrics embedded data for key:', key, error);
+    }
+
+    // No-op fallback for local testing when Qualtrics is unavailable
+    console.debug('Qualtrics embedded data unavailable. Returning undefined for key:', key);
+    return undefined;
+}
+
+function stampQualtricsTimestampOnce(key) {
+    var existingValue = getQualtricsEmbeddedData(key);
+    if (existingValue !== undefined && existingValue !== null && existingValue !== '') {
+        return existingValue;
+    }
+
+    var timestamp = new Date().toISOString();
+    setQualtricsEmbeddedData(key, timestamp);
+    return timestamp;
 }
 
 // Apply styles inspired by the website
@@ -275,6 +338,11 @@ async function sendMessage() {
                 //     addSystemMessage("🔄 Handing off → Recommendation Agent");
                 //     await new Promise(resolve => setTimeout(resolve, 1000));
                 // }
+            }
+
+            // Stamp RECOMMENDATION_RECEIVED_TS if response contains recommendation
+            if (responses.some(msg => msg.includes('showRecommendation('))) {
+                stampQualtricsTimestampOnce('RECOMMENDATION_RECEIVED_TS');
             }
         } else {
             showErrorMessage("Error from server.<br>Status code: " + response.status);
@@ -457,8 +525,24 @@ try {
 
     // Hide NextButton during chat interaction
     Qualtrics.SurveyEngine.addOnload(function () {
-      this.hideNextButton();      // built‑in helper
-      //  … any other per‑page setup
+        this.hideNextButton();
+        stampQualtricsTimestampOnce('PAGE_LOAD_TS');
+
+        var nextButton = document.getElementById('NextButton');
+        if (nextButton) {
+            var handleNextClick = function () {
+                stampQualtricsTimestampOnce('NEXT_BUTTON_TS');
+            };
+
+            if (typeof nextButton.addEventListener === 'function') {
+                nextButton.addEventListener('click', handleNextClick, { once: true });
+            } else {
+                nextButton.onclick = function () {
+                    handleNextClick();
+                    nextButton.onclick = null;
+                };
+            }
+        }
     });
     
     var sendButton = document.getElementById('send-button');
@@ -584,13 +668,39 @@ function showProductOverlay(){
 }
 
 
-function showRecommendation(productNumber) {    
+function showRecommendation(productNumber) {
     // Set tracking variables
     originalRecommendation = productNumber;
     recommendationType = "single";
-    
+
+    // Track popup open count and timing
+    recommendationPopupOpenCount++;
+    currentPopupShownAt = new Date();
+
+    // Stamp first-time timestamp
+    stampQualtricsTimestampOnce('RECOMMENDED_PRODUCT_POPUP_TS');
+
+    // Log reopen if applicable
+    if (recommendationPopupOpenCount > 1) {
+        logEvent("recommended-product-popup-reopened", {
+            reopenCount: recommendationPopupOpenCount
+        });
+    }
+
     showProductOverlay()
-    message = "Here is your recommended product: " + productNumber 
+
+    // Update close button to log close event
+    let closeButton = document.querySelector(".modal-close-button");
+    if (closeButton) {
+        closeButton.onclick = () => {
+            logEvent("recommended-product-popup-closed", {
+                timeViewedMs: currentPopupShownAt ? (new Date() - currentPopupShownAt) : null
+            });
+            document.getElementById("recommendation").remove();
+        };
+    }
+
+    message = "Here is your recommended product: " + productNumber
     // Adapt message
     let alertMessage = document.getElementById("recommendationMessage")
     alertMessage.innerHTML = message;
@@ -613,14 +723,30 @@ function showRecommendation(productNumber) {
     acceptButton.textContent = '✅Accept';
     // Styling handled by CSS class
     acceptButton.onclick = function() {
+        // Calculate durations
+        var decisionTime = new Date();
+        var timeOnProduct = currentPopupShownAt ? (decisionTime - currentPopupShownAt) : null;
+
+        // Stamp decision timestamp
+        setQualtricsEmbeddedData('RECOMMENDED_PRODUCT_DECISION_TS', decisionTime.toISOString());
+        setQualtricsEmbeddedData('TIME_ON_RECOMMENDED_PRODUCT_MS', timeOnProduct);
+
+        // Calculate total decision time from recommendation received
+        var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
+        if (recReceivedTs) {
+            var totalTime = decisionTime - new Date(recReceivedTs);
+            setQualtricsEmbeddedData('TOTAL_DECISION_TIME_MS', totalTime);
+        }
+
         // Log acceptance with context
         logEvent("accepted-recommended-product-" + productNumber, {
             acceptedProduct: productNumber,
             originalRecommendation: originalRecommendation,
             wasRecommended: true,
-            recommendationType: recommendationType
+            recommendationType: recommendationType,
+            timeOnProductMs: timeOnProduct
         });
-        
+
         alert('You accepted product ' + productNumber + '!');
         document.getElementById("NextButton").click();
     };
@@ -630,6 +756,23 @@ function showRecommendation(productNumber) {
     declineButton.textContent = '❌Decline';
     // Styling handled by CSS class
     declineButton.addEventListener('click', function () {
+        // Calculate durations
+        var decisionTime = new Date();
+        var timeOnProduct = currentPopupShownAt ? (decisionTime - currentPopupShownAt) : null;
+
+        // Stamp decision timestamp
+        setQualtricsEmbeddedData('RECOMMENDED_PRODUCT_DECISION_TS', decisionTime.toISOString());
+        setQualtricsEmbeddedData('TIME_ON_RECOMMENDED_PRODUCT_MS', timeOnProduct);
+
+        // Log decline event
+        logEvent("declined-recommended-product-" + productNumber, {
+            declinedProduct: productNumber,
+            originalRecommendation: originalRecommendation,
+            wasRecommended: true,
+            recommendationType: recommendationType,
+            timeOnProductMs: timeOnProduct
+        });
+
         document.getElementById("recommendation").remove();
         showAllProducts("Choose a product below")
     });
@@ -660,15 +803,40 @@ function showRecommendation(productNumber) {
 
 function showAllProducts(message) {
   console.log("showAllProducts() called with message:", message);
-  
+
   // Update recommendation type if switching from single to gallery
   if (recommendationType === "single") {
     recommendationType = "gallery-after-decline";
   } else {
     recommendationType = "gallery";
   }
-  
+
+  // Track gallery open count and timing
+  galleryOpenCount++;
+  currentGalleryShownAt = new Date();
+
+  // Stamp first-time timestamp
+  stampQualtricsTimestampOnce('PRODUCT_GALLERY_SHOWN_TS');
+
+  // Log reopen if applicable
+  if (galleryOpenCount > 1) {
+    logEvent("product-gallery-reopened", {
+      reopenCount: galleryOpenCount
+    });
+  }
+
   showProductOverlay();
+
+  // Update close button to log close event
+  let closeButton = document.querySelector(".modal-close-button");
+  if (closeButton) {
+    closeButton.onclick = () => {
+      logEvent("product-gallery-closed", {
+        timeViewedMs: currentGalleryShownAt ? (new Date() - currentGalleryShownAt) : null
+      });
+      document.getElementById("recommendation").remove();
+    };
+  }
 
   // Set prompt text
   const alertMessage = document.getElementById("recommendationMessage");
@@ -784,7 +952,15 @@ function showAllProducts(message) {
 
   // Nav arrow behavior (scrollIntoView is robust under Qualtrics)
   const slides = Array.from(track.children);
+  let hasNavigated = false; // Track if user has navigated at all
+
   function goTo(i) {
+    // Track first navigation
+    if (!hasNavigated) {
+      stampQualtricsTimestampOnce('GALLERY_FIRST_NAVIGATION_TS');
+      hasNavigated = true;
+    }
+
     idx = (i + total) % total;
     slides[idx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     updateIndicator();
@@ -800,6 +976,12 @@ function showAllProducts(message) {
       const width = track.clientWidth || 1;
       const newIdx = Math.round(track.scrollLeft / width);
       if (newIdx !== idx) {
+        // Track first navigation via scroll
+        if (!hasNavigated) {
+          stampQualtricsTimestampOnce('GALLERY_FIRST_NAVIGATION_TS');
+          hasNavigated = true;
+        }
+
         idx = Math.max(0, Math.min(total - 1, newIdx));
         updateIndicator();
       }
@@ -825,10 +1007,26 @@ function showAllProducts(message) {
     var originalProductNumber = parseInt(currentSlideElement.getAttribute('data-original-index'));
     var displayPos = parseInt(currentSlideElement.getAttribute('data-display-position'));
 
+    // Calculate durations
+    var decisionTime = new Date();
+    var timeInGallery = currentGalleryShownAt ? (decisionTime - currentGalleryShownAt) : null;
+
+    // Stamp decision timestamp
+    setQualtricsEmbeddedData('GALLERY_DECISION_TS', decisionTime.toISOString());
+    setQualtricsEmbeddedData('TIME_IN_GALLERY_MS', timeInGallery);
+
+    // Calculate total decision time from recommendation received
+    var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
+    if (recReceivedTs) {
+      var totalTime = decisionTime - new Date(recReceivedTs);
+      setQualtricsEmbeddedData('TOTAL_DECISION_TIME_MS', totalTime);
+    }
+
     console.log("Accepted product:", {
       originalProductNumber: originalProductNumber,
       displayPosition: displayPos,
-      wasRecommended: originalRecommendation === originalProductNumber
+      wasRecommended: originalRecommendation === originalProductNumber,
+      timeInGalleryMs: timeInGallery
     });
 
     // Determine if this matches the original recommendation
@@ -843,7 +1041,8 @@ function showAllProducts(message) {
       displayPosition: displayPos,
       originalRecommendation: originalRecommendation,
       wasRecommended: wasRecommended,
-      recommendationType: recommendationType
+      recommendationType: recommendationType,
+      timeInGalleryMs: timeInGallery
     });
 
     // If they chose alternative, also log the rejection of original
@@ -866,8 +1065,36 @@ function showAllProducts(message) {
   declineButton.textContent = '❌Decline';
   declineButton.className = "custom-recommendation-button";
   declineButton.onclick = function() {
+    // Calculate durations
+    var decisionTime = new Date();
+    var timeInGallery = currentGalleryShownAt ? (decisionTime - currentGalleryShownAt) : null;
+
+    // Stamp decision timestamp
+    setQualtricsEmbeddedData('GALLERY_DECISION_TS', decisionTime.toISOString());
+    setQualtricsEmbeddedData('TIME_IN_GALLERY_MS', timeInGallery);
+
+    // Calculate total decision time from recommendation received
+    var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
+    if (recReceivedTs) {
+      var totalTime = decisionTime - new Date(recReceivedTs);
+      setQualtricsEmbeddedData('TOTAL_DECISION_TIME_MS', totalTime);
+    }
+
+    // Log decline from gallery
+    logEvent("declined-all-products-from-gallery", {
+      originalRecommendation: originalRecommendation,
+      recommendationType: recommendationType,
+      timeInGalleryMs: timeInGallery
+    });
+
     document.getElementById("recommendation").remove();
-    // Could add additional decline logic here if needed
+
+    // Show decline message and proceed to next question
+    alert('Thank you for your feedback. You have declined all products.');
+
+    // Advance to next question
+    var nb = document.getElementById("NextButton");
+    if (nb) nb.click();
   };
   /* DECLINE LOGIC - END */
 
