@@ -7,7 +7,7 @@ var chatTitle = 'Comparabot Insurance Finder';
 var avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Replace with your actual image URL (square image)
 
 // Study identifier for cross-study analysis
-var STUDY_ID = 'ST02';
+var STUDY_ID = 'ST02_01';
 
 const productImageData = [
     {
