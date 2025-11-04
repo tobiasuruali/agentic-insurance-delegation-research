@@ -1855,7 +1855,7 @@ function showRecommendation(productNumber) {
 
     // Accept button
     const acceptButton = document.createElement('button');
-    acceptButton.textContent = '✅Accept';
+    acceptButton.textContent = '✅Accept Product';
     // Styling handled by CSS class
     acceptButton.onclick = function() {
         // Calculate durations
@@ -1888,7 +1888,7 @@ function showRecommendation(productNumber) {
 
     // Decline button
     const declineButton = document.createElement('button');
-    declineButton.textContent = '❌Decline';
+    declineButton.textContent = '❌Decline & Browse';
     // Styling handled by CSS class
     declineButton.addEventListener('click', function () {
         // Calculate durations
@@ -2093,6 +2093,15 @@ function showAllProducts(message) {
       indicatorTotal: ciTotal.textContent
     });
   }
+
+  // Function to update Accept button text with current display position
+  function updateAcceptButtonText() {
+    if (window.galleryAcceptButton) {
+      const currentPos = idx + 1; // 1-indexed display position in randomized carousel
+      window.galleryAcceptButton.textContent = '✅Accept Product ' + currentPos;
+    }
+  }
+
   updateIndicator();
 
   // Nav arrow behavior (scrollIntoView is robust under Qualtrics)
@@ -2109,6 +2118,7 @@ function showAllProducts(message) {
     idx = (i + total) % total;
     slides[idx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     updateIndicator();
+    updateAcceptButtonText();
   }
   prev.addEventListener("click", () => goTo(idx - 1));
   next.addEventListener("click", () => goTo(idx + 1));
@@ -2135,6 +2145,7 @@ function showAllProducts(message) {
 
         idx = Math.max(0, Math.min(total - 1, newIdx));
         updateIndicator();
+        updateAcceptButtonText();
       }
     });
   });
@@ -2143,6 +2154,12 @@ function showAllProducts(message) {
   const acceptButton = document.createElement('button');
   acceptButton.textContent = '✅Accept';
   acceptButton.className = "custom-recommendation-button";
+
+  // Store reference globally for dynamic updates
+  window.galleryAcceptButton = acceptButton;
+
+  // Set initial product number
+  updateAcceptButtonText();
   acceptButton.onclick = function() {
     var track = document.querySelector('.carousel .slides');
     var displayPosition = 0; // default fallback (0-indexed)
@@ -2213,7 +2230,7 @@ function showAllProducts(message) {
 
   /* DECLINE LOGIC - START */
   const declineButton = document.createElement('button');
-  declineButton.textContent = '❌Decline';
+  declineButton.textContent = '❌Remain Uninsured';
   declineButton.className = "custom-recommendation-button";
   declineButton.onclick = function() {
     // Calculate durations
