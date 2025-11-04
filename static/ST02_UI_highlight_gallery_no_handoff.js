@@ -6,6 +6,9 @@ var botName = 'Comparabot';
 var chatTitle = 'Comparabot Insurance Finder';
 var avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Replace with your actual image URL (square image)
 
+// Study configuration
+var STUDY_ID = 'ST02_02';
+
 const productImageData = [
     {
         src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_01.png',
@@ -88,7 +91,98 @@ sendButtonFontColor         = "#FFFFFF";    // White text
 
 // Internal variables
 var isSending = false; // Prevent double-send on rapid clicks
-var sessionId = 'session_' + crypto.randomUUID();
+
+// Composite session ID combining Qualtrics SessionID and PROLIFIC_PID
+var compositeSessionId = (function () {
+    function getStored() {
+        try {
+            var item = localStorage.getItem('ST02_sessionId');
+            return (item && item.trim()) || '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function setStored(value) {
+        try {
+            localStorage.setItem('ST02_sessionId', value);
+        } catch (e) {
+            // Ignore storage errors
+        }
+    }
+
+    var stored = getStored();
+    if (stored) {
+        return stored;
+    }
+
+    var sessionId = '';
+    var prolificId = '';
+
+    try {
+        if (typeof Qualtrics !== 'undefined' && Qualtrics.SurveyEngine) {
+            var qualtricsSessionId = Qualtrics.SurveyEngine.getEmbeddedData('Q_SessionID');
+            if (qualtricsSessionId && qualtricsSessionId.trim()) {
+                sessionId = qualtricsSessionId.trim();
+            }
+        }
+    } catch (e) {
+        // Ignore Qualtrics access errors
+    }
+
+    if (!sessionId) {
+        sessionId = 'AUTO_' + crypto.randomUUID();
+    }
+
+    try {
+        if (typeof Qualtrics !== 'undefined' && Qualtrics.SurveyEngine) {
+            var pid = Qualtrics.SurveyEngine.getEmbeddedData('PROLIFIC_PID');
+            if (pid && pid.trim()) {
+                prolificId = pid.trim();
+            }
+        }
+    } catch (e) {
+        // Ignore Qualtrics access errors
+    }
+
+    if (!prolificId) {
+        var urlParams = new URLSearchParams(window.location.search);
+        var pidFromUrl = urlParams.get('PROLIFIC_PID');
+        if (pidFromUrl && pidFromUrl.trim()) {
+            prolificId = pidFromUrl.trim();
+        }
+    }
+
+    if (!prolificId) {
+        prolificId = 'AUTO_' + crypto.randomUUID();
+    }
+
+    // Prefix each component for clarity
+    sessionId = 'SES_' + sessionId;
+    prolificId = 'PID_' + prolificId;
+
+    // Combine into composite format
+    var combined = sessionId + '__PROLIFIC__' + prolificId;
+    var compositeId = STUDY_ID + '_' + combined;
+
+    setStored(compositeId);
+
+    // Also set in Qualtrics for reference
+    try {
+        if (typeof Qualtrics !== 'undefined' && Qualtrics.SurveyEngine) {
+            if (typeof Qualtrics.SurveyEngine.setJSEmbeddedData === 'function') {
+                Qualtrics.SurveyEngine.setJSEmbeddedData('CompositeSessionId', compositeId);
+            } else if (typeof Qualtrics.SurveyEngine.setEmbeddedData === 'function') {
+                Qualtrics.SurveyEngine.setEmbeddedData('CompositeSessionId', compositeId);
+            }
+        }
+    } catch (e) {
+        // Ignore Qualtrics set errors
+    }
+
+    return compositeId;
+})();
+
 var chatHistory = "";
 var chatHistoryJson = [];
 
@@ -170,6 +264,453 @@ function stampQualtricsTimestampOnce(key) {
     return timestamp;
 }
 
+// Utility functions for delays and safe content handling
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function escapeHTML(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function sanitizeHTML(content) {
+    // Replace dangerous HTML tags
+    var sanitized = content
+        .replace(/<script[^>]*>.*?<\/script>/gi, '')
+        .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+        .replace(/<object[^>]*>.*?<\/object>/gi, '')
+        .replace(/<embed[^>]*>/gi, '')
+        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+    return sanitized;
+}
+
+function formatMessageContentSafe(value, container) {
+    // Qualtrics-safe message formatting using pure DOM methods (no innerHTML)
+    var sanitized = sanitizeHTML(value);
+    var lines = sanitized.split('\n');
+
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) {
+            if (i < lines.length - 1) {
+                container.appendChild(document.createElement('br'));
+            }
+            continue;
+        }
+
+        // Handle anchor tags
+        var anchorRegex = /<a\s+href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi;
+        var match;
+        var lastIndex = 0;
+        var hasAnchors = false;
+
+        while ((match = anchorRegex.exec(line)) !== null) {
+            hasAnchors = true;
+            // Text before link
+            if (match.index > lastIndex) {
+                var beforeText = line.substring(lastIndex, match.index);
+                container.appendChild(document.createTextNode(beforeText));
+            }
+
+            // Create link
+            var link = document.createElement('a');
+            link.href = match[1];
+            link.textContent = match[2];
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.style.color = '#1A73E8';
+            link.style.textDecoration = 'underline';
+            container.appendChild(link);
+
+            lastIndex = anchorRegex.lastIndex;
+        }
+
+        if (hasAnchors) {
+            // Remaining text after last link
+            if (lastIndex < line.length) {
+                var remainingText = line.substring(lastIndex);
+                container.appendChild(document.createTextNode(remainingText));
+            }
+            if (i < lines.length - 1) {
+                container.appendChild(document.createElement('br'));
+            }
+            continue;
+        }
+
+        // Bullet list items
+        if (line.startsWith('• ') || line.startsWith('- ')) {
+            var bulletSpan = document.createElement('span');
+            bulletSpan.textContent = '• ';
+            bulletSpan.style.marginRight = '0.5em';
+            container.appendChild(bulletSpan);
+
+            var text = line.substring(2);
+            container.appendChild(document.createTextNode(text));
+
+            if (i < lines.length - 1) {
+                container.appendChild(document.createElement('br'));
+            }
+            continue;
+        }
+
+        // Regular paragraph
+        var p = document.createElement('p');
+        p.style.margin = '0';
+        p.style.marginBottom = i < lines.length - 1 ? '0.5em' : '0';
+        p.textContent = line;
+        container.appendChild(p);
+    }
+}
+
+// Inject modern CSS styles
+let globalStylesInjected = false;
+function injectGlobalStyles() {
+    if (globalStylesInjected) {
+        return;
+    }
+
+    const style = document.createElement('style');
+    style.id = 'st02-global-styles';
+    style.textContent = `
+        /* Chat window and layout styling */
+        #chat-window.chat-scroll-region {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1.8vw, 12px);
+            padding: clamp(4px, 1vw, 8px);
+            background: #ffffff;
+            overflow-y: auto;
+        }
+
+        #chat-window.chat-scroll-region::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #chat-window.chat-scroll-region::-webkit-scrollbar-thumb {
+            background: rgba(60, 58, 189, 0.25);
+            border-radius: 8px;
+        }
+
+        #input-row.chat-input-row {
+            display: flex;
+            gap: 12px;
+            padding: clamp(6px, 1.5vw, 10px);
+            background: rgba(60, 58, 189, 0.03);
+            border-top: 1px solid rgba(60, 58, 189, 0.08);
+        }
+
+        #user-input.chat-input {
+            flex: 1 1 auto;
+            min-width: 0;
+            border-radius: 14px;
+            border: 1px solid rgba(17, 19, 34, 0.12);
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            background: #ffffff;
+            color: #111322;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        #user-input.chat-input:focus {
+            outline: none;
+            border-color: rgba(60, 58, 189, 0.48);
+            box-shadow: 0 0 0 4px rgba(60, 58, 189, 0.12);
+        }
+
+        #user-input.chat-input::placeholder {
+            color: rgba(17, 19, 34, 0.45);
+        }
+
+        #send-button.chat-send-button {
+            flex: 0 0 auto;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3c3abd, #4f4cd7);
+            color: #ffffff;
+            border: none;
+            padding: 0 clamp(12px, 2vw, 18px);
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            min-height: 36px;
+            transition: transform 0.18s ease, box-shadow 0.2s ease;
+            position: relative;
+        }
+
+        #send-button.chat-send-button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 36px rgba(60, 58, 189, 0.25);
+        }
+
+        #send-button.chat-send-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+            box-shadow: none;
+        }
+
+        /* Modern message styling */
+        .message {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: clamp(8px, 2vw, 12px);
+            border-radius: 12px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+            max-width: min(640px, 92%);
+            animation: messageIn 0.35s ease;
+            position: relative;
+            isolation: isolate;
+            z-index: 0;
+        }
+
+        .message > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #3c3abd, #4f4cd7) !important;
+            color: #ffffff !important;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: #F0F1F9 !important;
+            color: #111322 !important;
+            border: 1px solid rgba(60, 58, 189, 0.2) !important;
+        }
+
+        .bot-message::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(145deg, rgba(60, 58, 189, 0.05), transparent 62%);
+            mix-blend-mode: multiply;
+            opacity: 0.3;
+        }
+
+        .bot-message.recommendation {
+            background: #E8F4F8 !important;
+            color: #000000 !important;
+            border: 1px solid rgba(41, 118, 221, 0.3) !important;
+            box-shadow: 0 24px 48px rgba(41, 118, 221, 0.18);
+        }
+
+        .bot-message.recommendation::before {
+            background: linear-gradient(160deg, rgba(41, 118, 221, 0.12), transparent 58%);
+            mix-blend-mode: normal;
+            opacity: 0.3;
+        }
+
+        .message-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(17, 19, 34, 0.025);
+            color: #6E6E6E;
+            align-self: flex-start;
+        }
+
+        .message-label::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.7;
+        }
+
+        .user-message .message-label {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        .bot-message .message-label {
+            background: rgba(60, 58, 189, 0.025);
+            color: #6E6E6E;
+        }
+
+        .bot-message.recommendation .message-label {
+            background: rgba(41, 118, 221, 0.03);
+            color: #6E6E6E;
+        }
+
+        .message-body {
+            font-size: clamp(0.8rem, 2vw, 0.9rem) !important;
+            line-height: 1.6 !important;
+            color: inherit !important;
+        }
+
+        .user-message .message-body {
+            color: #ffffff !important;
+        }
+
+        .bot-message .message-body {
+            color: #111322 !important;
+        }
+
+        .bot-message.recommendation .message-body {
+            color: #000000 !important;
+        }
+
+        .message-body ul {
+            margin: 0;
+            padding-left: 1.1rem;
+            display: grid;
+            gap: 6px;
+        }
+
+        .message-body p {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .message-body:empty::before {
+            content: '[No message content]';
+            color: red;
+            font-style: italic;
+        }
+
+        .message-body a {
+            color: #3c3abd;
+            text-decoration: underline;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .message-body a:hover {
+            color: #4f4cd7;
+            text-decoration: none;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(60, 58, 189, 0.08);
+            box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
+            color: rgba(17, 19, 34, 0.72);
+            font-size: 0.75rem;
+        }
+
+        .typing-label {
+            font-size: 0.75rem;
+            color: rgba(17, 19, 34, 0.72);
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 999px;
+            background: #3c3abd;
+            opacity: 0.2;
+            animation: typingPulse 1.3s ease-in-out infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.16s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.32s;
+        }
+
+        /* Keyframe animations */
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes typingPulse {
+            0%, 100% {
+                opacity: 0.2;
+                transform: translateY(0);
+            }
+            40% {
+                opacity: 1;
+                transform: translateY(-3px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .message,
+            .typing-indicator {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+    globalStylesInjected = true;
+}
+
+// Setup layout by adding necessary CSS classes
+function setupLayout() {
+    const chatContainer = document.getElementById('chat-container');
+    if (chatContainer) {
+        chatContainer.classList.add('chat-shell');
+    }
+
+    const chatWindow = document.getElementById('chat-window');
+    if (chatWindow) {
+        chatWindow.classList.add('chat-scroll-region');
+    }
+
+    const inputRow = document.getElementById('input-row');
+    if (inputRow) {
+        inputRow.classList.add('chat-input-row');
+    }
+
+    const input = document.getElementById('user-input');
+    if (input) {
+        input.classList.add('chat-input');
+        input.setAttribute('placeholder', 'Type your message…');
+    }
+
+    const button = document.getElementById('send-button');
+    if (button) {
+        button.classList.add('chat-send-button');
+    }
+}
+
 // Apply styles inspired by the website
 document.body.style.fontFamily = "'Arial', sans-serif";
 document.body.style.backgroundColor = documentBackgroundColor
@@ -210,6 +751,136 @@ function addChatHeader() {
     chatWindow.parentNode.insertBefore(chatHeader, chatWindow);
 }
 
+async function loadConversationHistory() {
+    try {
+        console.log('Loading conversation history for session: ' + compositeSessionId);
+
+        var historyEndpoint = chatbotURL.replace('/InsuranceRecommendation', '') + '/conversation/' + compositeSessionId;
+        var response = await fetch(historyEndpoint);
+
+        if (!response.ok) {
+            console.log('No previous conversation found or error loading history');
+            return;
+        }
+
+        var data = await response.json();
+        var history = data.history || [];
+
+        console.log('Retrieved ' + history.length + ' messages from backend');
+
+        var chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error('Chat window not found');
+            return;
+        }
+
+        chatHistoryJson = history.slice();
+
+        for (var h = 0; h < history.length; h++) {
+            var msg = history[h];
+            if (msg.role === 'user') {
+                chatHistory += 'User: ' + msg.content + '\n';
+            } else if (msg.role === 'assistant') {
+                chatHistory += 'Agent: ' + msg.content + '\n';
+            }
+        }
+
+        // Render messages in UI
+        for (var i = 0; i < history.length; i++) {
+            var msg = history[i];
+
+            if (msg.role === 'user') {
+                var userMessageDiv = createMessageElement('user', msg.content);
+                chatWindow.appendChild(userMessageDiv);
+            } else if (msg.role === 'assistant') {
+                // For no_handoff: always use 'collector' agent type (seamless single agent)
+                var agentType = 'collector';
+
+                var botMessageDiv = createMessageElement('assistant', msg.content, agentType);
+                chatWindow.appendChild(botMessageDiv);
+            }
+        }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        console.log('Successfully loaded and rendered ' + history.length + ' messages');
+
+        if (history.length === 0) {
+            console.log('Empty conversation detected, sending initialization request');
+            await sendInitializationMessage();
+        }
+
+    } catch (error) {
+        console.error('Error loading conversation history:', error);
+    }
+}
+
+async function sendInitializationMessage() {
+    try {
+        console.log('Initializing conversation with welcome message');
+        stampQualtricsTimestampOnce('BOT_WELCOME_TS');
+
+        var chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error('Chat window not found');
+            return;
+        }
+
+        var typingIndicator = createTypingIndicator();
+        chatWindow.appendChild(typingIndicator);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        var requestData = {
+            message: [],
+            session_id: compositeSessionId,
+            qualtrics_response_id: "${e://Field/ResponseID}",
+            show_handoff: false  // ST02 no handoff - seamless single agent experience
+        };
+
+        var response = await fetch(chatbotURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
+
+        if (response.ok) {
+            var data = await response.json();
+            var responses = Array.isArray(data.response) ? data.response : [data.response];
+
+            for (var r = 0; r < responses.length; r++) {
+                var messageContent = responses[r];
+                var botTimestamp = new Date().toISOString();
+
+                chatHistory += 'Agent: ' + messageContent + '\n';
+                chatHistoryJson.push({
+                    role: 'assistant',
+                    content: messageContent,
+                    timestamp: botTimestamp,
+                    agent_type: 'collector'
+                });
+
+                var botMessageDiv = createMessageElement('assistant', messageContent, 'collector');
+                chatWindow.appendChild(botMessageDiv);
+            }
+
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            console.log('Initialization complete');
+
+            setQualtricsEmbeddedData('ChatHistory', chatHistory);
+            setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+        } else {
+            console.error('Failed to initialize conversation:', response.status);
+        }
+    } catch (error) {
+        console.error('Error initializing conversation:', error);
+    }
+}
+
 async function sendMessage() {
     // Immediate guard: prevent double-send on rapid clicks
     if (isSending) {
@@ -237,40 +908,23 @@ async function sendMessage() {
     chatHistory += "User: " + userInput + "\n";
     chatHistoryJson.push({ role: "user", content: userInput, timestamp: timestamp });
 
-    // User message styling
-    var userMessageDiv = document.createElement('div');
-    userMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
-    userMessageDiv.style.color = userMessageFontColor;
-    userMessageDiv.style.backgroundColor = userMessageBackgroundColor;
-    userMessageDiv.style.padding = "clamp(8px, 2vw, 12px)";
-    userMessageDiv.style.borderRadius = "10px";
-    userMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
-    userMessageDiv.style.maxWidth = "70%";
-    userMessageDiv.style.alignSelf = "flex-end";
-    userMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-    userMessageDiv.innerHTML = '<strong>You:</strong> ' + userInput;
+    // User message with modern styling
+    var userMessageDiv = createMessageElement('user', userInput);
     chatWindow.appendChild(userMessageDiv);
-    
+
     // Scroll immediately to show user message
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    // Loading message styling
-    var loadingMessageDiv = document.createElement('div');
-    loadingMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
-    loadingMessageDiv.style.fontStyle = 'italic';
-    loadingMessageDiv.style.color = loadingMessageFontColor;
-    loadingMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
-    loadingMessageDiv.style.maxWidth = "70%";
-    loadingMessageDiv.style.alignSelf = "flex-start";
-    loadingMessageDiv.id = 'loading-message';
-    loadingMessageDiv.textContent = botName + ' is typing...';
-    chatWindow.appendChild(loadingMessageDiv);
+    // Typing indicator with animation
+    var typingIndicator = createTypingIndicator();
+    typingIndicator.id = 'loading-message';
+    chatWindow.appendChild(typingIndicator);
 
     try {
         var qualtricsResponseId = "${e://Field/ResponseID}";
         var requestData = {
             message: chatHistoryJson,
-            session_id: sessionId,
+            session_id: compositeSessionId,
             qualtrics_response_id: qualtricsResponseId,
             show_handoff: false  // ST02 no handoff - seamless single agent experience
         };
@@ -285,8 +939,10 @@ async function sendMessage() {
             body: JSON.stringify(requestData)
         });
 
-        var loadingDiv = document.getElementById('loading-message');
-        if (loadingDiv) loadingDiv.remove();
+        // Remove typing indicator
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
 
         if (response.ok) {
             var data = await response.json();
@@ -310,7 +966,7 @@ async function sendMessage() {
                 
                 // Add delay for non-first messages
                 if (i > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await wait(800);
                 }
                 
                 chatHistory += "Agent: " + messageContent + "\n";
@@ -350,13 +1006,13 @@ async function sendMessage() {
         }
         
         try{
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-            Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-            Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+            setQualtricsEmbeddedData('ChatHistory', chatHistory);
+            setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+            setQualtricsEmbeddedData('CompositeSessionId', compositeSessionId);
+            setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
         } catch(error) {
             console.error("Error from Qualtrics: ", error);
-            sessionId = "DEBUG"
+            compositeSessionId = "DEBUG"
             qualtricsResponseId = "DEBUG"
         }
         
@@ -366,8 +1022,9 @@ async function sendMessage() {
         sendButton.style.opacity = '1';
         isSending = false;
     } catch (error) {
-        var loadingDiv = document.getElementById('loading-message');
-        if (loadingDiv) loadingDiv.remove();
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
         showErrorMessage("Network error: " + error.message);
         console.error("Network error: ", error);
 
@@ -382,55 +1039,68 @@ async function sendMessage() {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-function createBotMessage(content, agentType = 'collector') {
-    var botMessageDiv = document.createElement('div');
-    
-    // Base styling
-    botMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
-    botMessageDiv.style.padding = 'clamp(8px, 2vw, 12px)';
-    botMessageDiv.style.borderRadius = '10px';
-    botMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
-    botMessageDiv.style.maxWidth = '70%';
-    botMessageDiv.style.alignSelf = 'flex-start';
-    botMessageDiv.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-    
-    // Agent-specific styling
-    if (agentType === 'collector') {
-        botMessageDiv.style.backgroundColor = botMessageBackgroundColor;
-        botMessageDiv.style.color = botMessageFontColor;
-        botMessageDiv.style.border = '1px solid #E9ECEF';
-        botMessageDiv.style.borderLeft = '4px solid #3c3abd';
-        botMessageDiv.innerHTML = '<strong>Information Agent:</strong> ' + content;
+// Create message element with modern styling
+function createMessageElement(role, content, agentType) {
+    const wrapper = document.createElement('div');
+    const normalizedRole = role === 'assistant' ? 'bot' : role;
+    wrapper.className = `message ${normalizedRole}-message`;
+
+    // Agent-specific inline styles (for Qualtrics compatibility)
+    if (normalizedRole === 'user') {
+        wrapper.style.background = 'linear-gradient(135deg, #3c3abd, #4f4cd7)';
+        wrapper.style.color = '#ffffff';
     } else if (agentType === 'recommendation') {
-        botMessageDiv.style.backgroundColor = '#E8F4F8';
-        botMessageDiv.style.color = '#000000';
-        botMessageDiv.style.border = '1px solid #D4E8F3';
-        botMessageDiv.style.borderLeft = '4px solid #1A73E8';
-        botMessageDiv.innerHTML = '<strong>Recommendation Agent:</strong> ' + content;
+        wrapper.classList.add('recommendation');
+        wrapper.style.background = '#E8F4F8';
+        wrapper.style.color = '#000000';
+        wrapper.style.border = '1px solid rgba(41, 118, 221, 0.3)';
+    } else {
+        wrapper.style.background = '#F0F1F9';
+        wrapper.style.color = '#111322';
+        wrapper.style.border = '1px solid rgba(60, 58, 189, 0.2)';
     }
-    
-    return botMessageDiv;
+
+    const label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = normalizedRole === 'user' ? 'You' :
+                       agentType === 'recommendation' ? 'Recommendation Agent' :
+                       'Information Agent';
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+    formatMessageContentSafe(content, body);
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(body);
+    return wrapper;
 }
 
-function addSystemMessage(message) {
-    var chatWindow = document.getElementById('chat-window');
-    var systemMessageDiv = document.createElement('div');
-    
-    systemMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
-    systemMessageDiv.style.fontStyle = 'italic';
-    systemMessageDiv.style.color = '#6E6E6E';
-    systemMessageDiv.style.backgroundColor = '#FFFFFF';
-    systemMessageDiv.style.padding = '8px 12px';
-    systemMessageDiv.style.borderRadius = '15px';
-    systemMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
-    systemMessageDiv.style.maxWidth = '60%';
-    systemMessageDiv.style.alignSelf = 'center';
-    systemMessageDiv.style.border = '1px solid #DADADA';
-    systemMessageDiv.style.textAlign = 'center';
-    
-    systemMessageDiv.innerHTML = '<em>' + message + '</em>';
-    chatWindow.appendChild(systemMessageDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+// Create typing indicator element
+function createTypingIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'typing-indicator';
+
+    const label = document.createElement('span');
+    label.className = 'typing-label';
+    label.textContent = `Information Agent is thinking`;
+
+    const dots = document.createElement('div');
+    dots.className = 'typing-dots';
+
+    for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'typing-dot';
+        dots.appendChild(dot);
+    }
+
+    indicator.appendChild(label);
+    indicator.appendChild(dots);
+    return indicator;
+}
+
+function createBotMessage(content, agentType = 'collector') {
+    // Use modern createMessageElement instead of inline styling
+    return createMessageElement('assistant', content, agentType);
 }
 
 function logEvent(eventType, details) {
@@ -447,10 +1117,10 @@ function logEvent(eventType, details) {
         chatHistoryJson.push(logEntry);
         
         // Set standard embedded data
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistory', chatHistory);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
-        Qualtrics.SurveyEngine.setJSEmbeddedData('SessionId', sessionId);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('ResponseID', "${e://Field/ResponseID}");
+        setQualtricsEmbeddedData('ChatHistory', chatHistory);
+        setQualtricsEmbeddedData('ChatHistoryJson', JSON.stringify(chatHistoryJson));
+        setQualtricsEmbeddedData('CompositeSessionId', compositeSessionId);
+        setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
         
         // Initialize all variables to ensure consistent data structure
         var currentRecommended = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendedProduct') || "";
@@ -515,7 +1185,7 @@ function logEvent(eventType, details) {
         
     } catch(error) {
         console.error("Error logging event: ", error);
-        sessionId = "DEBUG";
+        compositeSessionId = "DEBUG";
         qualtricsResponseId = "DEBUG";
     }
 }
@@ -525,6 +1195,20 @@ try {
 
     // Hide NextButton during chat interaction
     Qualtrics.SurveyEngine.addOnload(function () {
+        // Inject modern CSS styles first (inside Qualtrics callback)
+        injectGlobalStyles();
+
+        // Add CSS classes to HTML elements (inside Qualtrics callback)
+        setupLayout();
+
+        // Load conversation history when page loads (inside Qualtrics callback - DOM is now ready)
+        loadConversationHistory().then(function () {
+            console.log("Conversation history load attempt completed");
+        }).catch(function (err) {
+            console.error("Failed to load conversation history:", err);
+        });
+
+        // Hide next button
         this.hideNextButton();
         stampQualtricsTimestampOnce('PAGE_LOAD_TS');
 
@@ -543,32 +1227,24 @@ try {
                 };
             }
         }
-    });
-    
-    var sendButton = document.getElementById('send-button');
-    sendButton.style.backgroundColor = sendButtonColor;
-    sendButton.style.color = sendButtonFontColor;
-    sendButton.style.padding = "clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px)";
-    sendButton.style.minHeight = "44px"; // Minimum touch target
-    sendButton.style.border = "none";
-    sendButton.style.borderRadius = "5px";
-    sendButton.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
-    sendButton.style.cursor = "pointer";
-    sendButton.addEventListener('click', sendMessage);
 
-    document.getElementById('user-input').style.padding = "clamp(8px, 2vw, 12px)";
-    document.getElementById('user-input').style.minHeight = "44px"; // Minimum touch target
-    document.getElementById('user-input').style.border = "1px solid #CCC";
-    document.getElementById('user-input').style.borderRadius = "5px";
-    document.getElementById('user-input').style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
+        // Add event listeners (styling now handled by CSS classes) - inside Qualtrics callback
+        var sendButton = document.getElementById('send-button');
+        if (sendButton) {
+            sendButton.addEventListener('click', sendMessage);
+        }
 
-    // Handle Enter key to send message and prevent default behavior
-    document.getElementById('user-input').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();  // Prevent default behavior like form submission
-            if (document.getElementById('user-input').value.trim() !== "") {  // Ensure input is not empty
-                sendMessage();
-            }
+        // Handle Enter key to send message and prevent default behavior - inside Qualtrics callback
+        var userInput = document.getElementById('user-input');
+        if (userInput) {
+            userInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();  // Prevent default behavior like form submission
+                    if (document.getElementById('user-input').value.trim() !== "") {  // Ensure input is not empty
+                        sendMessage();
+                    }
+                }
+            });
         }
     });
 } catch (error) {
@@ -924,7 +1600,17 @@ function showAllProducts(message) {
 
   // ===== Fraction Indicator (SPAN‑split to avoid Qualtrics sanitizing numbers) =====
   const total = Array.isArray(productImageData) ? productImageData.length : 0;
+
+  // Find the display position of the originally recommended product
   let idx = 0;
+  if (originalRecommendation) {
+    const highlightedSlide = track.querySelector('.highlighted');
+    if (highlightedSlide) {
+      const displayPos = parseInt(highlightedSlide.getAttribute('data-display-position'));
+      idx = displayPos - 1; // Convert to 0-indexed
+      console.log("Starting gallery at originally recommended product position:", displayPos);
+    }
+  }
 
   const indicator = document.createElement("div");
   indicator.className = "carousel-indicator";
@@ -967,6 +1653,12 @@ function showAllProducts(message) {
   }
   prev.addEventListener("click", () => goTo(idx - 1));
   next.addEventListener("click", () => goTo(idx + 1));
+
+  // Scroll to originally recommended product position on gallery open (without counting as navigation)
+  if (idx > 0 && slides[idx]) {
+    slides[idx].scrollIntoView({ behavior: "auto", inline: "center", block: "nearest" });
+    console.log("Gallery scrolled to recommended product at position:", idx + 1);
+  }
 
   // Sync when user scrolls manually
   let scrollRAF;
