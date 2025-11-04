@@ -2059,7 +2059,17 @@ function showAllProducts(message) {
 
   // ===== Fraction Indicator (SPAN‑split to avoid Qualtrics sanitizing numbers) =====
   const total = Array.isArray(productImageData) ? productImageData.length : 0;
+
+  // Find the display position of the originally recommended product
   let idx = 0;
+  if (originalRecommendation) {
+    const highlightedSlide = track.querySelector('.highlighted');
+    if (highlightedSlide) {
+      const displayPos = parseInt(highlightedSlide.getAttribute('data-display-position'));
+      idx = displayPos - 1; // Convert to 0-indexed
+      console.log("Starting gallery at originally recommended product position:", displayPos);
+    }
+  }
 
   const indicator = document.createElement("div");
   indicator.className = "carousel-indicator";
@@ -2102,6 +2112,12 @@ function showAllProducts(message) {
   }
   prev.addEventListener("click", () => goTo(idx - 1));
   next.addEventListener("click", () => goTo(idx + 1));
+
+  // Scroll to originally recommended product position on gallery open (without counting as navigation)
+  if (idx > 0 && slides[idx]) {
+    slides[idx].scrollIntoView({ behavior: "auto", inline: "center", block: "nearest" });
+    console.log("Gallery scrolled to recommended product at position:", idx + 1);
+  }
 
   // Sync when user scrolls manually
   let scrollRAF;
