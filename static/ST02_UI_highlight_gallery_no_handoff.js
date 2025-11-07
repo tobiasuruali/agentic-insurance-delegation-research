@@ -279,15 +279,57 @@ function escapeHTML(value) {
         .replace(/>/g, '&gt;');
 }
 
-function sanitizeHTML(content) {
-    // Replace dangerous HTML tags
-    var sanitized = content
-        .replace(/<script[^>]*>.*?<\/script>/gi, '')
-        .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
-        .replace(/<object[^>]*>.*?<\/object>/gi, '')
-        .replace(/<embed[^>]*>/gi, '')
-        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
-    return sanitized;
+// HTML sanitization with allowlist
+function sanitizeHTML(value) {
+    const template = document.createElement('template');
+    template.innerHTML = value;
+
+    const allowedElements = new Set(['P', 'BR', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'B', 'I', 'A', 'SPAN']);
+    const allowedAnchorAttributes = new Set(['href', 'target', 'rel', 'onclick', 'title']);
+
+    const walk = node => {
+        const childNodes = Array.from(node.childNodes);
+        for (const child of childNodes) {
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                if (!allowedElements.has(child.tagName)) {
+                    while (child.firstChild) {
+                        node.insertBefore(child.firstChild, child);
+                    }
+                    child.remove();
+                    continue;
+                }
+
+                if (child.tagName === 'A') {
+                    const href = child.getAttribute('href');
+                    if (href && /^\s*javascript:/i.test(href)) {
+                        child.removeAttribute('href');
+                    }
+
+                    if (href && /^https?:/i.test(href) && !child.hasAttribute('target')) {
+                        child.setAttribute('target', '_blank');
+                        child.setAttribute('rel', 'noopener');
+                    }
+
+                    Array.from(child.attributes).forEach(attr => {
+                        if (!allowedAnchorAttributes.has(attr.name)) {
+                            child.removeAttribute(attr.name);
+                        }
+                    });
+                } else {
+                    Array.from(child.attributes).forEach(attr => {
+                        child.removeAttribute(attr.name);
+                    });
+                }
+
+                walk(child);
+            } else if (child.nodeType === Node.COMMENT_NODE) {
+                child.remove();
+            }
+        }
+    };
+
+    walk(template.content);
+    return template.innerHTML;
 }
 
 function formatMessageContentSafe(value, container) {
@@ -304,8 +346,8 @@ function formatMessageContentSafe(value, container) {
             continue;
         }
 
-        // Handle anchor tags
-        var anchorRegex = /<a\s+href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi;
+        // Handle anchor tags (preserve onclick for product recommendations)
+        var anchorRegex = /<a\s+([^>]*)>(.*?)<\/a>/gi;
         var match;
         var lastIndex = 0;
         var hasAnchors = false;
@@ -318,15 +360,37 @@ function formatMessageContentSafe(value, container) {
                 container.appendChild(document.createTextNode(beforeText));
             }
 
-            // Create link
-            var link = document.createElement('a');
-            link.href = match[1];
-            link.textContent = match[2];
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.style.color = '#1A73E8';
-            link.style.textDecoration = 'underline';
-            container.appendChild(link);
+            // Parse anchor attributes
+            var attrString = match[1];
+            var linkText = match[2];
+
+            // Create anchor element
+            var anchor = document.createElement('a');
+            anchor.textContent = linkText;
+
+            // Extract href attribute
+            var hrefMatch = /href=["']([^"']*)["']/i.exec(attrString);
+            if (hrefMatch) {
+                anchor.href = hrefMatch[1];
+            }
+
+            // Extract onclick attribute (needed for showRecommendation)
+            var onclickMatch = /onclick=["']([^"']*)["']/i.exec(attrString);
+            if (onclickMatch) {
+                anchor.setAttribute('onclick', onclickMatch[1]);
+            }
+
+            // Set standard attributes for external links
+            if (anchor.href && /^https?:/i.test(anchor.href)) {
+                anchor.target = '_blank';
+                anchor.rel = 'noopener noreferrer';
+            }
+
+            // Style matching ST02 design
+            anchor.style.color = '#1A73E8';
+            anchor.style.textDecoration = 'underline';
+
+            container.appendChild(anchor);
 
             lastIndex = anchorRegex.lastIndex;
         }
@@ -1048,26 +1112,35 @@ function createMessageElement(role, content, agentType) {
     const normalizedRole = role === 'assistant' ? 'bot' : role;
     wrapper.className = `message ${normalizedRole}-message`;
 
-    // Agent-specific inline styles (for Qualtrics compatibility)
+    const label = document.createElement('div');
+    label.className = 'message-label';
+
+    // Agent-specific inline styles with colored labels (for Qualtrics compatibility)
     if (normalizedRole === 'user') {
         wrapper.style.background = 'linear-gradient(135deg, #3c3abd, #4f4cd7)';
         wrapper.style.color = '#ffffff';
+        wrapper.style.alignSelf = 'flex-end';
+        label.textContent = 'You';
+        label.style.background = 'rgba(255, 255, 255, 0.22)';
+        label.style.color = '#ffffff';
     } else if (agentType === 'recommendation') {
         wrapper.classList.add('recommendation');
         wrapper.style.background = '#E8F4F8';
         wrapper.style.color = '#000000';
         wrapper.style.border = '1px solid rgba(41, 118, 221, 0.3)';
+        wrapper.style.alignSelf = 'flex-start';
+        label.textContent = 'Recommendation Agent';
+        label.style.background = 'rgba(41, 118, 221, 0.18)';
+        label.style.color = '#2976dd';
     } else {
         wrapper.style.background = '#F0F1F9';
         wrapper.style.color = '#111322';
         wrapper.style.border = '1px solid rgba(60, 58, 189, 0.2)';
+        wrapper.style.alignSelf = 'flex-start';
+        label.textContent = 'Information Agent';
+        label.style.background = 'rgba(60, 58, 189, 0.12)';
+        label.style.color = '#3c3abd';
     }
-
-    const label = document.createElement('div');
-    label.className = 'message-label';
-    label.textContent = normalizedRole === 'user' ? 'You' :
-                       agentType === 'recommendation' ? 'Recommendation Agent' :
-                       'Information Agent';
 
     const body = document.createElement('div');
     body.className = 'message-body';
