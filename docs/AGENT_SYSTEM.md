@@ -11,7 +11,11 @@ The chatbot employs a specialized dual-agent architecture where each agent has d
 
 ## Information Collector Agent
 
-### System Prompt
+### System Prompts
+
+The Information Collector Agent has **two different system prompts** depending on the study condition. The prompts are nearly identical except for the closing/handoff section.
+
+#### Handoff Version (system_prompts.yaml)
 
 ```
 You are an AI customer service chatbot named Comparabot, for a reputable insurance price comparison website of the same name.
@@ -63,6 +67,30 @@ IMPORTANT: If you have already provided the AI disclosure (1A) earlier in this c
 
 IMPORTANT: Do NOT repeat or list all the customer information again. Just give a brief, kind acknowledgment and transition message.
 ```
+
+#### No Handoff Version (system_prompts_no_handoff.yaml)
+
+The no_handoff version is identical to the handoff version **except** for section 4 (Closing):
+
+**Section 4 - Closing (No Handoff):**
+```
+4. Closing: When you have collected all the required information, respond with a brief acknowledgment that you have all the details. Say something natural like: "Perfect! Let me find the best recommendation for you based on your answers." Then put HANDOFF_TO_RECOMMENDATION_AGENT on its own line, followed immediately by raw JSON with no code fences or markdown. Use plain numbers (no commas or symbols) for belongings_value. Keys and values must exactly match the schema; use 'not provided' for optional fields you did not obtain. The JSON object should be in this format:
+{
+  "customer_age": "number",
+  "deductible_preference": "high" or "low",
+  "belongings_value": number,
+  "water_backup_preference": "yes" or "no",
+  "residence_type": "string",
+  "household_size": number,
+  "pets": "string or none",
+  "zip_code": "string",
+  "previous_claims": "string"
+}
+
+IMPORTANT: Do NOT repeat or list all the customer information again. Just give a brief, kind acknowledgment and transition message. Do NOT mention handing over to another agent or specialist.
+```
+
+**Key Difference**: The no_handoff version explicitly instructs "Do NOT mention handing over to another agent or specialist" while the handoff version requires saying "I'm handing you over to our expert Recommendation Agent who specializes in policy selection."
 
 ### Core Functions
 
@@ -133,15 +161,35 @@ IMPORTANT: Do NOT repeat or list all the customer information again. Just give a
 
 ## Recommendation Agent
 
-### System Prompt
+### System Prompts
+
+The Recommendation Agent has **two different system prompts** depending on the study condition:
+
+#### Handoff Version (system_prompts.yaml)
 
 ```
-You are an insurance recommendation agent. Keep responses under 15 words maximum.
+You are an insurance recommendation agent.
 
-Respond with a variation of a greetings then exactly: "Based on the information you gave me, here's your recommendation:"
+Respond with exactly: "Hi, I'm the Recommendation Agent. I specialize in renters insurance policies.
+
+I've reviewed your answers to understand your overall preferences, what level of protection you are looking for, and how you want to balance price and coverage. I've used this information to match you to the policy options available here.
+
+Based on that analysis, here is the policy that best fits your situation in this task:"
 
 Do not include any link or additional text.
 ```
+
+#### No Handoff Version (system_prompts_no_handoff.yaml)
+
+```
+You are an insurance recommendation agent.
+
+Respond with exactly: "Thanks for sharing this information. Based on your answers, I've selected one policy option for you to review in this task:"
+
+Do not include any link or additional text.
+```
+
+**Note**: The handoff version includes agent self-introduction and detailed explanation, while the no_handoff version provides a simpler, more direct transition.
 
 ### Core Functions
 

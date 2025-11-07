@@ -485,15 +485,41 @@ logEvent("recommended-product-3", {
 - `recommendationType`: Tracks interaction flow ("single", "gallery", "gallery-after-decline")
 
 ### Complete Embedded Data Variable Set
-**All scenarios output these 7 variables:**
 
+**ST01 (Simple) - 7 Core Variables:**
 1. **`RecommendedProduct`**: Product number initially recommended (always has value)
-2. **`AcceptedProduct`**: Product number accepted by user (value or `""`)
+2. **`AcceptedProduct`**: Product number accepted by user (value, `""`, or `"UNINSURED"`)
 3. **`WasRecommendationAccepted`**: "true" if accepted recommended product, "false" otherwise
-4. **`UserJourney`**: User flow type (always has value)
+4. **`UserJourney`**: User flow type (e.g., "direct-accept", "declined-all-remain-uninsured")
 5. **`RecommendationType`**: Interaction type (always has value)
 6. **`RejectedRecommendation`**: Product number that was rejected (value or `""`)
 7. **`DeclinedProduct`**: Product number that was declined (value or `""`)
+
+**ST02 (Gallery) - 20+ Variables:**
+
+*Core Variables:*
+- `ChatHistory`, `ChatHistoryJson`, `SessionId`, `CompositeSessionId`, `ResponseID`
+- `TreatmentCondition` - "handoff" or "no_handoff"
+
+*Product Decision Variables (same as ST01):*
+- `RecommendedProduct`, `AcceptedProduct`, `WasRecommendationAccepted`
+- `UserJourney`, `RecommendationType`, `RejectedRecommendation`, `DeclinedProduct`
+
+*Gallery-Specific Variables:*
+- `AcceptedProductDisplayPosition` - Position where accepted product appeared in gallery
+- `RandomizedProductOrder` - Randomized order of products shown
+- `TIME_IN_GALLERY_MS` - Time spent in gallery view (milliseconds)
+- `TIME_ON_RECOMMENDED_PRODUCT_MS` - Time viewing recommended product (milliseconds)
+
+*Timestamp Variables:*
+- `WINDOW_OPEN_TS` - Page load time
+- `INIT_MSG_TS` - Initial message sent
+- `FIRST_MSG_TS` - User's first message
+- `NEXT_CLICK_TS` - Next button clicked
+- `RECOMMENDATION_RECEIVED_TS` - Recommendation received
+- `RECOMMENDED_PRODUCT_DECISION_TS` - Decision on recommended product
+- `GALLERY_DECISION_TS` - Final gallery decision
+- `TOTAL_DECISION_TIME_MS` - Total decision time (milliseconds)
 
 ### Event Types and Logic
 
@@ -742,27 +768,34 @@ function createStaticHandoffDivider() {
 
 **Process**:
 1. Creates handoff message container with steps
-2. Sequentially animates each step (200ms → 1500ms delays)
+2. Sequentially animates each step with staggered delays
 3. Shows active state with spinning indicator
 4. Marks previous steps as completed with checkmarks
-5. Total duration: ~4 seconds for full sequence
+5. **Total duration: ~10.8 seconds for full sequence (ST02)**
 
-**Animation Stages**:
+**Animation Stages (ST02 Current Timing)**:
 ```javascript
-// Step 1: Activate immediately (200ms delay)
+// Step 1: Activate after 200ms delay
 Step 1: ACTIVE (spinning) → "Handing over to Insurance Specialist"
 
-// Step 2: After 1.5s delay
+// Step 2: After 3.75s delay (was 1.75s)
 Step 1: COMPLETED (checkmark) ✓
 Step 2: ACTIVE (spinning) → "Thinking"
 
-// Step 3: After 1.5s delay
+// Step 3: After 6.0s delay (was 4.0s)
 Step 2: COMPLETED (checkmark) ✓
 Step 3: ACTIVE (spinning) → "Getting top recommendation"
 
 // Final: After 850ms
 Step 3: COMPLETED (checkmark) ✓
 All steps completed
+```
+
+**Timing Code (ST02_UI_highlight_gallery_handoff.js line 1500)**:
+```javascript
+await wait(i === 0 ? 200 : (i === 1 ? 3750 : 6000));
+// Step 0: 200ms, Step 1: 3750ms, Step 2: 6000ms
+// Total: 200 + 3750 + 6000 + 850 = 10,800ms (10.8 seconds)
 ```
 
 **CSS Classes Used**:

@@ -67,12 +67,13 @@ The system provides two types of handoff visualizations:
 **1. Animated Handoff Sequence** (Real-time handoffs)
 - Appears during live agent transitions
 - 3-step animated visualization:
-  - Step 1: "Handing over to Insurance Specialist"
-  - Step 2: "Thinking"
-  - Step 3: "Getting top recommendation"
+  - Step 1: "Handing over to Insurance Specialist" (200ms delay)
+  - Step 2: "Thinking" (3750ms delay in ST02)
+  - Step 3: "Getting top recommendation" (6000ms delay in ST02)
 - Each step appears sequentially with completion checkmarks
 - Smooth animations with color-coded progress indicators
-- Total duration: ~4 seconds for complete sequence
+- **Total duration: ~10.8 seconds for complete sequence (ST02 current timing)**
+- Note: ST01 may use different timing values
 
 **2. Static Handoff Divider** (Conversation history)
 - Appears when loading previous conversations

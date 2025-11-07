@@ -65,13 +65,43 @@ flowchart TB
 ## ✨ Features
 
 🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI
-🔄 **Animated Handoff Sequence**: Beautiful step-by-step visualization showing agent transition progress
+🔄 **Animated Handoff Sequence**: Beautiful step-by-step visualization showing agent transition progress (~10.8 seconds)
 📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation
 🎯 **Personalized Recommendations**: Advanced matching based on deductible, coverage, and water backup preferences
 ⚡ **Session Persistence**: Firestore-backed conversation storage that survives page refreshes and instance restarts
 💾 **Smart Session Management**: Three-tier system (Qualtrics → localStorage → generated) for reliable session tracking
 🔗 **Direct Product Links**: Actionable recommendations with immediate purchase options
-🎨 **Responsive UI**: Modern design with smooth animations and mobile-friendly interface  
+🎨 **Responsive UI**: Modern design with smooth animations and mobile-friendly interface
+🔬 **Multiple Study Variants**: ST01 (simple accept/decline), ST02 (gallery with highlight), ST03 (lottery simulation)
+🎛️ **Study Conditions**: Handoff vs no_handoff versions for experimental control
+
+---
+
+### Study Variants
+
+The system supports multiple study configurations:
+
+**ST01 - Simple Accept/Decline**
+- `ST01_UI_simple_decline_handoff.js` - With agent handoff animation
+- `ST01_UI_simple_decline_no_handoff.js` - Without handoff animation
+- STUDY_ID: `ST01_01` (handoff), `ST01_02` (no_handoff)
+- User can accept or decline the single recommended product
+
+**ST02 - Gallery with Product Highlight**
+- `ST02_UI_highlight_gallery_handoff.js` - With agent handoff animation
+- `ST02_UI_highlight_gallery_no_handoff.js` - Without handoff animation
+- STUDY_ID: `ST02_01` (handoff), `ST02_02` (no_handoff)
+- Recommended product is highlighted, user can browse full gallery
+- Tracks gallery metrics (time, position, randomized order)
+
+**ST03 - Lottery Simulation**
+- `ST03_lottery_simulation_code.js`
+- Different experimental paradigm
+
+**Study Condition System:**
+- Controlled via `show_handoff` parameter in API requests
+- Backend selects appropriate system prompts (handoff vs no_handoff)
+- Frontend tracks condition in `TreatmentCondition` embedded data variable
 
 ---
 
@@ -159,24 +189,36 @@ Add these variables to your Qualtrics Survey Flow before the chatbot question:
 - `ChatHistory` - Conversation log (text format)
 - `ChatHistoryJson` - Structured conversation data (JSON)
 - `SessionId` - Session identifier (auto-managed by 3-tier system)
+- `CompositeSessionId` - Composite session identifier (STUDY_ID + SessionID + PROLIFIC_PID)
 - `ResponseID` - Qualtrics response ID
+- `TreatmentCondition` - Study condition ("handoff" or "no_handoff")
 
-**Analytics Variables:**
+**Product Decision Variables:**
 - `RecommendedProduct` - Initially recommended product number
-- `AcceptedProduct` - Product user accepted
+- `AcceptedProduct` - Product user accepted (or "UNINSURED" if declined all)
 - `WasRecommendationAccepted` - "true"/"false"
-- `UserJourney` - User interaction flow (e.g., "direct-accept", "decline-only")
+- `UserJourney` - User interaction flow (e.g., "direct-accept", "declined-all-remain-uninsured")
 - `RecommendationType` - Interaction type (e.g., "single", "gallery")
 - `RejectedRecommendation` - Rejected product number
 - `DeclinedProduct` - Declined product number
 
-**Timestamp Variables (optional but recommended):**
+**Gallery-Specific Variables (ST02):**
+- `AcceptedProductDisplayPosition` - Position where accepted product appeared in gallery
+- `RandomizedProductOrder` - Randomized order of products shown in gallery
+- `TIME_IN_GALLERY_MS` - Time spent in gallery view (milliseconds)
+- `TIME_ON_RECOMMENDED_PRODUCT_MS` - Time spent viewing recommended product (milliseconds)
+
+**Timestamp Variables:**
 - `WINDOW_OPEN_TS` - When the chatbot page loaded
 - `INIT_MSG_TS` - When initial message was sent
 - `FIRST_MSG_TS` - When user sent first message
 - `NEXT_CLICK_TS` - When user clicked Next button
+- `RECOMMENDATION_RECEIVED_TS` - When recommendation was received
+- `RECOMMENDED_PRODUCT_DECISION_TS` - When user made decision on recommended product
+- `GALLERY_DECISION_TS` - When user made final decision in gallery
+- `TOTAL_DECISION_TIME_MS` - Total decision time (milliseconds)
 
-*Leave all values empty - JavaScript will populate them automatically.*
+**Note:** Different study versions (ST01, ST02, ST03) may use different subsets of these variables. ST02 (gallery version) uses all variables listed above. Leave all values empty - JavaScript will populate them automatically.
 
 ### Google Cloud Authentication & Setup
 ```bash
