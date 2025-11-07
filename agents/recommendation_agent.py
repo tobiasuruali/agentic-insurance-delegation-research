@@ -63,7 +63,9 @@ class RecommendationAgent:
         
         Recommended Product Link: {recommendation_result['recommendation_link']}
 
-        Please provide a personalized response to the customer based on this information. Do NOT include the link in your response, it will be added automatically.
+        Please provide a personalized response to the customer based on this information.
+        Follow your system prompt instructions exactly. Do NOT personalize, summarize, or mention any customer details or product specifications. Do NOT include the link in your response - it will be added automatically.
+
         """
         
         messages = [
