@@ -1497,7 +1497,7 @@ async function showHandoffSequence(chatWindowOverride) {
     // Sequential reveal with timing from local-ui.js
     for (let i = 0; i < stepElements.length; i++) {
         const currentStep = stepElements[i];
-        await wait(i === 0 ? 200 : (i === 1 ? 1750 : 4000));
+        await wait(i === 0 ? 200 : (i === 1 ? 1750 : 6000));
         currentStep.element.classList.add('active');
 
         if (i > 0) {
@@ -1509,7 +1509,7 @@ async function showHandoffSequence(chatWindowOverride) {
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    await wait(850);
+    await wait(3000);
 
     const lastStep = stepElements[stepElements.length - 1];
     lastStep.element.classList.remove('active');
