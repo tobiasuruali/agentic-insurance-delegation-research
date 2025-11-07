@@ -183,6 +183,9 @@ var compositeSessionId = (function () {
     return compositeId;
 })();
 
+// Set treatment condition for this study variant
+setQualtricsEmbeddedData('TreatmentCondition', 'no_handoff');
+
 var chatHistory = "";
 var chatHistoryJson = [];
 
