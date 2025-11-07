@@ -1161,7 +1161,13 @@ function logEvent(eventType, details) {
         if (eventType === "showed-product-gallery") {
             currentRecommendationType = details.type || "gallery";
         }
-        
+
+        if (eventType === "declined-all-products-from-gallery") {
+            currentAccepted = "UNINSURED";
+            currentWasAccepted = "false";
+            currentUserJourney = "declined-all-remain-uninsured";
+        }
+
         // Store display position if available in details
         var currentDisplayPosition = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProductDisplayPosition') || "";
         if (details.displayPosition) {
