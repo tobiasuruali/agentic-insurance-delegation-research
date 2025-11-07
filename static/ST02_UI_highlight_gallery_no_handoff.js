@@ -986,6 +986,7 @@ async function sendMessage() {
     var typingIndicator = createTypingIndicator();
     typingIndicator.id = 'loading-message';
     chatWindow.appendChild(typingIndicator);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
     try {
         var qualtricsResponseId = "${e://Field/ResponseID}";

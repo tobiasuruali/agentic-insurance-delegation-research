@@ -314,88 +314,102 @@ function sanitizeHTML(value) {
 // Format message content with markdown-like support (Qualtrics-safe version)
 // NO innerHTML - builds everything with pure DOM methods
 function formatMessageContentSafe(value, container) {
-    const normalized = String(value || '').replace(/\r\n?/g, '\n');
-    if (!normalized.trim()) {
-        return;
-    }
+    // Qualtrics-safe message formatting using pure DOM methods (no innerHTML)
+    var sanitized = sanitizeHTML(value);
+    var lines = sanitized.split('\n');
 
-    // Check for anchor tags and parse them manually
-    const anchorRegex = /<a\s+([^>]*)>(.*?)<\/a>/gi;
-    const hasAnchor = anchorRegex.test(normalized);
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) {
+            if (i < lines.length - 1) {
+                container.appendChild(document.createElement('br'));
+            }
+            continue;
+        }
 
-    if (hasAnchor) {
-        // Parse anchor tags manually - Qualtrics blocks innerHTML
-        const p = document.createElement('p');
-        let lastIndex = 0;
-        const regex = /<a\s+([^>]*)>(.*?)<\/a>/gi;
-        let match;
+        // Handle anchor tags (preserve onclick for product recommendations)
+        var anchorRegex = /<a\s+([^>]*)>(.*?)<\/a>/gi;
+        var match;
+        var lastIndex = 0;
+        var hasAnchors = false;
 
-        while ((match = regex.exec(normalized)) !== null) {
-            // Add text before the link
+        while ((match = anchorRegex.exec(line)) !== null) {
+            hasAnchors = true;
+            // Text before link
             if (match.index > lastIndex) {
-                const textBefore = normalized.substring(lastIndex, match.index);
-                p.appendChild(document.createTextNode(textBefore));
+                var beforeText = line.substring(lastIndex, match.index);
+                container.appendChild(document.createTextNode(beforeText));
             }
 
             // Parse anchor attributes
-            const attrString = match[1];
-            const linkText = match[2];
+            var attrString = match[1];
+            var linkText = match[2];
 
             // Create anchor element
-            const anchor = document.createElement('a');
+            var anchor = document.createElement('a');
             anchor.textContent = linkText;
 
-            // Extract href
-            const hrefMatch = /href=["']([^"']*)["']/i.exec(attrString);
+            // Extract href attribute
+            var hrefMatch = /href=["']([^"']*)["']/i.exec(attrString);
             if (hrefMatch) {
                 anchor.href = hrefMatch[1];
             }
 
-            // Extract onclick
-            const onclickMatch = /onclick=["']([^"']*)["']/i.exec(attrString);
+            // Extract onclick attribute (needed for showRecommendation)
+            var onclickMatch = /onclick=["']([^"']*)["']/i.exec(attrString);
             if (onclickMatch) {
                 anchor.setAttribute('onclick', onclickMatch[1]);
             }
 
-            p.appendChild(anchor);
-            lastIndex = regex.lastIndex;
-        }
-
-        // Add remaining text after last link
-        if (lastIndex < normalized.length) {
-            p.appendChild(document.createTextNode(normalized.substring(lastIndex)));
-        }
-
-        container.appendChild(p);
-    } else {
-        // No HTML - use safe text-only approach
-        const paragraphs = normalized.split(/\n{2,}/);
-
-        for (const paragraph of paragraphs) {
-            const trimmed = paragraph.trim();
-            if (!trimmed) continue;
-
-            // Check for bullet-point lists (starting with -, *, •, or numbers)
-            const lines = trimmed.split('\n');
-            const isList = lines.every(line => /^[\s]*[-*•]/.test(line) || /^[\s]*\d+\./.test(line));
-
-            if (isList && lines.length > 1) {
-                const ul = document.createElement('ul');
-                for (const line of lines) {
-                    const cleanedLine = line.replace(/^[\s]*[-*•]\s*/, '').replace(/^[\s]*\d+\.\s*/, '').trim();
-                    if (!cleanedLine) continue;
-                    const li = document.createElement('li');
-                    li.textContent = cleanedLine;
-                    ul.appendChild(li);
-                }
-                container.appendChild(ul);
-            } else {
-                // Regular paragraph
-                const p = document.createElement('p');
-                p.textContent = trimmed;
-                container.appendChild(p);
+            // Set standard attributes for external links
+            if (anchor.href && /^https?:/i.test(anchor.href)) {
+                anchor.target = '_blank';
+                anchor.rel = 'noopener noreferrer';
             }
+
+            // Style matching ST02 design
+            anchor.style.color = '#1A73E8';
+            anchor.style.textDecoration = 'underline';
+
+            container.appendChild(anchor);
+
+            lastIndex = anchorRegex.lastIndex;
         }
+
+        if (hasAnchors) {
+            // Remaining text after last link
+            if (lastIndex < line.length) {
+                var remainingText = line.substring(lastIndex);
+                container.appendChild(document.createTextNode(remainingText));
+            }
+            if (i < lines.length - 1) {
+                container.appendChild(document.createElement('br'));
+            }
+            continue;
+        }
+
+        // Bullet list items
+        if (line.startsWith('• ') || line.startsWith('- ')) {
+            var bulletSpan = document.createElement('span');
+            bulletSpan.textContent = '• ';
+            bulletSpan.style.marginRight = '0.5em';
+            container.appendChild(bulletSpan);
+
+            var text = line.substring(2);
+            container.appendChild(document.createTextNode(text));
+
+            if (i < lines.length - 1) {
+                container.appendChild(document.createElement('br'));
+            }
+            continue;
+        }
+
+        // Regular paragraph
+        var p = document.createElement('p');
+        p.style.margin = '0';
+        p.style.marginBottom = i < lines.length - 1 ? '0.5em' : '0';
+        p.textContent = line;
+        container.appendChild(p);
     }
 }
 
