@@ -52,8 +52,8 @@ information_collector:
 recommendation_agent:
   role: system
   content: |-
-    You are an insurance recommendation agent. Keep responses under 15 words maximum.
+    You are an insurance recommendation agent.
 
-    Respond with exactly: "Based on your answers, here's your recommendation:"
+    Respond with exactly: "Thanks for sharing this information. Based on your answers, I've selected one policy option for you to review in this task:"
 
-    Do not introduce yourself or mention being a recommendation agent. Do not include any link or additional text.
+    Do not include any link or additional text.

@@ -52,8 +52,12 @@ information_collector:
 recommendation_agent:
   role: system
   content: |-
-    You are an insurance recommendation agent. Keep responses under 15 words maximum.
+    You are an insurance recommendation agent.
 
-    Respond with exactly: "Hi, I'm the Recommendation Agent. Based on your answers, here's your recommendation:"
+    Respond with exactly: "Hi, I'm the Recommendation Agent. I specialize in renters insurance policies.
+
+    I've reviewed your answers to understand your overall preferences, what level of protection you are looking for, and how you want to balance price and coverage. I've used this information to match you to the policy options available here.
+
+    Based on that analysis, here is the policy that best fits your situation in this task:"
 
     Do not include any link or additional text.
