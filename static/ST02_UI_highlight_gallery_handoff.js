@@ -1581,13 +1581,13 @@ function logEvent(eventType, details) {
         setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
         
         // Initialize all variables to ensure consistent data structure
-        var currentRecommended = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendedProduct') || "";
-        var currentAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProduct') || "";
-        var currentWasAccepted = Qualtrics.SurveyEngine.getJSEmbeddedData('WasRecommendationAccepted') || "";
-        var currentUserJourney = Qualtrics.SurveyEngine.getJSEmbeddedData('UserJourney') || "";
-        var currentRecommendationType = Qualtrics.SurveyEngine.getJSEmbeddedData('RecommendationType') || "";
-        var currentRejected = Qualtrics.SurveyEngine.getJSEmbeddedData('RejectedRecommendation') || "";
-        var currentDeclined = Qualtrics.SurveyEngine.getJSEmbeddedData('DeclinedProduct') || "";
+        var currentRecommended = getQualtricsEmbeddedData('RecommendedProduct') || "";
+        var currentAccepted = getQualtricsEmbeddedData('AcceptedProduct') || "";
+        var currentWasAccepted = getQualtricsEmbeddedData('WasRecommendationAccepted') || "";
+        var currentUserJourney = getQualtricsEmbeddedData('UserJourney') || "";
+        var currentRecommendationType = getQualtricsEmbeddedData('RecommendationType') || "";
+        var currentRejected = getQualtricsEmbeddedData('RejectedRecommendation') || "";
+        var currentDeclined = getQualtricsEmbeddedData('DeclinedProduct') || "";
         
         // Set specific values based on event type, keeping others as current or empty
         if (eventType.startsWith("recommended-product-")) {
@@ -1627,24 +1627,24 @@ function logEvent(eventType, details) {
         }
 
         // Store display position if available in details
-        var currentDisplayPosition = Qualtrics.SurveyEngine.getJSEmbeddedData('AcceptedProductDisplayPosition') || "";
+        var currentDisplayPosition = getQualtricsEmbeddedData('AcceptedProductDisplayPosition') || "";
         if (details.displayPosition) {
             currentDisplayPosition = details.displayPosition;
         }
 
         // Always set ALL variables to ensure consistent data structure
-        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendedProduct', currentRecommended);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProduct', currentAccepted);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('AcceptedProductDisplayPosition', currentDisplayPosition);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('UserJourney', currentUserJourney);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('RecommendationType', currentRecommendationType);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('RejectedRecommendation', currentRejected);
-        Qualtrics.SurveyEngine.setJSEmbeddedData('DeclinedProduct', currentDeclined);
+        setQualtricsEmbeddedData('RecommendedProduct', currentRecommended);
+        setQualtricsEmbeddedData('AcceptedProduct', currentAccepted);
+        setQualtricsEmbeddedData('AcceptedProductDisplayPosition', currentDisplayPosition);
+        setQualtricsEmbeddedData('WasRecommendationAccepted', currentWasAccepted);
+        setQualtricsEmbeddedData('UserJourney', currentUserJourney);
+        setQualtricsEmbeddedData('RecommendationType', currentRecommendationType);
+        setQualtricsEmbeddedData('RejectedRecommendation', currentRejected);
+        setQualtricsEmbeddedData('DeclinedProduct', currentDeclined);
 
         // Store randomized product order when gallery is shown
         if (eventType === "showed-product-gallery" && shuffledProductOrder) {
-            Qualtrics.SurveyEngine.setJSEmbeddedData('RandomizedProductOrder', JSON.stringify(shuffledProductOrder));
+            setQualtricsEmbeddedData('RandomizedProductOrder', JSON.stringify(shuffledProductOrder));
         }
         
     } catch(error) {
