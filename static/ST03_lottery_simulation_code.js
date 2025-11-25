@@ -84,9 +84,9 @@ Qualtrics.SurveyEngine.addOnload(function () {
     var scenarioBonus = Math.max(scenarioEndowment - (prem + oop), 0);
 
     // dollar version of the scenario bonus
-    var scenarioBonusDollar = scenarioBonus / 1000;
+    var scenarioBonusDollar = Number((scenarioBonus / 1000).toFixed(2));
 
-    // === NEW: readable product description ===
+    // readable product description
     var productDescription;
     if (uninsured) {
         productDescription = "Uninsured";
@@ -129,13 +129,32 @@ Qualtrics.SurveyEngine.addOnload(function () {
     }
     Qualtrics.SurveyEngine.setEmbeddedData("Sim_Message", msg);
 
-    // === Auto-advance after 5 seconds ===
-    var that = this; // keep reference to question object
+    // === Timing logic: hide Next, auto-click after 5s, show Next only if needed ===
+    var that = this;
+
+    // hide Next immediately so they can't click early
+    try {
+        that.hideNextButton();
+    } catch (e) {
+        // if hide fails, just ignore; worst case Next stays visible
+    }
+
     window.setTimeout(function () {
+        var autoClicked = false;
         try {
             that.clickNextButton();
+            autoClicked = true;
         } catch (e) {
-            console && console.warn && console.warn("Auto-next failed:", e);
+            // auto-click failed, we'll show Next below
+            autoClicked = false;
         }
-    }, 5000);
+
+        if (!autoClicked) {
+            try {
+                that.showNextButton();
+            } catch (e2) {
+                // if showing fails, silently ignore
+            }
+        }
+    }, 3500);
 });
