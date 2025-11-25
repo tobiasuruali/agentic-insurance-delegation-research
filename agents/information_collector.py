@@ -21,15 +21,18 @@ class InformationCollectorAgent:
     
     def should_handoff(self, response: str) -> bool:
         """Check if the agent wants to handoff to recommendation agent"""
-        return 'HANDOFF_TO_RECOMMENDATION_AGENT' in response
+        return 'HANDOFF_TO_RECOMMENDATION_AGENT' in response.upper()
     
     def extract_collected_data(self, response: str) -> Optional[Dict]:
         """Extract the JSON data from the handoff response"""
         try:
-            # Find the JSON object after HANDOFF_TO_RECOMMENDATION_AGENT
-            handoff_index = response.find('HANDOFF_TO_RECOMMENDATION_AGENT')
-            if handoff_index == -1:
+            # Find the JSON object after HANDOFF_TO_RECOMMENDATION_AGENT (case-insensitive)
+            handoff_pattern = re.compile(r'HANDOFF_TO_RECOMMENDATION_AGENT', re.IGNORECASE)
+            match = handoff_pattern.search(response)
+            if not match:
                 return None
+
+            handoff_index = match.start()
             
             json_start = response.find('{', handoff_index)
             if json_start == -1:

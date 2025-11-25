@@ -164,8 +164,9 @@ async def process_with_information_collector(conversation_history: List[Dict], g
             if customer_data:
                 is_valid, missing_fields = info_collector_agent.validate_collected_data(customer_data)
                 if is_valid:
-                    # Clean the response for display (remove handoff signal)
-                    display_response = response_content.split('HANDOFF_TO_RECOMMENDATION_AGENT')[0].strip()
+                    # Clean the response for display (remove handoff signal) - case insensitive
+                    handoff_pattern = re.compile(r'HANDOFF_TO_RECOMMENDATION_AGENT', re.IGNORECASE)
+                    display_response = handoff_pattern.split(response_content)[0].strip()
                     if not display_response:
                         display_response = "Thank you for providing all the information."
                     
