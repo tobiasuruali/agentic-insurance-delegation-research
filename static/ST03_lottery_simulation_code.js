@@ -1,4 +1,46 @@
 Qualtrics.SurveyEngine.addOnload(function () {
+    // --- inject minimal CSS for loading animation ---
+    (function () {
+        var css = ""
+          + "#sim-loading-wrapper {"
+          + "  margin-top: 16px;"
+          + "  text-align: center;"
+          + "  font-family: Arial, sans-serif;"
+          + "}"
+          + "#sim-loading-text {"
+          + "  font-weight: bold;"
+          + "  margin-bottom: 6px;"
+          + "}"
+          + "#sim-loading-subtext {"
+          + "  font-size: 0.9em;"
+          + "  color: #555;"
+          + "  margin-top: 6px;"
+          + "}"
+          + "#sim-loading-dots {"
+          + "  display: inline-flex;"
+          + "  gap: 6px;"
+          + "  margin-top: 4px;"
+          + "}"
+          + "#sim-loading-dots span {"
+          + "  width: 8px;"
+          + "  height: 8px;"
+          + "  border-radius: 50%;"
+          + "  background-color: #333;"
+          + "  display: inline-block;"
+          + "  animation: sim-bounce 1s infinite ease-in-out;"
+          + "}"
+          + "#sim-loading-dots span:nth-child(2) { animation-delay: 0.15s; }"
+          + "#sim-loading-dots span:nth-child(3) { animation-delay: 0.30s; }"
+          + "@keyframes sim-bounce {"
+          + "  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }"
+          + "  40% { transform: translateY(-4px); opacity: 1; }"
+          + "}";
+        var style = document.createElement('style');
+        style.type = 'text/css';
+        style.appendChild(document.createTextNode(css));
+        document.head.appendChild(style);
+    })();
+    
     var acceptedRaw = Qualtrics.SurveyEngine.getEmbeddedData("AcceptedProduct") || "";
     var val = acceptedRaw.trim();
 
