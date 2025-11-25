@@ -2247,7 +2247,8 @@ function showAllProducts(message) {
       });
     }
 
-    alert('You accepted product ' + originalProductNumber + '!');
+    // alert('You accepted product ' + originalProductNumber + '!');
+    alert('You accepted a product ' + '!');
     var nb = document.getElementById("NextButton");
     if (nb) nb.click();
   };
@@ -2282,7 +2283,7 @@ function showAllProducts(message) {
     document.getElementById("recommendation").remove();
 
     // Show decline message and proceed to next question
-    alert('Thank you for your feedback. You have declined all products.');
+    alert('Thank you for your feedback. You have declined all products & remain uninsured.');
 
     // Advance to next question
     var nb = document.getElementById("NextButton");

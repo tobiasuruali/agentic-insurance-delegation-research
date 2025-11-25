@@ -1847,7 +1847,8 @@ function showAllProducts(message) {
       });
     }
 
-    alert('You accepted product ' + originalProductNumber + '!');
+    // alert('You accepted product ' + originalProductNumber + '!');
+    alert('You accepted a product ' + '!');
     var nb = document.getElementById("NextButton");
     if (nb) nb.click();
   };

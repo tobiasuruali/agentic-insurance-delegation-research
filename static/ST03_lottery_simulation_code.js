@@ -29,7 +29,7 @@ Qualtrics.SurveyEngine.addOnload(function () {
 
     if (val === "" || val.toUpperCase() === "UNINSURED" || val === "-1") {
         uninsured = true;
-        prodId = "UNINSURED";
+        prodId = "Uninsured";
     } else {
         if (/^\d+$/.test(val)) {
             val = "P" + val;
@@ -42,7 +42,7 @@ Qualtrics.SurveyEngine.addOnload(function () {
             wb     = productMap[val].wb;
         } else {
             uninsured = true;
-            prodId = "UNINSURED";
+            prodId = "Uninsured";
         }
     }
 
@@ -83,16 +83,32 @@ Qualtrics.SurveyEngine.addOnload(function () {
     var scenarioEndowment = 1500;
     var scenarioBonus = Math.max(scenarioEndowment - (prem + oop), 0);
 
+    // dollar version of the scenario bonus
+    var scenarioBonusDollar = scenarioBonus / 1000;
+
+    // === NEW: readable product description ===
+    var productDescription;
+    if (uninsured) {
+        productDescription = "Uninsured";
+    } else {
+        productDescription = "Premium: " + prem +
+            ", Deductible: " + ded +
+            ", Coverage limit: " + limit +
+            (wb === 1 ? ", with water-backup coverage" : ", without water-backup coverage");
+    }
+
     // write Sim_...
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Event",        eventName);
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_LossAmount",   lossAmount.toString());
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Premium",      prem.toString());
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Deductible",   ded.toString());
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Limit",        limit.toString());
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_OOP",          oop.toString());
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_BonusScenario",scenarioBonus.toString());
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_ProductID",    prodId);
-    Qualtrics.SurveyEngine.setEmbeddedData("Sim_WaterBackup",  wb.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Event",               eventName);
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_LossAmount",          lossAmount.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Premium",             prem.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Deductible",          ded.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_Limit",               limit.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_OOP",                 oop.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_BonusScenario",       scenarioBonus.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_BonusScenarioDollar", scenarioBonusDollar.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_ProductID",           prodId);
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_ProductDescription",  productDescription);
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_WaterBackup",         wb.toString());
 
     var msg;
     if (uninsured) {
@@ -112,4 +128,14 @@ Qualtrics.SurveyEngine.addOnload(function () {
               ". Your remaining scenario balance is " + scenarioBonus + ".";
     }
     Qualtrics.SurveyEngine.setEmbeddedData("Sim_Message", msg);
+
+    // === Auto-advance after 5 seconds ===
+    var that = this; // keep reference to question object
+    window.setTimeout(function () {
+        try {
+            that.clickNextButton();
+        } catch (e) {
+            console && console.warn && console.warn("Auto-next failed:", e);
+        }
+    }, 5000);
 });
