@@ -133,10 +133,10 @@ Qualtrics.SurveyEngine.addOnload(function () {
     if (uninsured) {
         productDescription = "Uninsured";
     } else {
-        productDescription = "Premium: " + prem +
-            ", Deductible: " + ded +
-            ", Coverage limit: " + limit +
-            (wb === 1 ? ", with water-backup coverage" : ", without water-backup coverage");
+        productDescription = "Premium: <b>$" + prem + "</b><br>" +
+            "Deductible: $" + ded +
+            ", Coverage limit: $" + limit +
+            (wb === 1 ? ", <br>with water-backup coverage" : ", <br>without water-backup coverage");
     }
 
     // write Sim_...
@@ -154,20 +154,17 @@ Qualtrics.SurveyEngine.addOnload(function () {
 
     var msg;
     if (uninsured) {
-        msg = "Scenario: " + eventName +
-              ". You remained uninsured. Loss: " + lossAmount +
-              ". You paid: " + oop +
-              ". Your remaining scenario balance is " + scenarioBonus + ".";
+        msg = "Scenario: <b>" + eventName + "</b>.<br>" +
+              "You remained uninsured. Loss: <b>$" + lossAmount + "</b>. You paid: <b>$" + oop + "</b>.<br>" +
+              "Your remaining scenario balance is <b>$" + scenarioBonus + "</b>.";
     } else {
-        msg = "Scenario: " + eventName +
-              ". You had " + prodId +
-              " (premium " + prem +
-              ", deductible " + ded +
-              ", limit " + limit +
-              (wb === 1 ? ", water-backup included" : ", no water-backup") +
-              "). Loss: " + lossAmount +
-              ". You paid: " + oop +
-              ". Your remaining scenario balance is " + scenarioBonus + ".";
+        msg = "Scenario: <b>" + eventName + "</b>.<br>" +
+              "You had <b>" + prodId + "</b> (premium <b>$" + prem +
+              "</b>, deductible <b>$" + ded +
+              "</b>, limit <b>$" + limit +
+              "</b>" + (wb === 1 ? ", water-backup included" : ", no water-backup") + ").<br>" +
+              "Loss: <b>$" + lossAmount + "</b>. You paid: <b>$" + oop + "</b>.<br>" +
+              "Your remaining scenario balance is <b>$" + scenarioBonus + "</b>.";
     }
     Qualtrics.SurveyEngine.setEmbeddedData("Sim_Message", msg);
 
@@ -198,5 +195,5 @@ Qualtrics.SurveyEngine.addOnload(function () {
                 // if showing fails, silently ignore
             }
         }
-    }, 3500);
+    }, 5000);
 });
