@@ -44,30 +44,45 @@ Qualtrics.SurveyEngine.addOnload(function () {
     var acceptedRaw = Qualtrics.SurveyEngine.getEmbeddedData("AcceptedProduct") || "";
     var val = acceptedRaw.trim();
 
-    // product map
+    // Retrieve recommended product from previous step
+    var recommendedRaw = Qualtrics.SurveyEngine.getEmbeddedData("RecommendedProduct") || "";
+    var recommendedNormalized = "";
+    if (recommendedRaw) {
+        // Normalize: could be "P5", "5", or just 5
+        var recTrimmed = String(recommendedRaw).trim();
+        if (/^\d+$/.test(recTrimmed)) {
+            // Just a number like "5" or 5
+            recommendedNormalized = "P" + recTrimmed;
+        } else if (/^P\d+$/i.test(recTrimmed)) {
+            // Already in format "P5" or "p5"
+            recommendedNormalized = recTrimmed.toUpperCase();
+        }
+    }
+
+    // product map with quality ranking (1 = good price/quality, 2 = inferior price/quality)
     var productMap = {
-        "P1":  { premium: 18, ded: 1000, limit: 15000, wb: 0 },
-        "P2":  { premium: 22, ded: 1000, limit: 15000, wb: 0 },
-        "P3":  { premium: 23, ded: 1000, limit: 50000, wb: 0 },
-        "P4":  { premium: 27, ded: 1000, limit: 50000, wb: 0 },
-        "P5":  { premium: 23, ded: 250,  limit: 15000, wb: 0 },
-        "P6":  { premium: 27, ded: 250,  limit: 15000, wb: 0 },
-        "P7":  { premium: 28, ded: 250,  limit: 50000, wb: 0 },
-        "P8":  { premium: 32, ded: 250,  limit: 50000, wb: 0 },
-        "P9":  { premium: 23, ded: 1000, limit: 15000, wb: 1 },
-        "P10": { premium: 27, ded: 1000, limit: 15000, wb: 1 },
-        "P11": { premium: 28, ded: 1000, limit: 50000, wb: 1 },
-        "P12": { premium: 32, ded: 1000, limit: 50000, wb: 1 },
-        "P13": { premium: 28, ded: 250,  limit: 15000, wb: 1 },
-        "P14": { premium: 32, ded: 250,  limit: 15000, wb: 1 },
-        "P15": { premium: 33, ded: 250,  limit: 50000, wb: 1 },
-        "P16": { premium: 37, ded: 250,  limit: 50000, wb: 1 }
+        "P1":  { premium: 18, ded: 1000, limit: 15000, wb: 0, quality: 1 },
+        "P2":  { premium: 22, ded: 1000, limit: 15000, wb: 0, quality: 2 },
+        "P3":  { premium: 23, ded: 1000, limit: 50000, wb: 0, quality: 1 },
+        "P4":  { premium: 27, ded: 1000, limit: 50000, wb: 0, quality: 2 },
+        "P5":  { premium: 23, ded: 250,  limit: 15000, wb: 0, quality: 1 },
+        "P6":  { premium: 27, ded: 250,  limit: 15000, wb: 0, quality: 2 },
+        "P7":  { premium: 28, ded: 250,  limit: 50000, wb: 0, quality: 1 },
+        "P8":  { premium: 32, ded: 250,  limit: 50000, wb: 0, quality: 2 },
+        "P9":  { premium: 23, ded: 1000, limit: 15000, wb: 1, quality: 1 },
+        "P10": { premium: 27, ded: 1000, limit: 15000, wb: 1, quality: 2 },
+        "P11": { premium: 28, ded: 1000, limit: 50000, wb: 1, quality: 1 },
+        "P12": { premium: 32, ded: 1000, limit: 50000, wb: 1, quality: 2 },
+        "P13": { premium: 28, ded: 250,  limit: 15000, wb: 1, quality: 1 },
+        "P14": { premium: 32, ded: 250,  limit: 15000, wb: 1, quality: 2 },
+        "P15": { premium: 33, ded: 250,  limit: 50000, wb: 1, quality: 1 },
+        "P16": { premium: 37, ded: 250,  limit: 50000, wb: 1, quality: 2 }
     };
 
     // normalize
     var uninsured = false;
     var prodId = "";
-    var prem = 0, ded = 0, limit = 0, wb = 0;
+    var prem = 0, ded = 0, limit = 0, wb = 0, quality = 0;
 
     if (val === "" || val.toUpperCase() === "UNINSURED" || val === "-1") {
         uninsured = true;
@@ -82,9 +97,25 @@ Qualtrics.SurveyEngine.addOnload(function () {
             ded    = productMap[val].ded;
             limit  = productMap[val].limit;
             wb     = productMap[val].wb;
+            quality = productMap[val].quality;
         } else {
             uninsured = true;
             prodId = "Uninsured";
+        }
+    }
+
+    // Determine product quality and compare with recommendation
+    var qualityLabel = "";
+    var acceptedRecommended = "";
+
+    if (!uninsured) {
+        qualityLabel = (quality === 1) ? "good" : "inferior";
+
+        // Check if accepted product matches recommended product
+        if (recommendedNormalized && prodId === recommendedNormalized) {
+            acceptedRecommended = "true";
+        } else if (recommendedNormalized) {
+            acceptedRecommended = "false";
         }
     }
 
@@ -151,6 +182,12 @@ Qualtrics.SurveyEngine.addOnload(function () {
     Qualtrics.SurveyEngine.setEmbeddedData("Sim_ProductID",           prodId);
     Qualtrics.SurveyEngine.setEmbeddedData("Sim_ProductDescription",  productDescription);
     Qualtrics.SurveyEngine.setEmbeddedData("Sim_WaterBackup",         wb.toString());
+
+    // Product quality and recommendation tracking
+    Qualtrics.SurveyEngine.setEmbeddedData("Treatment_Product_Quality",     qualityLabel);
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_ProductQualityRank",        quality.toString());
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_AcceptedRecommendedProduct", acceptedRecommended);
+    Qualtrics.SurveyEngine.setEmbeddedData("Sim_RecommendedProduct",        recommendedNormalized);
 
     var msg;
     if (uninsured) {
