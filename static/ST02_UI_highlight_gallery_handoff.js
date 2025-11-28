@@ -232,6 +232,12 @@ var currentPopupShownAt = null; // Track most recent popup show time for duratio
 var currentGalleryShownAt = null; // Track most recent gallery show time
 var recommendationPopupOpenCount = 0; // Count how many times popup opened
 var galleryOpenCount = 0; // Count how many times gallery opened
+var totalPopupTimeMs = 0; // Cumulative time spent on recommendation popup across all sessions
+var totalGalleryTimeMs = 0; // Cumulative time spent in gallery across all sessions
+
+// Data quality tracking
+var isProcessingDecision = false; // Prevent double-click on decision buttons
+var dataQualityFlags = []; // Track data quality issues
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array) {
@@ -1852,8 +1858,17 @@ function showRecommendation(productNumber) {
     let closeButton = document.querySelector(".modal-close-button");
     if (closeButton) {
         closeButton.onclick = () => {
+            // Calculate session time and accumulate
+            var sessionTime = currentPopupShownAt ? (new Date() - currentPopupShownAt) : 0;
+            totalPopupTimeMs += sessionTime;
+
+            // Store both LAST and TOTAL time
+            setQualtricsEmbeddedData('LAST_TIME_ON_RECOMMENDED_PRODUCT_MS', sessionTime);
+            setQualtricsEmbeddedData('TOTAL_TIME_ON_RECOMMENDED_PRODUCT_MS', totalPopupTimeMs);
+
             logEvent("recommended-product-popup-closed", {
-                timeViewedMs: currentPopupShownAt ? (new Date() - currentPopupShownAt) : null
+                timeViewedMs: sessionTime,
+                totalTimeMs: totalPopupTimeMs
             });
             document.getElementById("recommendation").remove();
         };
@@ -1882,13 +1897,30 @@ function showRecommendation(productNumber) {
     acceptButton.textContent = '✅Accept Product';
     // Styling handled by CSS class
     acceptButton.onclick = function() {
+        // Double-click protection
+        if (isProcessingDecision) return;
+        isProcessingDecision = true;
+
         // Calculate durations
         var decisionTime = new Date();
-        var timeOnProduct = currentPopupShownAt ? (decisionTime - currentPopupShownAt) : null;
+        var sessionTime = currentPopupShownAt ? (decisionTime - currentPopupShownAt) : 0;
 
-        // Stamp decision timestamp
+        // Accumulate to total time
+        totalPopupTimeMs += sessionTime;
+
+        // Data quality checks
+        if (sessionTime < 1000 && sessionTime > 0) {
+            dataQualityFlags.push('short_attention');
+        }
+        if (sessionTime > 300000) {
+            dataQualityFlags.push('unusually_long_session');
+        }
+
+        // Stamp decision timestamp and both LAST/TOTAL time
         setQualtricsEmbeddedData('RECOMMENDED_PRODUCT_DECISION_TS', decisionTime.toISOString());
-        setQualtricsEmbeddedData('TIME_ON_RECOMMENDED_PRODUCT_MS', timeOnProduct);
+        setQualtricsEmbeddedData('LAST_TIME_ON_RECOMMENDED_PRODUCT_MS', sessionTime);
+        setQualtricsEmbeddedData('TOTAL_TIME_ON_RECOMMENDED_PRODUCT_MS', totalPopupTimeMs);
+        setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
 
         // Calculate total decision time from recommendation received
         var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
@@ -1903,7 +1935,8 @@ function showRecommendation(productNumber) {
             originalRecommendation: originalRecommendation,
             wasRecommended: true,
             recommendationType: recommendationType,
-            timeOnProductMs: timeOnProduct
+            timeOnProductMs: sessionTime,
+            totalTimeOnProductMs: totalPopupTimeMs
         });
 
         alert('You accepted product ' + productNumber + '!');
@@ -1915,13 +1948,30 @@ function showRecommendation(productNumber) {
     declineButton.textContent = '❌Decline & Browse';
     // Styling handled by CSS class
     declineButton.addEventListener('click', function () {
+        // Double-click protection
+        if (isProcessingDecision) return;
+        isProcessingDecision = true;
+
         // Calculate durations
         var decisionTime = new Date();
-        var timeOnProduct = currentPopupShownAt ? (decisionTime - currentPopupShownAt) : null;
+        var sessionTime = currentPopupShownAt ? (decisionTime - currentPopupShownAt) : 0;
 
-        // Stamp decision timestamp
+        // Accumulate to total time
+        totalPopupTimeMs += sessionTime;
+
+        // Data quality checks
+        if (sessionTime < 1000 && sessionTime > 0) {
+            dataQualityFlags.push('short_attention');
+        }
+        if (sessionTime > 300000) {
+            dataQualityFlags.push('unusually_long_session');
+        }
+
+        // Stamp decision timestamp and both LAST/TOTAL time
         setQualtricsEmbeddedData('RECOMMENDED_PRODUCT_DECISION_TS', decisionTime.toISOString());
-        setQualtricsEmbeddedData('TIME_ON_RECOMMENDED_PRODUCT_MS', timeOnProduct);
+        setQualtricsEmbeddedData('LAST_TIME_ON_RECOMMENDED_PRODUCT_MS', sessionTime);
+        setQualtricsEmbeddedData('TOTAL_TIME_ON_RECOMMENDED_PRODUCT_MS', totalPopupTimeMs);
+        setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
 
         // Log decline event
         logEvent("declined-recommended-product-" + productNumber, {
@@ -1929,7 +1979,8 @@ function showRecommendation(productNumber) {
             originalRecommendation: originalRecommendation,
             wasRecommended: true,
             recommendationType: recommendationType,
-            timeOnProductMs: timeOnProduct
+            timeOnProductMs: sessionTime,
+            totalTimeOnProductMs: totalPopupTimeMs
         });
 
         document.getElementById("recommendation").remove();
@@ -1990,8 +2041,17 @@ function showAllProducts(message) {
   let closeButton = document.querySelector(".modal-close-button");
   if (closeButton) {
     closeButton.onclick = () => {
+      // Calculate session time and accumulate
+      var sessionTime = currentGalleryShownAt ? (new Date() - currentGalleryShownAt) : 0;
+      totalGalleryTimeMs += sessionTime;
+
+      // Store both LAST and TOTAL time
+      setQualtricsEmbeddedData('LAST_TIME_IN_GALLERY_MS', sessionTime);
+      setQualtricsEmbeddedData('TOTAL_TIME_IN_GALLERY_MS', totalGalleryTimeMs);
+
       logEvent("product-gallery-closed", {
-        timeViewedMs: currentGalleryShownAt ? (new Date() - currentGalleryShownAt) : null
+        timeViewedMs: sessionTime,
+        totalTimeMs: totalGalleryTimeMs
       });
       document.getElementById("recommendation").remove();
     };
@@ -2185,6 +2245,10 @@ function showAllProducts(message) {
   // Set initial product number
   updateAcceptButtonText();
   acceptButton.onclick = function() {
+    // Double-click protection
+    if (isProcessingDecision) return;
+    isProcessingDecision = true;
+
     var track = document.querySelector('.carousel .slides');
     var displayPosition = 0; // default fallback (0-indexed)
     if (track) {
@@ -2201,11 +2265,24 @@ function showAllProducts(message) {
 
     // Calculate durations
     var decisionTime = new Date();
-    var timeInGallery = currentGalleryShownAt ? (decisionTime - currentGalleryShownAt) : null;
+    var sessionTime = currentGalleryShownAt ? (decisionTime - currentGalleryShownAt) : 0;
 
-    // Stamp decision timestamp
+    // Accumulate to total time
+    totalGalleryTimeMs += sessionTime;
+
+    // Data quality checks
+    if (sessionTime < 2000 && sessionTime > 0) {
+        dataQualityFlags.push('short_attention');
+    }
+    if (sessionTime > 600000) {
+        dataQualityFlags.push('unusually_long_session');
+    }
+
+    // Stamp decision timestamp and both LAST/TOTAL time
     setQualtricsEmbeddedData('GALLERY_DECISION_TS', decisionTime.toISOString());
-    setQualtricsEmbeddedData('TIME_IN_GALLERY_MS', timeInGallery);
+    setQualtricsEmbeddedData('LAST_TIME_IN_GALLERY_MS', sessionTime);
+    setQualtricsEmbeddedData('TOTAL_TIME_IN_GALLERY_MS', totalGalleryTimeMs);
+    setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
 
     // Calculate total decision time from recommendation received
     var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
@@ -2218,7 +2295,8 @@ function showAllProducts(message) {
       originalProductNumber: originalProductNumber,
       displayPosition: displayPos,
       wasRecommended: originalRecommendation === originalProductNumber,
-      timeInGalleryMs: timeInGallery
+      timeInGalleryMs: sessionTime,
+      totalGalleryTimeMs: totalGalleryTimeMs
     });
 
     // Determine if this matches the original recommendation
@@ -2234,7 +2312,8 @@ function showAllProducts(message) {
       originalRecommendation: originalRecommendation,
       wasRecommended: wasRecommended,
       recommendationType: recommendationType,
-      timeInGalleryMs: timeInGallery
+      timeInGalleryMs: sessionTime,
+      totalGalleryTimeMs: totalGalleryTimeMs
     });
 
     // If they chose alternative, also log the rejection of original
@@ -2258,13 +2337,30 @@ function showAllProducts(message) {
   declineButton.textContent = '❌Remain Uninsured';
   declineButton.className = "custom-recommendation-button";
   declineButton.onclick = function() {
+    // Double-click protection
+    if (isProcessingDecision) return;
+    isProcessingDecision = true;
+
     // Calculate durations
     var decisionTime = new Date();
-    var timeInGallery = currentGalleryShownAt ? (decisionTime - currentGalleryShownAt) : null;
+    var sessionTime = currentGalleryShownAt ? (decisionTime - currentGalleryShownAt) : 0;
 
-    // Stamp decision timestamp
+    // Accumulate to total time
+    totalGalleryTimeMs += sessionTime;
+
+    // Data quality checks
+    if (sessionTime < 2000 && sessionTime > 0) {
+        dataQualityFlags.push('short_attention');
+    }
+    if (sessionTime > 600000) {
+        dataQualityFlags.push('unusually_long_session');
+    }
+
+    // Stamp decision timestamp and both LAST/TOTAL time
     setQualtricsEmbeddedData('GALLERY_DECISION_TS', decisionTime.toISOString());
-    setQualtricsEmbeddedData('TIME_IN_GALLERY_MS', timeInGallery);
+    setQualtricsEmbeddedData('LAST_TIME_IN_GALLERY_MS', sessionTime);
+    setQualtricsEmbeddedData('TOTAL_TIME_IN_GALLERY_MS', totalGalleryTimeMs);
+    setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
 
     // Calculate total decision time from recommendation received
     var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
@@ -2277,7 +2373,8 @@ function showAllProducts(message) {
     logEvent("declined-all-products-from-gallery", {
       originalRecommendation: originalRecommendation,
       recommendationType: recommendationType,
-      timeInGalleryMs: timeInGallery
+      timeInGalleryMs: sessionTime,
+      totalGalleryTimeMs: totalGalleryTimeMs
     });
 
     document.getElementById("recommendation").remove();
