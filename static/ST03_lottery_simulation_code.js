@@ -133,7 +133,7 @@ Qualtrics.SurveyEngine.addOnload(function () {
         lossAmount = 5000;
     } else {
         eventName = "Large loss";
-        lossAmount = 40000;
+        lossAmount = 25000;
     }
 
     // OOP

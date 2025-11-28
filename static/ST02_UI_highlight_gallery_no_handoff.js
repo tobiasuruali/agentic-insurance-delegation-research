@@ -1434,6 +1434,9 @@ function showProductOverlay(){
 
 
 function showRecommendation(productNumber) {
+    // Reset decision processing flag for new popup session
+    isProcessingDecision = false;
+
     // Set tracking variables
     originalRecommendation = productNumber;
     recommendationType = "single";
@@ -1520,7 +1523,7 @@ function showRecommendation(productNumber) {
         setQualtricsEmbeddedData('RECOMMENDED_PRODUCT_DECISION_TS', decisionTime.toISOString());
         setQualtricsEmbeddedData('LAST_TIME_ON_RECOMMENDED_PRODUCT_MS', sessionTime);
         setQualtricsEmbeddedData('TOTAL_TIME_ON_RECOMMENDED_PRODUCT_MS', totalPopupTimeMs);
-        setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
+        setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.length > 0 ? dataQualityFlags.join(',') : 'none');
 
         // Calculate total decision time from recommendation received
         var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
@@ -1571,7 +1574,7 @@ function showRecommendation(productNumber) {
         setQualtricsEmbeddedData('RECOMMENDED_PRODUCT_DECISION_TS', decisionTime.toISOString());
         setQualtricsEmbeddedData('LAST_TIME_ON_RECOMMENDED_PRODUCT_MS', sessionTime);
         setQualtricsEmbeddedData('TOTAL_TIME_ON_RECOMMENDED_PRODUCT_MS', totalPopupTimeMs);
-        setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
+        setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.length > 0 ? dataQualityFlags.join(',') : 'none');
 
         // Log decline event
         logEvent("declined-recommended-product-" + productNumber, {
@@ -1613,6 +1616,9 @@ function showRecommendation(productNumber) {
 
 function showAllProducts(message) {
   console.log("showAllProducts() called with message:", message);
+
+  // Reset decision processing flag for new gallery session
+  isProcessingDecision = false;
 
   // Update recommendation type if switching from single to gallery
   if (recommendationType === "single") {
@@ -1882,7 +1888,7 @@ function showAllProducts(message) {
     setQualtricsEmbeddedData('GALLERY_DECISION_TS', decisionTime.toISOString());
     setQualtricsEmbeddedData('LAST_TIME_IN_GALLERY_MS', sessionTime);
     setQualtricsEmbeddedData('TOTAL_TIME_IN_GALLERY_MS', totalGalleryTimeMs);
-    setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
+    setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.length > 0 ? dataQualityFlags.join(',') : 'none');
 
     // Calculate total decision time from recommendation received
     var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
@@ -1960,7 +1966,7 @@ function showAllProducts(message) {
     setQualtricsEmbeddedData('GALLERY_DECISION_TS', decisionTime.toISOString());
     setQualtricsEmbeddedData('LAST_TIME_IN_GALLERY_MS', sessionTime);
     setQualtricsEmbeddedData('TOTAL_TIME_IN_GALLERY_MS', totalGalleryTimeMs);
-    setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.join(','));
+    setQualtricsEmbeddedData('DATA_QUALITY_FLAGS', dataQualityFlags.length > 0 ? dataQualityFlags.join(',') : 'none');
 
     // Calculate total decision time from recommendation received
     var recReceivedTs = getQualtricsEmbeddedData('RECOMMENDATION_RECEIVED_TS');
