@@ -91,8 +91,10 @@ The system supports multiple study configurations:
 - `ST02_UI_highlight_gallery_handoff.js` - With agent handoff animation
 - `ST02_UI_highlight_gallery_no_handoff.js` - Without handoff animation
 - STUDY_ID: `ST02_01` (handoff), `ST02_02` (no_handoff)
-- Recommended product is highlighted, user can browse full gallery
-- Tracks gallery metrics (time, position, randomized order)
+- Recommended product is highlighted, user can browse full gallery of 16 randomized products
+- 4 possible user journeys: direct-accept, decline-then-gallery-accept-recommended, decline-then-gallery-accept-alternative, decline-then-gallery-remain-uninsured
+- Comprehensive tracking of decision process, timing, and product selection
+- **📄 See [ST02 Study Design Documentation](docs/ST02_STUDY_DESIGN.md) for detailed user journey maps and analysis variables**
 
 **ST03 - Lottery Simulation**
 - `ST03_lottery_simulation_code.js`

@@ -1618,14 +1618,14 @@ function logEvent(eventType, details) {
             var productNum = eventType.replace("accepted-recommended-product-", "");
             currentAccepted = productNum;
             currentWasAccepted = "true";
-            currentUserJourney = details.recommendationType === "single" ? "direct-accept" : "gallery-accept-recommended";
+            currentUserJourney = details.recommendationType === "single" ? "direct-accept" : "decline-then-gallery-accept-recommended";
         }
         
         if (eventType.startsWith("accepted-alternative-product-")) {
             var productNum = eventType.replace("accepted-alternative-product-", "");
             currentAccepted = productNum;
             currentWasAccepted = "false";
-            currentUserJourney = "decline-then-gallery-accept";
+            currentUserJourney = "decline-then-gallery-accept-alternative";
         }
         
         if (eventType.startsWith("rejected-recommended-product-")) {
@@ -1641,7 +1641,7 @@ function logEvent(eventType, details) {
         if (eventType === "declined-all-products-from-gallery") {
             currentAccepted = "UNINSURED";
             currentWasAccepted = "false";
-            currentUserJourney = "declined-all-remain-uninsured";
+            currentUserJourney = "decline-then-gallery-remain-uninsured";
         }
 
         // Store display position if available in details
