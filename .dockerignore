@@ -1,0 +1,70 @@
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Git and version control
+.git/
+.gitignore
+.github/
+
+# Documentation and images (not needed at runtime)
+*.md
+docs/
+img/
+README*
+SCALING_GUIDE.md
+LICENSE
+
+# Docker files (not needed inside container)
+Dockerfile*
+docker-compose*.yml
+compose.yaml
+.dockerignore
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment and configuration files
+.env
+.env.*
+!.env.example
+
+# Cloud configuration
+cloudrun.yaml
+.gcloudignore
+
+# Test files (if any)
+tests/
+test_*.py
+*_test.py
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Logs
+*.log
+logs/
+
+# Static files archive (not served by app)
+static/archive/
+
+# Templates directory (currently empty)
+templates/
