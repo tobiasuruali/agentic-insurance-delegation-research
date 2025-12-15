@@ -1497,7 +1497,7 @@ function showRecommendation(productNumber) {
 
     // Accept button
     const acceptButton = document.createElement('button');
-    acceptButton.textContent = '✅Accept Product';
+    acceptButton.textContent = '💵 Purchase Product';
     // Styling handled by CSS class
     acceptButton.onclick = function() {
         // Double-click protection
@@ -1548,7 +1548,7 @@ function showRecommendation(productNumber) {
 
     // Decline button
     const declineButton = document.createElement('button');
-    declineButton.textContent = '❌Decline & Browse';
+    declineButton.textContent = '🔍 Browse Products';
     // Styling handled by CSS class
     declineButton.addEventListener('click', function () {
         // Double-click protection
@@ -1788,7 +1788,7 @@ function showAllProducts(message) {
   function updateAcceptButtonText() {
     if (window.galleryAcceptButton) {
       const currentPos = idx + 1; // 1-indexed display position in randomized carousel
-      window.galleryAcceptButton.textContent = '✅Accept Product ' + currentPos;
+      window.galleryAcceptButton.textContent = '💵 Purchase Product ' + currentPos;
     }
   }
 
