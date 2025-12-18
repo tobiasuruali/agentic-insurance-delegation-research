@@ -1497,7 +1497,7 @@ function showRecommendation(productNumber) {
 
     // Accept button
     const acceptButton = document.createElement('button');
-    acceptButton.textContent = '💵 Purchase Product';
+    acceptButton.textContent = '💵 Purchase this Product';
     // Styling handled by CSS class
     acceptButton.onclick = function() {
         // Double-click protection
@@ -1548,7 +1548,7 @@ function showRecommendation(productNumber) {
 
     // Decline button
     const declineButton = document.createElement('button');
-    declineButton.textContent = '🔍 Browse Products';
+    declineButton.textContent = '🔍 Browse all Products';
     // Styling handled by CSS class
     declineButton.addEventListener('click', function () {
         // Double-click protection
@@ -1602,10 +1602,24 @@ function showRecommendation(productNumber) {
     buttonContainer.appendChild(acceptButton);
     buttonContainer.appendChild(declineButton);
 
-    let alertContent = document.getElementById('product-overlay-content')    
-       
+    let alertContent = document.getElementById('product-overlay-content')
+
     alertContent.appendChild(buttonContainer);   // Bottom (Buttons)
-    
+
+    // Add disclaimer text below buttons
+    const disclaimerText = document.createElement('small');
+    disclaimerText.textContent = 'IMPORTANT: Purchase finalizes your choice; browse to compare all products first (recommended product above stays available).';
+    disclaimerText.style.cssText = `
+        display: block;
+        margin-top: 8px;
+        font-size: 0.75rem;
+        color: #d32f2f;
+        font-weight: 500;
+        text-align: center;
+        line-height: 1.2;
+    `;
+    alertContent.appendChild(disclaimerText);
+
     // Log the recommendation event
     logEvent("recommended-product-" + productNumber, {
         productNumber: productNumber,
@@ -2002,8 +2016,22 @@ function showAllProducts(message) {
   /* DECLINE LOGIC - START */
   buttonContainer.appendChild(declineButton);
   /* DECLINE LOGIC - END */
-  
+
   content.appendChild(buttonContainer);
+
+  // Add disclaimer text below gallery buttons
+  const galleryDisclaimerText = document.createElement('small');
+  galleryDisclaimerText.textContent = 'IMPORTANT: Purchase finalizes your choice; browse to compare all products first (recommended product above stays available).';
+  galleryDisclaimerText.style.cssText = `
+      display: block;
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: #d32f2f;
+      font-weight: 500;
+      text-align: center;
+      line-height: 1.2;
+  `;
+  content.appendChild(galleryDisclaimerText);
 
   // Log the gallery display event
   logEvent("showed-product-gallery", {
@@ -2174,7 +2202,7 @@ function applyCustomRecommendationcStyles() {
     .carousel {
       position: relative;
       width: 100%;
-      margin: clamp(1.25rem, 4vw, 2rem) 0;
+      margin: clamp(1.25rem, 4vw, 2rem) 0 clamp(0.5rem, 1vw, 0.75rem) 0;
     }
     /* Scroll container */
     .carousel .slides {
