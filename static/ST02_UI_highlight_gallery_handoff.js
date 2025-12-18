@@ -1877,7 +1877,7 @@ function showRecommendation(productNumber) {
         };
     }
 
-    message = "Here is your recommended product: " + productNumber
+    let message = "Here is your recommended product: " + productNumber
     // Adapt message
     let alertMessage = document.getElementById("recommendationMessage")
     alertMessage.innerHTML = message;
