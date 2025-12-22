@@ -28,7 +28,10 @@ The system is built with FastAPI, uses OpenAI's API for agent intelligence, and 
 
 ### Frontend
 - **`static/`** - HTML/CSS/JS for chat interface
-- **`static/UI_for_qualtrics.js`** - Embeddable Qualtrics integration code
+- **`static/ST00_UI_for_qualtrics.html`** - Qualtrics integration HTML template
+- **`static/ST01_UI_simple_decline_*.js`** - Simple decline UI variants for Qualtrics
+- **`static/ST02_UI_highlight_gallery_*.js`** - Gallery UI variants for Qualtrics
+- **`static/local-ui.js`** - Local development UI
 
 ## Coding Standards & Conventions
 
@@ -143,7 +146,10 @@ http://localhost:8080/ui
 
 ### Qualtrics Integration
 - Requires embedded data variables in Survey Flow
-- JavaScript code in `static/UI_for_qualtrics.js` handles integration
+- Multiple UI variants available in `static/` directory:
+  - `ST00_UI_for_qualtrics.html` - HTML template
+  - `ST01_UI_simple_decline_*.js` - Simple decline UI variants
+  - `ST02_UI_highlight_gallery_*.js` - Gallery UI variants
 - Critical variables: `ChatHistory`, `SessionId`, `RecommendedProduct`, `WasRecommendationAccepted`
 
 ## Code Quality & Style
