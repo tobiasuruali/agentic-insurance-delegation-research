@@ -79,7 +79,7 @@ http://localhost:8001/ui
 docker-compose up --build
 
 # Access the application
-http://localhost:8000/ui
+http://localhost:8080/ui
 ```
 
 ### Testing
