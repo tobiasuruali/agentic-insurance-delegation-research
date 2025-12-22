@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Initialize logging configuration if not already configured
+# This ensures logging works even if settings is imported before application
+import core.logging_config  # noqa: F401
+
 # Configure logger for this module
 logger = logging.getLogger(__name__)
 
