@@ -1086,8 +1086,6 @@ async function sendMessage() {
             setQualtricsEmbeddedData('ResponseID', "${e://Field/ResponseID}");
         } catch(error) {
             console.error("Error from Qualtrics: ", error);
-            compositeSessionId = "DEBUG"
-            qualtricsResponseId = "DEBUG"
         }
         
         // Re-enable send button and reset sending flag
@@ -1274,8 +1272,6 @@ function logEvent(eventType, details) {
         
     } catch(error) {
         console.error("Error logging event: ", error);
-        compositeSessionId = "DEBUG";
-        qualtricsResponseId = "DEBUG";
     }
 }
 
@@ -1477,7 +1473,7 @@ function showRecommendation(productNumber) {
         };
     }
 
-    message = "Here is your recommended product: " + productNumber
+    let message = "Here is your recommended product: " + productNumber
     // Adapt message
     let alertMessage = document.getElementById("recommendationMessage")
     alertMessage.innerHTML = message;
