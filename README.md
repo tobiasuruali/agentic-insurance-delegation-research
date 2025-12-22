@@ -2,7 +2,7 @@
 
 > **An intelligent 2-agent system that enables insurance recommendations through specialized AI agents and seamless handoff mechanisms.**
 
-![Chat Interface](img/chat-interface-poc.png)
+![Chat Interface](img/chat-interface-final.png)
 
 This system demonstrates a simple agentic AI architecture where two specialized agents collaborate to deliver personalized insurance recommendations. Each agent has a distinct role and expertise, creating a natural conversation flow that mimics human insurance consultation.
 
