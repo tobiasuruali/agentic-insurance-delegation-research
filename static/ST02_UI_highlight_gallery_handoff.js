@@ -1174,7 +1174,6 @@ async function sendMessage() {
         } catch(error) {
             console.error("Error from Qualtrics: ", error);
             compositeSessionId = "DEBUG"
-            qualtricsResponseId = "DEBUG"
         }
         
         // Re-enable send button and reset sending flag
@@ -1674,7 +1673,6 @@ function logEvent(eventType, details) {
     } catch(error) {
         console.error("Error logging event: ", error);
         compositeSessionId = "DEBUG";
-        qualtricsResponseId = "DEBUG";
     }
 }
 
