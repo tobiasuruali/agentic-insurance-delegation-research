@@ -55,11 +55,40 @@ The system returns an array of messages during handoff:
 - **Message 2**: Recommendation Agent's product recommendation
 
 ### UI Features
-- **System Message**: "🔄 Connecting you with our Insurance Specialist..." appears between agents
-- **Visual Indicators**: Different colors and labels for each agent
-  - Information Agent: Gray background with red border
-  - Recommendation Agent: Light blue background with blue border
-- **Smooth Transitions**: 1-second delays between messages for natural flow
+
+#### Visual Agent Identification
+- **Information Agent**: Light gray background (`#F0F1F9`) with purple border, labeled "Information Agent"
+- **Recommendation Agent**: Light blue background (`#E8F4F8`) with blue border, labeled "Recommendation Agent"
+- **Agent Type Tracking**: Each message includes explicit `agent_type` field ("collector" or "recommendation")
+
+#### Handoff Divider System
+The system provides two types of handoff visualizations:
+
+**1. Animated Handoff Sequence** (Real-time handoffs)
+- Appears during live agent transitions
+- 3-step animated visualization:
+  - Step 1: "Handing over to Insurance Specialist" (200ms delay)
+  - Step 2: "Thinking" (3750ms delay in ST02)
+  - Step 3: "Getting top recommendation" (6000ms delay in ST02)
+- Each step appears sequentially with completion checkmarks
+- Smooth animations with color-coded progress indicators
+- **Total duration: ~10.8 seconds for complete sequence (ST02 current timing)**
+- Note: ST01 may use different timing values
+
+**2. Static Handoff Divider** (Conversation history)
+- Appears when loading previous conversations
+- Shows completed handoff with all steps marked done
+- Indicates: "Handoff Complete - Routed to Insurance Specialist"
+- Allows users to see where agent transition occurred
+
+#### Session Persistence
+- **Firestore Integration**: Conversations persist across page refreshes and server restarts
+- **Smart Session Management**: Three-tier system ensures reliable session tracking:
+  1. **Qualtrics Embedded Data** (highest priority): Uses Qualtrics SessionId if available
+  2. **localStorage Fallback**: Uses browser localStorage for session continuity
+  3. **Generated ID**: Creates new session using `crypto.randomUUID()` or fallback
+- **Conversation Recovery**: Automatically loads and renders previous messages on page refresh
+- **Handoff Detection**: System correctly identifies and displays handoff dividers in loaded history
 
 ### Complete Agent-Focused Application Flow
 
@@ -107,7 +136,7 @@ sequenceDiagram
     U->>IA: "Yes" (confirms all data)
     IA->>S: "Perfect! Let me find..." + HANDOFF_SIGNAL + JSON
     S->>U: Display transition message
-    S->>U: Show "🔄 Connecting..." indicator  
+    S->>U: Show "🔄 Handing off → Recommendation Agent" indicator  
     S->>RA: Process customer data immediately
     RA->>S: "Based on info, here's recommendation: [LINK]"
     S->>U: Display recommendation with agent styling
@@ -119,7 +148,7 @@ sequenceDiagram
 graph LR
     A[API Response Array] --> B[Message 1: Info Agent]
     B --> C[1 sec delay]
-    C --> D[System Message: 🔄 Connecting...]
+    C --> D[System Message: 🔄 Handing off → Recommendation Agent]
     D --> E[1 sec delay]
     E --> F[Message 2: Recommendation Agent]
     F --> G[Different Visual Styling]
@@ -145,17 +174,24 @@ http://localhost:8000/ui
 ```bash
 OPENAI_API_KEY=your_api_key
 PORT=8080
-ENABLE_CONVERSATION_STORAGE=false
+WORKERS=1  # Number of uvicorn workers (1 for dev, 4+ for prod)
+ENABLE_CONVERSATION_STORAGE=false       # Optional GCS logging
+ENABLE_FIRESTORE_STORAGE=true           # Enable Firestore persistence (recommended)
+GOOGLE_CLOUD_PROJECT=your_project_id    # Required for Firestore
 ```
 
 ## Key Features
 
 - **Intelligent Handoff**: Automatic detection when all required information is collected
-- **Visual Agent Identity**: Clear indicators showing which agent is active
-- **Structured Data Collection**: Validated JSON format for customer information
-- **Responsive UI**: Real-time message display with appropriate delays
+- **Animated Handoff Visualization**: Beautiful step-by-step transition animation between agents
+- **Visual Agent Identity**: Clear color-coded indicators showing which agent is active
+- **Structured Data Collection**: Validated JSON format for customer information with explicit agent_type tracking
+- **Session Persistence**: Firestore-backed conversation storage survives page refreshes and server restarts
+- **Smart Session Management**: Three-tier session ID system (Qualtrics → localStorage → generated)
+- **Conversation Recovery**: Automatically loads and renders previous conversations with handoff dividers
+- **Responsive UI**: Real-time message display with appropriate delays and smooth animations
 - **Error Handling**: Robust validation and fallback mechanisms
-- **Conversation Logging**: Optional persistent storage for analysis
+- **Conversation Logging**: Optional persistent storage for analysis (GCS)
 
 ## System Benefits
 

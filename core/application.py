@@ -56,6 +56,7 @@ class ChatRequest(BaseModel):
     message: List[ChatMessage]
     session_id: str
     qualtrics_response_id: str
+    show_handoff: bool = True  # Defaults to True for backward compatibility
 
 class ChatResponse(BaseModel):
     response: List[str]
@@ -108,11 +109,11 @@ async def insurance_recommendation(request: ChatRequest):
         "session_id": request.session_id,
         "qualtrics_response_id": request.qualtrics_response_id
     }
-    
+
     gpt_model = "gpt-4.1"
-    
-    # Process the request
-    result = request_handler.process_prompt_request(request_data, "/InsuranceRecommendation", gpt_model)
+
+    # Process the request (now async for better concurrency)
+    result = await request_handler.process_prompt_request(request_data, "/InsuranceRecommendation", gpt_model, request.show_handoff)
     
     # Handle the response
     if result.get('status_code') == 200:
@@ -131,6 +132,27 @@ async def insurance_recommendation(request: ChatRequest):
             status_code=result.get('status_code', 500),
             detail=result.get('error', 'Unknown error')
         )
+
+# Get conversation history endpoint
+@app.get("/conversation/{session_id}")
+async def get_conversation(session_id: str):
+    """Retrieve conversation history for a session"""
+    try:
+        chatbot_id = "InsuranceRecommendation"
+        conversation_key = f"{chatbot_id}_{session_id}"
+
+        conversation_history = request_handler.get_conversation_history(conversation_key)
+
+        logger.info(f"Retrieved {len(conversation_history)} messages for session: {session_id}")
+
+        return {
+            "session_id": session_id,
+            "history": conversation_history,
+            "count": len(conversation_history)
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving conversation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve conversation")
 
 # Local UI endpoint for development
 @app.get("/ui", response_class=HTMLResponse)

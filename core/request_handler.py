@@ -7,7 +7,7 @@ import traceback
 import logging
 import yaml
 
-from core.settings import openai_client, gcs_client
+from core.settings import openai_client, gcs_client, firestore_client
 from agents.information_collector import InformationCollectorAgent
 from agents.recommendation_agent import RecommendationAgent
 from data.insurance_products import recommend_insurance_product
@@ -15,40 +15,63 @@ from data.insurance_products import recommend_insurance_product
 # Configure module logger
 logger = logging.getLogger(__name__)
 
-# Load system prompts
+# Load system prompts (default with handoff)
 with open('data/system_prompts.yaml', 'r') as f:
     system_prompts = yaml.safe_load(f)
 
-# Initialize agents
+# Load system prompts without handoff
+with open('data/system_prompts_no_handoff.yaml', 'r') as f:
+    system_prompts_no_handoff = yaml.safe_load(f)
+
+# Initialize default agents (with handoff for backward compatibility)
 info_collector = InformationCollectorAgent(system_prompts['information_collector']['content'])
 recommendation_agent = RecommendationAgent(system_prompts['recommendation_agent']['content'])
+
+def get_agents(show_handoff: bool = True):
+    """
+    Get appropriate agents based on whether handoff should be shown.
+
+    Args:
+        show_handoff (bool): If True, use prompts with handoff mentions. If False, use seamless prompts.
+
+    Returns:
+        tuple: (info_collector, recommendation_agent) instances
+    """
+    prompts = system_prompts if show_handoff else system_prompts_no_handoff
+    logger.info(f"get_agents called with show_handoff={show_handoff}")
+    logger.info(f"Recommendation Agent prompt (first 200 chars): {prompts['recommendation_agent']['content'][:200]}")
+    return (
+        InformationCollectorAgent(prompts['information_collector']['content']),
+        RecommendationAgent(prompts['recommendation_agent']['content'])
+    )
 
 # Configuration
 bucket_name = os.getenv('GCS_BUCKET_NAME', 'insurance-chatbot-logs')
 enable_storage = os.getenv('ENABLE_CONVERSATION_STORAGE', 'false').lower() == 'true'
 
-# In-memory conversation storage
+# Firestore conversation storage toggle
+enable_firestore = os.getenv('ENABLE_FIRESTORE_STORAGE', 'true').lower() == 'true'
+
+# In-memory conversation storage (fallback when Firestore disabled)
 conversation_histories = {}
 
 def store_conversation_log(session_id: str, qualtrics_response_id: str, conversation_history: List[Dict], chatbot_id: str):
     """Store conversation log in Google Cloud Storage (optional)"""
     if not enable_storage or not gcs_client:
         return
-    
+
     try:
-        clean_qualtrics_id = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", qualtrics_response_id)
-        
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "session_id": session_id,
             "qualtrics_response_id": qualtrics_response_id,
             "conversation_history": conversation_history
         }
-        
+
         bucket = gcs_client.bucket(bucket_name)
-        blob = bucket.blob(f"chat_logs_{chatbot_id}_{clean_qualtrics_id}_{session_id}.json")
+        blob = bucket.blob(f"chat_logs/{session_id}.json")
         blob.upload_from_string(json.dumps(log_entry))
-        
+
         logger.info(f"Stored conversation log for session: {session_id}")
     except Exception as e:
         logger.error(f"Error storing conversation log: {str(e)}")
@@ -57,10 +80,8 @@ def store_error_log(session_id: str, qualtrics_response_id: str, error: str, req
     """Store error log in Google Cloud Storage (optional)"""
     if not enable_storage or not gcs_client:
         return
-    
+
     try:
-        clean_qualtrics_id = re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", qualtrics_response_id)
-        
         error_log = {
             "timestamp": datetime.utcnow().isoformat(),
             "session_id": session_id,
@@ -69,21 +90,64 @@ def store_error_log(session_id: str, qualtrics_response_id: str, error: str, req
             "traceback": traceback.format_exc(),
             "request_data": request_data
         }
-        
+
         bucket = gcs_client.bucket(bucket_name)
-        blob = bucket.blob(f"error_logs_{chatbot_id}_{clean_qualtrics_id}_{session_id}.json")
+        blob = bucket.blob(f"error_logs/{session_id}.json")
         blob.upload_from_string(json.dumps(error_log))
-        
+
         logger.info(f"Stored error log for session: {session_id}")
     except Exception as e:
         logger.error(f"Error storing error log: {str(e)}")
 
-def process_with_information_collector(conversation_history: List[Dict], gpt_model: str) -> Dict:
+def get_conversation_history(conversation_key: str) -> List[Dict]:
+    """Retrieve conversation history from Firestore or in-memory fallback"""
+    # Check if Firestore is enabled and available
+    if not enable_firestore or not firestore_client:
+        # Fallback to in-memory storage
+        logger.debug(f"Using in-memory storage for: {conversation_key}")
+        return conversation_histories.get(conversation_key, [])
+
+    # Use Firestore
+    try:
+        doc_ref = firestore_client.collection('conversations').document(conversation_key)
+        doc = doc_ref.get()
+
+        if doc.exists:
+            data = doc.to_dict()
+            return data.get('history', [])
+        return []
+    except Exception as e:
+        logger.error(f"Error retrieving from Firestore: {str(e)}, falling back to in-memory")
+        return conversation_histories.get(conversation_key, [])
+
+def save_conversation_history(conversation_key: str, conversation_history: List[Dict]):
+    """Save conversation history to Firestore or in-memory fallback"""
+    # Check if Firestore is enabled and available
+    if not enable_firestore or not firestore_client:
+        # Fallback to in-memory storage
+        logger.debug(f"Saving to in-memory storage: {conversation_key}")
+        conversation_histories[conversation_key] = conversation_history
+        return
+
+    # Use Firestore
+    try:
+        doc_ref = firestore_client.collection('conversations').document(conversation_key)
+        doc_ref.set({
+            'history': conversation_history,
+            'updated_at': datetime.utcnow(),
+            'session_id': conversation_key
+        })
+        logger.debug(f"Saved conversation to Firestore: {conversation_key}")
+    except Exception as e:
+        logger.error(f"Error saving to Firestore: {str(e)}, falling back to in-memory")
+        conversation_histories[conversation_key] = conversation_history
+
+async def process_with_information_collector(conversation_history: List[Dict], gpt_model: str, info_collector_agent: InformationCollectorAgent, recommendation_agent_instance: RecommendationAgent) -> Dict:
     """Process conversation with Information Collector Agent"""
     try:
-        messages = info_collector.get_conversation_messages(conversation_history)
-        
-        response = openai_client.chat.completions.create(
+        messages = info_collector_agent.get_conversation_messages(conversation_history)
+
+        response = await openai_client.chat.completions.create(
             model=gpt_model,
             messages=messages
         )
@@ -94,22 +158,23 @@ def process_with_information_collector(conversation_history: List[Dict], gpt_mod
         logger.info(f"OpenAI response: {response_content}")
         
         # Check if agent wants to handoff
-        if info_collector.should_handoff(response_content):
-            customer_data = info_collector.extract_collected_data(response_content)
-            
+        if info_collector_agent.should_handoff(response_content):
+            customer_data = info_collector_agent.extract_collected_data(response_content)
+
             if customer_data:
-                is_valid, missing_fields = info_collector.validate_collected_data(customer_data)
+                is_valid, missing_fields = info_collector_agent.validate_collected_data(customer_data)
                 if is_valid:
-                    # Clean the response for display (remove handoff signal)
-                    display_response = response_content.split('HANDOFF_TO_RECOMMENDATION_AGENT')[0].strip()
+                    # Clean the response for display (remove handoff signal) - case insensitive
+                    handoff_pattern = re.compile(r'HANDOFF_TO_RECOMMENDATION_AGENT', re.IGNORECASE)
+                    display_response = handoff_pattern.split(response_content)[0].strip()
                     if not display_response:
                         display_response = "Thank you for providing all the information."
                     
                     # Process recommendation immediately and return multiple messages
                     first_message = f"{display_response}"
                     
-                    # Get recommendation from Agent 2
-                    recommendation_result = process_with_recommendation_agent(customer_data, gpt_model)
+                    # Get recommendation from Recommendation Agent
+                    recommendation_result = await process_with_recommendation_agent(customer_data, gpt_model, recommendation_agent_instance)
                     
                     if recommendation_result['success']:
                         # Return both messages
@@ -155,19 +220,19 @@ def process_with_information_collector(conversation_history: List[Dict], gpt_mod
             'error': str(e)
         }
 
-def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Dict:
+async def process_with_recommendation_agent(customer_data: Dict, gpt_model: str, recommendation_agent_instance: RecommendationAgent) -> Dict:
     """Process recommendation with Recommendation Agent"""
     try:
         logger.info(f"Processing recommendation for customer age: {customer_data.get('customer_age', 'Unknown')}")
         logger.info(f"Customer preferences: deductible={customer_data.get('deductible_preference')}, belongings_value={customer_data.get('belongings_value')}")
-        
+
         # Generate recommendation using existing logic
-        recommendation_result = recommendation_agent.process_customer_data(customer_data)
+        recommendation_result = recommendation_agent_instance.process_customer_data(customer_data)
         logger.info(f"Recommendation result: {recommendation_result}")
-        
+
         # Create OpenAI function call for recommendation
         logger.info("Creating OpenAI function call for recommendation")
-        response = openai_client.chat.completions.create(
+        response = await openai_client.chat.completions.create(
             model=gpt_model,
             messages=[{"role": "user", "content": "Generate insurance recommendation"}],
             tools=[{
@@ -210,11 +275,18 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
             
             # Generate final response
             logger.info("Generating final recommendation response")
-            final_response = openai_client.chat.completions.create(
+            messages_for_openai = recommendation_agent_instance.get_conversation_messages(customer_data, {'recommendation_link': result})
+            logger.info(f"Messages being sent to OpenAI: {len(messages_for_openai)} messages")
+            for i, msg in enumerate(messages_for_openai):
+                logger.info(f"Message {i}: role={msg['role']}, content_length={len(msg['content'])}")
+                if msg['role'] == 'system':
+                    logger.info(f"System prompt content: {msg['content']}")
+
+            final_response = await openai_client.chat.completions.create(
                 model=gpt_model,
-                messages=recommendation_agent.get_conversation_messages(customer_data, {'recommendation_link': result})
+                messages=messages_for_openai
             )
-            
+
             response_content = final_response.choices[0].message.content.strip()
             logger.info(f"AI response: {response_content}")
             
@@ -228,8 +300,15 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
             }
         else:
             # Fallback if no tool call
-            messages = recommendation_agent.get_conversation_messages(customer_data, recommendation_result)
-            fallback_response = openai_client.chat.completions.create(
+            logger.info("No tool call - using fallback path")
+            messages = recommendation_agent_instance.get_conversation_messages(customer_data, recommendation_result)
+            logger.info(f"Fallback messages being sent to OpenAI: {len(messages)} messages")
+            for i, msg in enumerate(messages):
+                logger.info(f"Fallback Message {i}: role={msg['role']}, content_length={len(msg['content'])}")
+                if msg['role'] == 'system':
+                    logger.info(f"Fallback System prompt content: {msg['content']}")
+
+            fallback_response = await openai_client.chat.completions.create(
                 model=gpt_model,
                 messages=messages
             )
@@ -251,27 +330,55 @@ def process_with_recommendation_agent(customer_data: Dict, gpt_model: str) -> Di
             'error': str(e)
         }
 
-def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str):
+async def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str, show_handoff: bool = True):
     """
     Main request processing function that orchestrates the 2-agent workflow
+
+    Args:
+        request_data: Request data dictionary
+        endpoint: API endpoint
+        gpt_model: GPT model to use
+        show_handoff: If True, use prompts with handoff mentions. If False, use seamless prompts. (Default: True for backward compatibility)
     """
+    # Get appropriate agents based on show_handoff flag
+    info_collector_agent, recommendation_agent_instance = get_agents(show_handoff)
+    logger.info(f"Using agents with show_handoff={show_handoff}")
+
     user_input = request_data.get('message')
     session_id = request_data.get('session_id')
     chatbot_id = endpoint.lstrip("/")
     qualtrics_response_id = request_data.get('qualtrics_response_id')
-    
-    if not user_input or not session_id or not qualtrics_response_id:
+
+    # Validate required parameters (allow empty list for user_input in initialization case)
+    if user_input is None or not session_id or not qualtrics_response_id:
         logger.warning("Missing required parameters in request")
         return {'error': 'Missing required parameters', 'status_code': 400}
+
+    # Validate user_input is a list
+    if not isinstance(user_input, list):
+        logger.warning("user_input must be a list")
+        return {'error': 'Invalid user_input format', 'status_code': 400}
     
     logger.info(f"Processing chat for chatbot: {chatbot_id}, session: {session_id}")
-    
+
     # Get or create conversation history
     conversation_key = f"{chatbot_id}_{session_id}"
-    conversation_history = conversation_histories.get(conversation_key, [])
-    
-    # Add user input to conversation history
-    conversation_history.extend(user_input)
+    conversation_history = get_conversation_history(conversation_key)
+
+    # Check if this is an initialization request (empty history + empty input)
+    is_initialization = len(conversation_history) == 0 and len(user_input) == 0
+
+    if is_initialization:
+        logger.info(f"Initialization request detected for session: {session_id}")
+        # Keep conversation_history empty - info collector will generate welcome message
+    else:
+        # Only add NEW messages from the request (skip ones we already have)
+        # This prevents duplication when frontend sends full history after refresh
+        existing_count = len(conversation_history)
+        new_messages = user_input[existing_count:]
+
+        # Add only new messages to conversation history
+        conversation_history.extend(new_messages)
     
     try:
         # Check if we need to process with recommendation agent
@@ -291,10 +398,10 @@ def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str):
         
         if should_use_recommendation and customer_data:
             # Process with Recommendation Agent
-            result = process_with_recommendation_agent(customer_data, gpt_model)
+            result = await process_with_recommendation_agent(customer_data, gpt_model, recommendation_agent_instance)
         else:
             # Process with Information Collector Agent
-            result = process_with_information_collector(conversation_history, gpt_model)
+            result = await process_with_information_collector(conversation_history, gpt_model, info_collector_agent, recommendation_agent_instance)
         
         if not result['success']:
             raise Exception(result['error'])
@@ -305,14 +412,15 @@ def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str):
         # Handle both single response and multiple responses
         if isinstance(response_content, list):
             # For multiple responses, add each as a separate message
-            for msg_content in response_content:
+            for i, msg_content in enumerate(response_content):
                 assistant_msg = {
                     "role": "assistant",
                     "content": msg_content,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "agent_type": "recommendation" if (result.get('handoff') and i == 1) else "collector"
                 }
                 # Add customer data only to the first message if handoff occurred
-                if result.get('handoff') and result.get('customer_data') and msg_content == response_content[0]:
+                if result.get('handoff') and result.get('customer_data') and i == 0:
                     assistant_msg['customer_data'] = result['customer_data']
                 conversation_history.append(assistant_msg)
         else:
@@ -320,14 +428,17 @@ def process_prompt_request(request_data: Dict, endpoint: str, gpt_model: str):
             assistant_msg = {
                 "role": "assistant",
                 "content": response_content,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
+                "agent_type": "collector"  # Default to collector for single messages
             }
             # Add customer data if handoff occurred
             if result.get('handoff') and result.get('customer_data'):
                 assistant_msg['customer_data'] = result['customer_data']
             conversation_history.append(assistant_msg)
-        conversation_histories[conversation_key] = conversation_history
-        
+
+        # Save conversation history to Firestore
+        save_conversation_history(conversation_key, conversation_history)
+
         # Store conversation log (optional)
         store_conversation_log(session_id, qualtrics_response_id, conversation_history, chatbot_id)
         

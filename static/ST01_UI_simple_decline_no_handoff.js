@@ -8,67 +8,67 @@ var avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_
 
 const productImageData = [
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_01.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_01.png',
         alertText: 'Professional Insurance Option 1'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_02.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_02.png',
         alertText: 'Professional Insurance Option 2'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_03.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_03.png',
         alertText: 'Professional Insurance Option 3'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_04.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_04.png',
         alertText: 'Professional Insurance Option 4'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_05.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_05.png',
         alertText: 'Professional Insurance Option 5'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_06.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_06.png',
         alertText: 'Professional Insurance Option 6'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_07.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_07.png',
         alertText: 'Professional Insurance Option 7'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_08.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_08.png',
         alertText: 'Professional Insurance Option 8'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_09.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_09.png',
         alertText: 'Professional Insurance Option 9'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_10.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_10.png',
         alertText: 'Professional Insurance Option 10'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_11.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_11.png',
         alertText: 'Professional Insurance Option 11'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_12.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_12.png',
         alertText: 'Professional Insurance Option 12'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_13.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_13.png',
         alertText: 'Professional Insurance Option 13'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_14.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_14.png',
         alertText: 'Professional Insurance Option 14'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_15.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_15.png',
         alertText: 'Professional Insurance Option 15'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_16.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_16.png',
         alertText: 'Professional Insurance Option 16'
     }
 ];
@@ -250,7 +250,7 @@ async function sendMessage() {
                 
                 // INFO AGENT V2 CHANGE: Remove handoff system message
                 // if (isHandoff && i === 0) {
-                //     addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
+                //     addSystemMessage("🔄 Handing off → Recommendation Agent");
                 //     await new Promise(resolve => setTimeout(resolve, 1000));
                 // }
             }

@@ -6,176 +6,1043 @@ const botName = 'Comparabot';
 const chatTitle = 'Comparabot Insurance Finder';
 const avatarImageURL = 'https://storage.googleapis.com/images-mobilab/avatar_icon_chatbot.png'; // Placeholder avatar
 
-// Product image data (same as original) Example: https://storage.googleapis.com/images-mobilab/product_sheet_01.jpg
+// Product image data (same as original) Example: https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_01.png
 const productImageData = [
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_01.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_01.png',
         alertText: 'Professional Insurance Option 1'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_02.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_02.png',
         alertText: 'Professional Insurance Option 2'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_03.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_03.png',
         alertText: 'Professional Insurance Option 3'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_04.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_04.png',
         alertText: 'Professional Insurance Option 4'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_05.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_05.png',
         alertText: 'Professional Insurance Option 5'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_06.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_06.png',
         alertText: 'Professional Insurance Option 6'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_07.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_07.png',
         alertText: 'Professional Insurance Option 7'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_08.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_08.png',
         alertText: 'Professional Insurance Option 8'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_09.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_09.png',
         alertText: 'Professional Insurance Option 9'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_10.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_10.png',
         alertText: 'Professional Insurance Option 10'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_11.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_11.png',
         alertText: 'Professional Insurance Option 11'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_12.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_12.png',
         alertText: 'Professional Insurance Option 12'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_13.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_13.png',
         alertText: 'Professional Insurance Option 13'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_14.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_14.png',
         alertText: 'Professional Insurance Option 14'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_15.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_15.png',
         alertText: 'Professional Insurance Option 15'
     },
     {
-        src: 'https://storage.googleapis.com/images-mobilab/product_sheet_16.jpg',
+        src: 'https://storage.googleapis.com/images-mobilab/V3_product_sheets/V3_product_sheet_16.png',
         alertText: 'Professional Insurance Option 16'
     }
 ];
 
 // Colors - Professional Palette
-const documentBackgroundColor = "#F6F5F2";      // Main page background
-const chatHeaderBackgroundColor = "#3c3abd";    // Accent color (header background)
 const chatHeaderFontColor = "#FFFFFF";          // White text
-const userMessageFontColor = "#000000";         // Primary black text
-const userMessageBackgroundColor = "#FFFFFF";   // White card background
-const loadingMessageFontColor = "#6E6E6E";     // Secondary gray text
-const botMessageFontColor = "#000000";          // Primary black text
-const botMessageBackgroundColor = "#F8F9FA";    // Light gray card background
-const sendButtonColor = "#3c3abd";              // Accent button color
-const sendButtonFontColor = "#FFFFFF";          // White text
 
-// Internal variables
-const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+// Session ID management (compact version)
+const SESSION_STORAGE_KEY = 'localUI.sessionId';
+
+const sessionId = (() => {
+    // Helper: Read from localStorage with silent fallback
+    const getStored = () => {
+        try { return localStorage.getItem(SESSION_STORAGE_KEY)?.trim() || ''; }
+        catch { return ''; }
+    };
+
+    // Helper: Save to localStorage with silent fallback
+    const setStored = (val) => {
+        try { localStorage.setItem(SESSION_STORAGE_KEY, val); }
+        catch { console.warn('localStorage unavailable, session will not persist.'); }
+    };
+
+    // Check URL params first (supports both sessionId and session_id)
+    const params = new URLSearchParams(window.location.search);
+    const override = (params.get('sessionId') || params.get('session_id') || '').trim();
+    if (override) { setStored(override); return override; }
+
+    // Check localStorage second
+    const stored = getStored();
+    if (stored) return stored;
+
+    // Generate new session third
+    const generated = `session_${crypto?.randomUUID?.() || (Math.random().toString(36) + Date.now().toString(36)).slice(0, 32)}`;
+    setStored(generated);
+    return generated;
+})();
 let chatHistory = "";
 let chatHistoryJson = [];
+let handoverStylesInjected = false;
+let globalStylesInjected = false;
+let isSending = false;
+let sendButtonElement = null;
 
-// Apply styles
-document.body.style.fontFamily = "'Arial', sans-serif";
-document.body.style.backgroundColor = documentBackgroundColor;
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function injectGlobalStyles() {
+    if (globalStylesInjected) {
+        return;
+    }
+
+    const style = document.createElement('style');
+    style.id = 'local-ui-global-styles';
+    style.textContent = `
+        :root {
+            color-scheme: light;
+            --chat-shell-background: radial-gradient(circle at 20% 20%, rgba(60, 58, 189, 0.08), transparent 55%),
+                radial-gradient(circle at 80% 0%, rgba(60, 58, 189, 0.06), transparent 45%),
+                #f5f7fb;
+            --chat-surface: #ffffff;
+            --chat-border: rgba(32, 38, 50, 0.08);
+            --chat-shadow: 0 32px 60px rgba(15, 23, 42, 0.15);
+            --accent-primary: #3c3abd;
+            --accent-secondary: #4f4cd7;
+            --accent-tertiary: #2976dd;
+            --text-primary: #111322;
+            --text-secondary: rgba(17, 19, 34, 0.72);
+            --bot-message-surface: rgba(60, 58, 189, 0.06);
+            --handover-message-surface: linear-gradient(140deg, rgba(60, 58, 189, 0.08), rgba(41, 118, 221, 0.12));
+            --handover-border: rgba(60, 58, 189, 0.28);
+            --recommendation-surface: linear-gradient(135deg, rgba(41, 118, 221, 0.08), rgba(30, 147, 255, 0.12));
+            --system-message-surface: rgba(17, 19, 34, 0.06);
+            --step-background: rgba(255, 255, 255, 0.82);
+            --label-pill-radius: 999px;
+        }
+
+        body.chatgpt-inspired-body {
+            margin: 0;
+            min-height: 100vh;
+            padding: clamp(16px, 4vw, 48px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--chat-shell-background);
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            color: var(--text-primary);
+        }
+
+        #chat-container.chat-shell {
+            width: min(900px, 100%);
+            border-radius: 24px;
+            background: var(--chat-surface);
+            box-shadow: var(--chat-shadow);
+            border: 1px solid var(--chat-border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(8px);
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: clamp(18px, 4vw, 28px);
+            background: linear-gradient(135deg, rgba(60, 58, 189, 0.95), rgba(41, 118, 221, 0.92));
+            color: ${chatHeaderFontColor};
+        }
+
+        .chat-header-avatar {
+            width: clamp(48px, 6vw, 64px);
+            height: clamp(48px, 6vw, 64px);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.2);
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-header-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-header-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .chat-header-title {
+            font-size: clamp(1.15rem, 3vw, 1.4rem);
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .chat-header-subtitle {
+            font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+            opacity: 0.82;
+        }
+
+        #chat-window.chat-scroll-region {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(12px, 2.6vw, 18px);
+            padding: clamp(18px, 4vw, 32px);
+            background: var(--chat-surface);
+            overflow-y: auto;
+            max-height: min(70vh, 640px);
+        }
+
+        #chat-window.chat-scroll-region::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #chat-window.chat-scroll-region::-webkit-scrollbar-thumb {
+            background: rgba(60, 58, 189, 0.25);
+            border-radius: 8px;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: clamp(14px, 3vw, 18px);
+            border-radius: 18px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+            max-width: min(640px, 92%);
+            animation: messageIn 0.35s ease;
+            position: relative;
+            isolation: isolate;
+            z-index: 0;
+        }
+
+        .message > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: #ffffff;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: var(--bot-message-surface);
+            color: var(--text-primary);
+            border: 1px solid rgba(60, 58, 189, 0.08);
+        }
+
+        .bot-message::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(145deg, rgba(60, 58, 189, 0.08), transparent 62%);
+            mix-blend-mode: multiply;
+            opacity: 0.45;
+        }
+
+        .bot-message.recommendation {
+            background: var(--recommendation-surface);
+            border: 1px solid rgba(41, 118, 221, 0.22);
+            box-shadow: 0 24px 48px rgba(41, 118, 221, 0.18);
+        }
+
+        .bot-message.recommendation::before {
+            background: linear-gradient(160deg, rgba(41, 118, 221, 0.18), transparent 58%);
+            mix-blend-mode: normal;
+            opacity: 0.4;
+        }
+
+        .system-message {
+            align-self: center;
+            background: var(--system-message-surface);
+            color: var(--text-secondary);
+            box-shadow: none;
+            padding-inline: clamp(16px, 4vw, 28px);
+            text-align: center;
+        }
+
+        .message-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: var(--label-pill-radius);
+            background: rgba(17, 19, 34, 0.025);
+            color: var(--text-secondary);
+            align-self: flex-start;
+        }
+
+        .message-label::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.7;
+        }
+
+        .user-message .message-label {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        .bot-message .message-label {
+            background: rgba(60, 58, 189, 0.025);
+            color: var(--text-secondary);
+        }
+
+        .bot-message.recommendation .message-label {
+            background: rgba(41, 118, 221, 0.03);
+            color: var(--text-secondary);
+        }
+
+        .handover-message .message-label {
+            background: rgba(60, 58, 189, 0.2);
+            color: var(--accent-primary);
+        }
+
+        .message-body {
+            font-size: clamp(0.9rem, 2.6vw, 1.05rem);
+            line-height: 1.6;
+            color: inherit;
+        }
+
+        .message-body ul {
+            margin: 0;
+            padding-left: 1.1rem;
+            display: grid;
+            gap: 6px;
+        }
+
+        .message-body p {
+            margin: 0;
+        }
+
+        .message-body a {
+            color: var(--accent-primary);
+            text-decoration: underline;
+            font-weight: 500;
+            transition: color 0.2s ease, text-decoration-color 0.2s ease;
+        }
+
+        .message-body a:hover,
+        .message-body a:focus {
+            color: var(--accent-secondary);
+            text-decoration: none;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            background: rgba(60, 58, 189, 0.08);
+            box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
+            color: var(--text-secondary);
+        }
+
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--accent-primary);
+            opacity: 0.2;
+            animation: typingPulse 1.3s ease-in-out infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.16s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.32s;
+        }
+
+        #input-row.chat-input-row {
+            display: flex;
+            gap: 12px;
+            padding: clamp(16px, 4vw, 24px);
+            background: rgba(60, 58, 189, 0.03);
+            border-top: 1px solid rgba(60, 58, 189, 0.08);
+        }
+
+        #user-input.chat-input {
+            flex: 1 1 auto;
+            min-width: 0;
+            border-radius: 14px;
+            border: 1px solid rgba(17, 19, 34, 0.12);
+            padding: 14px 18px;
+            font-size: 1rem;
+            line-height: 1.4;
+            background: #ffffff;
+            color: var(--text-primary);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        #user-input.chat-input:focus {
+            outline: none;
+            border-color: rgba(60, 58, 189, 0.48);
+            box-shadow: 0 0 0 4px rgba(60, 58, 189, 0.12);
+        }
+
+        #user-input.chat-input::placeholder {
+            color: rgba(17, 19, 34, 0.45);
+        }
+
+        #send-button.chat-send-button {
+            flex: 0 0 auto;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: #ffffff;
+            border: none;
+            padding: 0 clamp(18px, 3vw, 26px);
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            min-height: 48px;
+            transition: transform 0.18s ease, box-shadow 0.2s ease;
+            position: relative;
+        }
+
+        #send-button.chat-send-button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 36px rgba(60, 58, 189, 0.25);
+        }
+
+        #send-button.chat-send-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+            box-shadow: none;
+        }
+
+        #send-button.chat-send-button.is-loading::after {
+            content: '';
+            position: absolute;
+            right: clamp(12px, 3vw, 18px);
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            border-top-color: #ffffff;
+            animation: spinner 0.75s linear infinite;
+        }
+
+        .handover-message {
+            align-self: center;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding-block: clamp(6px, 1.5vw, 10px);
+            padding-inline: clamp(10px, 2vw, 14px);
+            max-width: min(420px, 92%);
+            text-align: center;
+        }
+
+        .handover-message::before,
+        .handover-message::after {
+            display: none;
+        }
+
+        .handover-message .message-label {
+            align-self: center;
+            background: rgba(60, 58, 189, 0.16);
+            color: var(--accent-primary);
+            letter-spacing: 0.14em;
+        }
+
+        .handover-sequence {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            animation: handoverFadeIn 0.32s ease;
+        }
+
+        .handover-title {
+            font-weight: 600;
+            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+            color: var(--accent-primary);
+            letter-spacing: 0.02em;
+        }
+
+        .handover-subtitle {
+            font-size: clamp(0.72rem, 2vw, 0.82rem);
+            color: rgba(17, 19, 34, 0.68);
+            max-width: 32ch;
+        }
+
+        .handover-steps {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding-block: 6px 3px;
+        }
+
+        .handover-steps::before {
+            content: '';
+            position: absolute;
+            top: 22px;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            background: linear-gradient(180deg, rgba(60, 58, 189, 0.22), rgba(41, 118, 221, 0.18));
+            pointer-events: none;
+        }
+
+        .handover-step {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+            color: var(--text-secondary);
+            font-size: clamp(0.78rem, 2vw, 0.88rem);
+            min-height: 32px;
+        }
+
+        .handover-step-marker {
+            position: relative;
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            border: 2px solid rgba(60, 58, 189, 0.28);
+            background: var(--step-background);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            z-index: 1;
+            box-shadow: 0 4px 12px rgba(60, 58, 189, 0.15);
+        }
+
+        .handover-step-marker::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 999px;
+            border: 2px solid transparent;
+            border-top-color: rgba(60, 58, 189, 0.6);
+            border-right-color: rgba(60, 58, 189, 0.4);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .handover-step-label {
+            max-width: 26ch;
+        }
+
+        .handover-step.active {
+            opacity: 1;
+            transform: translateY(0);
+            color: var(--text-primary);
+        }
+
+        .handover-step.active .handover-step-marker {
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(60, 58, 189, 0.16);
+        }
+
+        .handover-step.active .handover-step-marker::after {
+            opacity: 1;
+            animation: handoverSpinner 1.2s linear infinite;
+        }
+
+        .handover-step.completed {
+            opacity: 0.92;
+            transform: translateY(0);
+            color: var(--text-secondary);
+        }
+
+        .handover-step.completed .handover-step-marker {
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+            color: #ffffff;
+            box-shadow: none;
+        }
+
+        .handover-step.completed .handover-step-marker::after {
+            opacity: 0;
+            animation: none;
+        }
+
+        .handover-step.completed .handover-step-marker::before {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -52%);
+            font-size: 0.48rem;
+            font-weight: 600;
+        }
+
+        .handover-message.handover-complete .handover-steps::before {
+            background: linear-gradient(180deg, rgba(60, 58, 189, 0.1), rgba(41, 118, 221, 0.12));
+        }
+
+        @keyframes handoverSpinner {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes typingPulse {
+            0%, 100% {
+                opacity: 0.2;
+                transform: translateY(0);
+            }
+            40% {
+                opacity: 1;
+                transform: translateY(-3px);
+            }
+        }
+
+        @keyframes spinner {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes handoverFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-60%);
+            }
+            100% {
+                transform: translateX(60%);
+            }
+        }
+
+        @keyframes carouselGlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .message,
+            .handover-sequence,
+            .handover-step,
+            .typing-indicator {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+    globalStylesInjected = true;
+}
+
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function sanitizeHTML(value) {
+    const template = document.createElement('template');
+    template.innerHTML = value;
+
+    const allowedElements = new Set(['P', 'BR', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'B', 'I', 'A', 'SPAN']);
+    const allowedAnchorAttributes = new Set(['href', 'target', 'rel', 'onclick', 'title']);
+
+    const walk = node => {
+        const childNodes = Array.from(node.childNodes);
+        for (const child of childNodes) {
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                if (!allowedElements.has(child.tagName)) {
+                    while (child.firstChild) {
+                        node.insertBefore(child.firstChild, child);
+                    }
+                    child.remove();
+                    continue;
+                }
+
+                if (child.tagName === 'A') {
+                    const href = child.getAttribute('href');
+                    if (href && /^\s*javascript:/i.test(href)) {
+                        child.removeAttribute('href');
+                    }
+
+                    if (href && /^https?:/i.test(href) && !child.hasAttribute('target')) {
+                        child.setAttribute('target', '_blank');
+                        child.setAttribute('rel', 'noopener');
+                    }
+
+                    Array.from(child.attributes).forEach(attr => {
+                        if (!allowedAnchorAttributes.has(attr.name)) {
+                            child.removeAttribute(attr.name);
+                        }
+                    });
+                } else {
+                    Array.from(child.attributes).forEach(attr => {
+                        child.removeAttribute(attr.name);
+                    });
+                }
+
+                walk(child);
+            } else if (child.nodeType === Node.COMMENT_NODE) {
+                child.remove();
+            }
+        }
+    };
+
+    walk(template.content);
+    return template.innerHTML;
+}
+
+function formatMessageContent(value) {
+    const normalized = String(value ?? '').replace(/\r\n?/g, '\n');
+    if (!normalized.trim()) {
+        return '';
+    }
+
+    const paragraphs = normalized.split(/\n{2,}/).map(paragraph => {
+        const trimmed = paragraph.trim();
+        if (!trimmed) {
+            return '';
+        }
+
+        const containsHTML = /<[^>]+>/.test(trimmed);
+        if (containsHTML) {
+            return trimmed;
+        }
+
+        const lines = trimmed.split(/\n/);
+        const bulletLines = lines.every(line => /^[-*]\s+/.test(line.trim()));
+
+        if (bulletLines) {
+            const items = lines
+                .map(line => line.trim().replace(/^[-*]\s+/, ''))
+                .filter(Boolean)
+                .map(item => `<li>${escapeHTML(item)}</li>`)
+                .join('');
+            return `<ul>${items}</ul>`;
+        }
+
+        const escapedLines = lines.map(line => escapeHTML(line));
+        return `<p>${escapedLines.join('<br>')}</p>`;
+    }).filter(Boolean);
+
+    return sanitizeHTML(paragraphs.join(''));
+}
+
+function createMessageElement(role, content, agentType) {
+    const wrapper = document.createElement('div');
+    const normalizedRole = role === 'assistant' ? 'bot' : role;
+    wrapper.className = `message ${normalizedRole}-message`;
+
+    if (normalizedRole === 'bot' && agentType === 'recommendation') {
+        wrapper.classList.add('recommendation');
+    }
+
+    const label = document.createElement('div');
+    label.className = 'message-label';
+
+    if (normalizedRole === 'user') {
+        label.textContent = 'You';
+    } else if (agentType === 'recommendation') {
+        label.textContent = 'Recommendation Agent';
+    } else {
+        label.textContent = 'Information Agent';
+    }
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+    body.innerHTML = formatMessageContent(content);
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(body);
+
+    return wrapper;
+}
+
+function createTypingIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'typing-indicator';
+
+    const label = document.createElement('span');
+    label.textContent = `${botName} is thinking`;
+
+    const dots = document.createElement('div');
+    dots.className = 'typing-dots';
+
+    for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'typing-dot';
+        dots.appendChild(dot);
+    }
+
+    indicator.appendChild(label);
+    indicator.appendChild(dots);
+
+    return indicator;
+}
+
+function setupLayout() {
+    injectGlobalStyles();
+    document.body.classList.add('chatgpt-inspired-body');
+
+    const chatContainer = document.getElementById('chat-container');
+    if (chatContainer) {
+        chatContainer.classList.add('chat-shell');
+    }
+
+    const chatWindow = document.getElementById('chat-window');
+    if (chatWindow) {
+        chatWindow.classList.add('chat-scroll-region');
+    }
+
+    const inputRow = document.getElementById('input-row');
+    if (inputRow) {
+        inputRow.classList.add('chat-input-row');
+    }
+
+    const input = document.getElementById('user-input');
+    if (input) {
+        input.classList.add('chat-input');
+        input.setAttribute('placeholder', 'Ask for personalized insurance guidance…');
+    }
+
+    const button = document.getElementById('send-button');
+    if (button) {
+        button.classList.add('chat-send-button');
+        sendButtonElement = button;
+    }
+}
 
 function addChatHeader() {
+    const chatWindow = document.getElementById('chat-window');
+    if (!chatWindow || chatWindow.previousElementSibling?.classList.contains('chat-header')) {
+        return;
+    }
+
     const chatHeader = document.createElement('div');
-    chatHeader.style.backgroundColor = chatHeaderBackgroundColor;
-    chatHeader.style.color = chatHeaderFontColor;
-    chatHeader.style.padding = "clamp(8px, 2vw, 12px)";
-    chatHeader.style.textAlign = "center";
-    chatHeader.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
-    chatHeader.style.fontWeight = "bold";
-    chatHeader.style.borderTopLeftRadius = "10px";
-    chatHeader.style.borderTopRightRadius = "10px";
-    chatHeader.style.display = "flex";
-    chatHeader.style.alignItems = "center";
+    chatHeader.className = 'chat-header';
+
+    const avatarWrapper = document.createElement('div');
+    avatarWrapper.className = 'chat-header-avatar';
 
     const avatar = document.createElement('img');
     avatar.src = avatarImageURL;
     avatar.alt = botName + ' Avatar';
-    avatar.style.width = "clamp(50px, 8vw, 80px)";
-    avatar.style.height = "clamp(50px, 8vw, 80px)";
-    avatar.style.marginRight = "clamp(8px, 2vw, 12px)";
-    avatar.style.borderRadius = "50%";
+    avatarWrapper.appendChild(avatar);
 
-    const chatHeaderText = document.createElement('span');
-    chatHeaderText.innerText = chatTitle;
+    const copyWrapper = document.createElement('div');
+    copyWrapper.className = 'chat-header-copy';
 
-    chatHeader.appendChild(avatar);
-    chatHeader.appendChild(chatHeaderText);
+    const title = document.createElement('div');
+    title.className = 'chat-header-title';
+    title.textContent = chatTitle;
 
-    const chatWindow = document.getElementById('chat-window');
+    const subtitle = document.createElement('div');
+    subtitle.className = 'chat-header-subtitle';
+    subtitle.textContent = 'Powered by multi-agent intelligence';
+
+    copyWrapper.appendChild(title);
+    copyWrapper.appendChild(subtitle);
+
+    chatHeader.appendChild(avatarWrapper);
+    chatHeader.appendChild(copyWrapper);
+
     chatWindow.parentNode.insertBefore(chatHeader, chatWindow);
 }
 
-async function sendMessage() {
-    console.log("Send button clicked");
-    const userInput = document.getElementById('user-input').value;
-    if (!userInput.trim()) return;
-
-    const chatWindow = document.getElementById('chat-window');
-    const timestamp = new Date().toISOString();
-    
-    chatHistory += "User: " + userInput + "\n";
-    chatHistoryJson.push({ 
-        role: "user", 
-        content: userInput,
-        timestamp: timestamp 
-    });
-
-    // User message styling
-    const userMessageDiv = document.createElement('div');
-    userMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
-    userMessageDiv.style.color = userMessageFontColor;
-    userMessageDiv.style.backgroundColor = userMessageBackgroundColor;
-    userMessageDiv.style.padding = "clamp(8px, 2vw, 12px)";
-    userMessageDiv.style.borderRadius = "10px";
-    userMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
-    userMessageDiv.style.maxWidth = "70%";
-    userMessageDiv.style.alignSelf = "flex-end";
-    userMessageDiv.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-    userMessageDiv.innerHTML = '<strong>You:</strong> ' + userInput;
-    chatWindow.appendChild(userMessageDiv);
-
-    // Loading message styling
-    const loadingMessageDiv = document.createElement('div');
-    loadingMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
-    loadingMessageDiv.style.fontStyle = 'italic';
-    loadingMessageDiv.style.color = loadingMessageFontColor;
-    loadingMessageDiv.style.marginBottom = "clamp(8px, 2vw, 12px)";
-    loadingMessageDiv.style.maxWidth = "70%";
-    loadingMessageDiv.style.alignSelf = "flex-start";
-    loadingMessageDiv.id = 'loading-message';
-    loadingMessageDiv.textContent = botName + ' is typing...';
-    chatWindow.appendChild(loadingMessageDiv);
-
+async function loadConversationHistory() {
     try {
+        console.log(`Loading conversation history for session: ${sessionId}`);
+
+        const response = await fetch(`/conversation/${sessionId}`);
+
+        if (!response.ok) {
+            console.log("No previous conversation found or error loading history");
+            return;
+        }
+
+        const data = await response.json();
+        const history = data.history || [];
+
+        console.log(`Retrieved ${history.length} messages from backend`);
+
+        const chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error("Chat window not found");
+            return;
+        }
+
+        // Populate chatHistoryJson with loaded history
+        chatHistoryJson = [...history];
+
+        // Build chatHistory string
+        for (const msg of history) {
+            if (msg.role === 'user') {
+                chatHistory += "User: " + msg.content + "\n";
+            } else if (msg.role === 'assistant') {
+                chatHistory += "Agent: " + msg.content + "\n";
+            }
+        }
+
+        // Render messages in UI
+        for (let i = 0; i < history.length; i++) {
+            const msg = history[i];
+
+            if (msg.role === 'user') {
+                const userMessageDiv = createMessageElement('user', msg.content);
+                chatWindow.appendChild(userMessageDiv);
+            } else if (msg.role === 'assistant') {
+                // Use explicit agent_type from backend, with fallback for backward compatibility
+                const agentType = msg.agent_type ||
+                    (msg.content.includes('showRecommendation(') ? 'recommendation' : 'collector');
+
+                const botMessageDiv = createMessageElement('assistant', msg.content, agentType);
+                chatWindow.appendChild(botMessageDiv);
+
+                // Check if handoff occurred: current message has customer_data AND next message is recommendation
+                if (msg.customer_data && i + 1 < history.length) {
+                    const nextMsg = history[i + 1];
+                    const nextAgentType = nextMsg.agent_type ||
+                        (nextMsg.content.includes('showRecommendation(') ? 'recommendation' : 'collector');
+
+                    if (nextAgentType === 'recommendation') {
+                        // Insert static handoff divider
+                        const handoffDivider = createStaticHandoffDivider();
+                        chatWindow.appendChild(handoffDivider);
+                    }
+                }
+            }
+        }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        console.log(`Successfully loaded and rendered ${history.length} messages`);
+
+        // Auto-initialize conversation if history is empty
+        if (history.length === 0) {
+            console.log("Empty conversation detected, sending initialization request");
+            await sendInitializationMessage();
+        }
+
+    } catch (error) {
+        console.error("Error loading conversation history:", error);
+        // Fail silently - start fresh conversation
+    }
+}
+
+async function sendInitializationMessage() {
+    try {
+        console.log("Initializing conversation with welcome message");
+
+        const chatWindow = document.getElementById('chat-window');
+        if (!chatWindow) {
+            console.error("Chat window not found");
+            return;
+        }
+
+        // Show typing indicator
+        const typingIndicator = createTypingIndicator();
+        chatWindow.appendChild(typingIndicator);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
         const requestData = {
-            message: chatHistoryJson,
+            message: [],  // Empty array signals initialization
             session_id: sessionId,
             qualtrics_response_id: "LOCAL_DEBUG"
         };
-        
-        console.log("Sending request:", JSON.stringify(requestData, null, 2));
-        
+
         const response = await fetch(chatbotURL, {
             method: 'POST',
             headers: {
@@ -184,58 +1051,143 @@ async function sendMessage() {
             body: JSON.stringify(requestData)
         });
 
-        const loadingDiv = document.getElementById('loading-message');
-        if (loadingDiv) loadingDiv.remove();
+        // Remove typing indicator
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
+
+        if (response.ok) {
+            const data = await response.json();
+            const responses = Array.isArray(data.response) ? data.response : [data.response];
+
+            for (const messageContent of responses) {
+                const botTimestamp = new Date().toISOString();
+
+                // Add to history
+                chatHistory += "Agent: " + messageContent + "\n";
+                chatHistoryJson.push({
+                    role: "assistant",
+                    content: messageContent,
+                    timestamp: botTimestamp,
+                    agent_type: "collector"
+                });
+
+                // Display in UI
+                const botMessageDiv = createMessageElement('assistant', messageContent, 'collector');
+                chatWindow.appendChild(botMessageDiv);
+            }
+
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            console.log("Initialization complete");
+        } else {
+            console.error("Failed to initialize conversation:", response.status);
+        }
+    } catch (error) {
+        console.error("Error initializing conversation:", error);
+        // Fail silently - user can still start conversation manually
+    }
+}
+
+async function sendMessage() {
+    if (isSending) {
+        return;
+    }
+
+    const inputField = document.getElementById('user-input');
+    const chatWindow = document.getElementById('chat-window');
+
+    if (!inputField || !chatWindow) {
+        return;
+    }
+
+    const userMessage = inputField.value.trim();
+    if (!userMessage) {
+        return;
+    }
+
+    const timestamp = new Date().toISOString();
+
+    chatHistory += "User: " + userMessage + "\n";
+    chatHistoryJson.push({
+        role: "user",
+        content: userMessage,
+        timestamp: timestamp
+    });
+
+    const userMessageDiv = createMessageElement('user', userMessage);
+    chatWindow.appendChild(userMessageDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    inputField.value = '';
+    inputField.focus();
+
+    const typingIndicator = createTypingIndicator();
+    chatWindow.appendChild(typingIndicator);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    if (!sendButtonElement) {
+        sendButtonElement = document.getElementById('send-button');
+    }
+
+    if (sendButtonElement) {
+        sendButtonElement.disabled = true;
+        sendButtonElement.classList.add('is-loading');
+    }
+
+    isSending = true;
+
+    try {
+        const requestData = {
+            message: chatHistoryJson,
+            session_id: sessionId,
+            qualtrics_response_id: "LOCAL_DEBUG"
+        };
+
+        console.log("Sending request:", JSON.stringify(requestData, null, 2));
+
+        const response = await fetch(chatbotURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
 
         if (response.ok) {
             const data = await response.json();
             const botTimestamp = new Date().toISOString();
-            
-            // Handle multiple messages
             const responses = Array.isArray(data.response) ? data.response : [data.response];
-            const isHandoff = responses.length > 1; // Multi-message response indicates handoff
-            
+            const isHandoff = responses.length > 1;
+
             console.log("Received response:", data.response);
             console.log("Processed responses:", responses);
             console.log("Is handoff:", isHandoff);
-            
-            // Display each message with a delay
+
             for (let i = 0; i < responses.length; i++) {
                 const messageContent = responses[i];
-                // For handoff: first message is Information Agent, second is Recommendation Agent
                 const agentType = isHandoff && i === 1 ? 'recommendation' : 'collector';
-                
-                console.log(`Message ${i}:`, messageContent, "Type:", typeof messageContent, "Agent:", agentType);
-                
-                // Add delay for non-first messages
+
                 if (i > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await wait(650);
                 }
-                
+
                 chatHistory += "Agent: " + messageContent + "\n";
-                chatHistoryJson.push({ 
-                    role: "assistant", 
+                chatHistoryJson.push({
+                    role: "assistant",
                     content: messageContent,
-                    timestamp: botTimestamp 
+                    timestamp: botTimestamp
                 });
 
-                console.log("Added to chatHistoryJson:", {
-                    role: "assistant", 
-                    content: messageContent,
-                    timestamp: botTimestamp 
-                });
-
-                // Create bot message with agent-specific styling
                 const botMessageDiv = createBotMessage(messageContent, agentType);
                 chatWindow.appendChild(botMessageDiv);
-                
-                // Scroll to bottom after each message
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-                
-                // Add system message AFTER the first message in handoff scenario
+
                 if (isHandoff && i === 0) {
-                    addSystemMessage("🔄 Connecting you with our Insurance Specialist...");
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await showHandoffSequence(chatWindow);
                 }
             }
         } else {
@@ -243,63 +1195,199 @@ async function sendMessage() {
             console.error("Error from server: " + response.status);
         }
     } catch (error) {
-        const loadingDiv = document.getElementById('loading-message');
-        if (loadingDiv) loadingDiv.remove();
         showErrorMessage("Network error: " + error.message);
         console.error("Network error: ", error);
-    }
+    } finally {
+        if (typingIndicator.parentNode) {
+            typingIndicator.remove();
+        }
 
-    document.getElementById('user-input').value = '';
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+        if (sendButtonElement) {
+            sendButtonElement.disabled = false;
+            sendButtonElement.classList.remove('is-loading');
+        }
+
+        isSending = false;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
 }
 
 function addSystemMessage(message) {
     const chatWindow = document.getElementById('chat-window');
+    if (!chatWindow) {
+        return;
+    }
+
     const systemMessageDiv = document.createElement('div');
-    
-    systemMessageDiv.style.fontSize = 'clamp(0.75rem, 2vw, 0.875rem)';
-    systemMessageDiv.style.fontStyle = 'italic';
-    systemMessageDiv.style.color = '#666';
-    systemMessageDiv.style.backgroundColor = '#f8f9fa';
-    systemMessageDiv.style.padding = '8px 12px';
-    systemMessageDiv.style.borderRadius = '15px';
-    systemMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
-    systemMessageDiv.style.maxWidth = '60%';
-    systemMessageDiv.style.alignSelf = 'center';
-    systemMessageDiv.style.border = '1px solid #dee2e6';
-    systemMessageDiv.style.textAlign = 'center';
-    
-    systemMessageDiv.innerHTML = `<em>${message}</em>`;
+    systemMessageDiv.className = 'message system-message';
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+    body.innerHTML = `<em>${escapeHTML(message)}</em>`;
+
+    systemMessageDiv.appendChild(body);
     chatWindow.appendChild(systemMessageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-function createBotMessage(content, agentType = 'collector') {
-    const botMessageDiv = document.createElement('div');
-    
-    // Base styling
-    botMessageDiv.style.fontSize = 'clamp(0.875rem, 2.5vw, 1rem)';
-    botMessageDiv.style.padding = 'clamp(8px, 2vw, 12px)';
-    botMessageDiv.style.borderRadius = '10px';
-    botMessageDiv.style.marginBottom = 'clamp(8px, 2vw, 12px)';
-    botMessageDiv.style.maxWidth = '70%';
-    botMessageDiv.style.alignSelf = 'flex-start';
-    botMessageDiv.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-    
-    // Agent-specific styling
-    if (agentType === 'collector') {
-        botMessageDiv.style.backgroundColor = '#EFEFEF';
-        botMessageDiv.style.color = '#333';
-        botMessageDiv.style.borderLeft = '4px solid #970000';
-        botMessageDiv.innerHTML = `<strong>Information Agent:</strong> ${content}`;
-    } else if (agentType === 'recommendation') {
-        botMessageDiv.style.backgroundColor = '#e8f4f8';
-        botMessageDiv.style.color = '#333';
-        botMessageDiv.style.borderLeft = '4px solid #0066cc';
-        botMessageDiv.innerHTML = `<strong>Recommendation Agent:</strong> ${content}`;
+function injectHandoverStyles() {
+    if (!handoverStylesInjected) {
+        handoverStylesInjected = true;
     }
-    
-    return botMessageDiv;
+}
+
+async function showHandoffSequence(chatWindowOverride) {
+    injectHandoverStyles();
+
+    const chatWindow = chatWindowOverride || document.getElementById('chat-window');
+    if (!chatWindow) {
+        return;
+    }
+
+    const handoverMessage = document.createElement('div');
+    handoverMessage.className = 'message handover-message';
+
+    const label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = 'Agent Handoff';
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+
+    const sequenceContainer = document.createElement('div');
+    sequenceContainer.className = 'handover-sequence';
+
+    const title = document.createElement('div');
+    title.className = 'handover-title';
+    title.textContent = 'Handing over';
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'handover-subtitle';
+    subtitle.textContent = "Routing to specialist...";
+
+    const stepsWrapper = document.createElement('div');
+    stepsWrapper.className = 'handover-steps';
+
+    const steps = [
+        { label: 'Handing over to Insurance Specialist' },
+        { label: 'Thinking' },
+        { label: 'Getting top recommendation' }
+    ];
+
+    const stepElements = steps.map(step => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'handover-step';
+        const marker = document.createElement('span');
+        marker.className = 'handover-step-marker';
+        marker.setAttribute('aria-hidden', 'true');
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'handover-step-label';
+        labelSpan.textContent = step.label;
+
+        stepElement.appendChild(marker);
+        stepElement.appendChild(labelSpan);
+        stepsWrapper.appendChild(stepElement);
+
+        return {
+            element: stepElement
+        };
+    });
+
+    sequenceContainer.appendChild(title);
+    sequenceContainer.appendChild(subtitle);
+    sequenceContainer.appendChild(stepsWrapper);
+    body.appendChild(sequenceContainer);
+    handoverMessage.appendChild(label);
+    handoverMessage.appendChild(body);
+    chatWindow.appendChild(handoverMessage);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    for (let i = 0; i < stepElements.length; i++) {
+        const currentStep = stepElements[i];
+        await wait(i === 0 ? 200 : (i === 1 ? 1750 : 4000));
+        currentStep.element.classList.add('active');
+
+        if (i > 0) {
+            const previousStep = stepElements[i - 1];
+            previousStep.element.classList.remove('active');
+            previousStep.element.classList.add('completed');
+        }
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    await wait(850);
+
+    const lastStep = stepElements[stepElements.length - 1];
+    lastStep.element.classList.remove('active');
+    lastStep.element.classList.add('completed');
+
+    sequenceContainer.classList.add('handover-finished');
+    handoverMessage.classList.add('handover-complete');
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function createStaticHandoffDivider() {
+    const handoverMessage = document.createElement('div');
+    handoverMessage.className = 'message handover-message handover-complete';
+
+    const label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = 'Agent Handoff';
+
+    const body = document.createElement('div');
+    body.className = 'message-body';
+
+    const sequenceContainer = document.createElement('div');
+    sequenceContainer.className = 'handover-sequence handover-finished';
+
+    const title = document.createElement('div');
+    title.className = 'handover-title';
+    title.textContent = 'Handoff Complete';
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'handover-subtitle';
+    subtitle.textContent = "Routed to Insurance Specialist";
+
+    const stepsWrapper = document.createElement('div');
+    stepsWrapper.className = 'handover-steps';
+
+    const steps = [
+        { label: 'Handing over to Insurance Specialist' },
+        { label: 'Thinking' },
+        { label: 'Getting top recommendation' }
+    ];
+
+    steps.forEach(step => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'handover-step completed';
+
+        const marker = document.createElement('span');
+        marker.className = 'handover-step-marker';
+        marker.setAttribute('aria-hidden', 'true');
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'handover-step-label';
+        labelSpan.textContent = step.label;
+
+        stepElement.appendChild(marker);
+        stepElement.appendChild(labelSpan);
+        stepsWrapper.appendChild(stepElement);
+    });
+
+    sequenceContainer.appendChild(title);
+    sequenceContainer.appendChild(subtitle);
+    sequenceContainer.appendChild(stepsWrapper);
+    body.appendChild(sequenceContainer);
+    handoverMessage.appendChild(label);
+    handoverMessage.appendChild(body);
+
+    return handoverMessage;
+}
+
+function createBotMessage(content, agentType = 'collector') {
+    return createMessageElement('assistant', content, agentType);
 }
 
 function showErrorMessage(message) {
@@ -332,7 +1420,12 @@ function showErrorMessage(message) {
 }
 
 function applyCustomAlertStyles() {
+    if (document.getElementById('custom-alert-styles')) {
+        return;
+    }
+
     const customAlertStyle = document.createElement("style");
+    customAlertStyle.id = 'custom-alert-styles';
     customAlertStyle.innerHTML = `
         .custom-alert {
             display: none;
@@ -392,35 +1485,32 @@ function showAllProducts(message) {
 
 // Initialize the chat interface
 try {
+    setupLayout();
     addChatHeader();
 
+    // Load existing conversation history from backend
+    loadConversationHistory().then(() => {
+        console.log("Conversation history load attempt completed");
+    }).catch(err => {
+        console.error("Failed to load conversation history:", err);
+    });
+
     const sendButton = document.getElementById('send-button');
-    sendButton.style.backgroundColor = sendButtonColor;
-    sendButton.style.color = sendButtonFontColor;
-    sendButton.style.padding = "clamp(10px, 2vw, 12px) clamp(16px, 4vw, 20px)";
-    sendButton.style.minHeight = "44px";
-    sendButton.style.border = "none";
-    sendButton.style.borderRadius = "5px";
-    sendButton.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
-    sendButton.style.cursor = "pointer";
-    sendButton.addEventListener('click', sendMessage);
+    if (sendButton) {
+        sendButton.addEventListener('click', sendMessage);
+    }
 
     const userInput = document.getElementById('user-input');
-    userInput.style.padding = "clamp(8px, 2vw, 12px)";
-    userInput.style.minHeight = "44px";
-    userInput.style.border = "1px solid #CCC";
-    userInput.style.borderRadius = "5px";
-    userInput.style.fontSize = "clamp(0.875rem, 2.5vw, 1rem)";
-
-    // Handle Enter key to send message
-    userInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            if (userInput.value.trim() !== "") {
-                sendMessage();
+    if (userInput) {
+        userInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (userInput.value.trim() !== "") {
+                    sendMessage();
+                }
             }
-        }
-    });
+        });
+    }
 } catch (error) {
     showErrorMessage("Error setting up event listeners: " + error.message);
     console.error("Error setting up event listeners: ", error);

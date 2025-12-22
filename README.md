@@ -2,7 +2,7 @@
 
 > **An intelligent 2-agent system that enables insurance recommendations through specialized AI agents and seamless handoff mechanisms.**
 
-![Chat Interface](img/chat-interface-poc.png)
+![Chat Interface](img/chat-interface-final.png)
 
 This system demonstrates a simple agentic AI architecture where two specialized agents collaborate to deliver personalized insurance recommendations. Each agent has a distinct role and expertise, creating a natural conversation flow that mimics human insurance consultation.
 
@@ -14,13 +14,13 @@ This system demonstrates a simple agentic AI architecture where two specialized 
 
 Our system employs **two specialized AI agents** that work in perfect harmony:
 
-**💻 Information Agent** (Data Collection Specialist)
+**💻 Information Agent**
 - Conducts structured conversations to gather customer information
 - Validates completeness of 9 essential data points, including customer age
 - Provides friendly, conversational experience
 - Signals when ready for handoff
 
-**💻 Recommendation Agent** (Insurance Specialist) 
+**💻 Recommendation Agent** 
 - Processes customer data to generate personalized recommendations
 - Utilizes advanced product matching algorithms
 - Delivers recommendations with direct product links
@@ -64,12 +64,46 @@ flowchart TB
 
 ## ✨ Features
 
-🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI  
-🔄 **Seamless Handoff**: Smooth transitions with system messages like "🔄 Connecting you with our Insurance Specialist..."  
-📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation  
-🎯 **Personalized Recommendations**: Advanced matching based on deductible preferences and coverage needs  
-⚡ **Real-time Processing**: Multi-message responses with appropriate delays for natural conversation flow  
-🔗 **Direct Product Links**: Actionable recommendations with immediate purchase options  
+🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI
+🔄 **Animated Handoff Sequence**: Beautiful step-by-step visualization showing agent transition progress (~10.8 seconds)
+📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation
+🎯 **Personalized Recommendations**: Advanced matching based on deductible, coverage, and water backup preferences
+⚡ **Session Persistence**: Firestore-backed conversation storage that survives page refreshes and instance restarts
+💾 **Smart Session Management**: Three-tier system (Qualtrics → localStorage → generated) for reliable session tracking
+🔗 **Direct Product Links**: Actionable recommendations with immediate purchase options
+🎨 **Responsive UI**: Modern design with smooth animations and mobile-friendly interface
+🔬 **Multiple Study Variants**: ST01 (simple accept/decline), ST02 (gallery with highlight), ST03 (lottery simulation)
+🎛️ **Study Conditions**: Handoff vs no_handoff versions for experimental control
+
+---
+
+### Study Variants
+
+The system supports multiple study configurations:
+
+**ST01 - Simple Accept/Decline**
+- `ST01_UI_simple_decline_handoff.js` - With agent handoff animation
+- `ST01_UI_simple_decline_no_handoff.js` - Without handoff animation
+- STUDY_ID: `ST01_01` (handoff), `ST01_02` (no_handoff)
+- User can accept or decline the single recommended product
+
+**ST02 - Gallery with Product Highlight**
+- `ST02_UI_highlight_gallery_handoff.js` - With agent handoff animation
+- `ST02_UI_highlight_gallery_no_handoff.js` - Without handoff animation
+- STUDY_ID: `ST02_01` (handoff), `ST02_02` (no_handoff)
+- Recommended product is highlighted, user can browse full gallery of 16 randomized products
+- 4 possible user journeys: direct-accept, decline-then-gallery-accept-recommended, decline-then-gallery-accept-alternative, decline-then-gallery-remain-uninsured
+- Comprehensive tracking of decision process, timing, and product selection
+- **📄 See [ST02 Study Design Documentation](docs/ST02_STUDY_DESIGN.md) for detailed user journey maps and analysis variables**
+
+**ST03 - Lottery Simulation**
+- `ST03_lottery_simulation_code.js`
+- Different experimental paradigm
+
+**Study Condition System:**
+- Controlled via `show_handoff` parameter in API requests
+- Backend selects appropriate system prompts (handoff vs no_handoff)
+- Frontend tracks condition in `TreatmentCondition` embedded data variable
 
 ---
 
@@ -134,8 +168,10 @@ FastAPI Application
 
 For comprehensive information about this system:
 
-📋 **[WORKFLOW.md](WORKFLOW.md)** - Complete workflow documentation with detailed diagrams and UI features  
-🔧 **[TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md)** - Extensive technical documentation covering all functions, API calls, and data flows  
+📋 **[WORKFLOW.md](docs/WORKFLOW.md)** - Complete workflow documentation with detailed diagrams and UI features
+🔧 **[TECHNICAL_REFERENCE.md](docs/TECHNICAL_REFERENCE.md)** - Extensive technical documentation covering all functions, API calls, and data flows
+🤖 **[AGENT_SYSTEM.md](docs/AGENT_SYSTEM.md)** - Detailed agent system reference with prompts and handoff mechanisms
+📈 **[SCALING_GUIDE.md](SCALING_GUIDE.md)** - Production deployment and scaling guide for 1000+ concurrent requests
 📖 **API Documentation** - Available at `/docs` when running the application  
 
 ---
@@ -144,29 +180,47 @@ For comprehensive information about this system:
 
 ### Qualtrics Integration
 This system is designed for seamless Qualtrics integration:
-- Upload `static/UI_for_qualtrics.js` as an embedded code block
-- Configure embedded data fields for conversation storage
-- Update `chatbotURL` with your deployment endpoint
+- Upload `static/ST01_UI_simple_decline_handoff.js` (simple accept/decline) or `static/UI_for_qualtrics.js` (with product gallery) as an embedded code block
+- Configure embedded data fields for conversation storage and analytics
+- Update `chatbotURL` variable in the script with your deployment endpoint
 
 #### Required Embedded Data Variables
 Add these variables to your Qualtrics Survey Flow before the chatbot question:
 
 **Core Variables:**
-- `ChatHistory` - Conversation log
-- `ChatHistoryJson` - Structured conversation data
-- `SessionId` - Session identifier
+- `ChatHistory` - Conversation log (text format)
+- `ChatHistoryJson` - Structured conversation data (JSON)
+- `SessionId` - Session identifier (auto-managed by 3-tier system)
+- `CompositeSessionId` - Composite session identifier (STUDY_ID + SessionID + PROLIFIC_PID)
 - `ResponseID` - Qualtrics response ID
+- `TreatmentCondition` - Study condition ("handoff" or "no_handoff")
 
-**Analytics Variables:**
+**Product Decision Variables:**
 - `RecommendedProduct` - Initially recommended product number
-- `AcceptedProduct` - Product user accepted
-- `WasRecommendationAccepted` - "true"/"false" 
-- `UserJourney` - User interaction flow
-- `RecommendationType` - Interaction type
+- `AcceptedProduct` - Product user accepted (or "UNINSURED" if declined all)
+- `WasRecommendationAccepted` - "true"/"false"
+- `UserJourney` - User interaction flow (e.g., "direct-accept", "declined-all-remain-uninsured")
+- `RecommendationType` - Interaction type (e.g., "single", "gallery")
 - `RejectedRecommendation` - Rejected product number
 - `DeclinedProduct` - Declined product number
 
-*Leave all values empty - JavaScript will populate them automatically.*
+**Gallery-Specific Variables (ST02):**
+- `AcceptedProductDisplayPosition` - Position where accepted product appeared in gallery
+- `RandomizedProductOrder` - Randomized order of products shown in gallery
+- `TIME_IN_GALLERY_MS` - Time spent in gallery view (milliseconds)
+- `TIME_ON_RECOMMENDED_PRODUCT_MS` - Time spent viewing recommended product (milliseconds)
+
+**Timestamp Variables:**
+- `WINDOW_OPEN_TS` - When the chatbot page loaded
+- `INIT_MSG_TS` - When initial message was sent
+- `FIRST_MSG_TS` - When user sent first message
+- `NEXT_CLICK_TS` - When user clicked Next button
+- `RECOMMENDATION_RECEIVED_TS` - When recommendation was received
+- `RECOMMENDED_PRODUCT_DECISION_TS` - When user made decision on recommended product
+- `GALLERY_DECISION_TS` - When user made final decision in gallery
+- `TOTAL_DECISION_TIME_MS` - Total decision time (milliseconds)
+
+**Note:** Different study versions (ST01, ST02, ST03) may use different subsets of these variables. ST02 (gallery version) uses all variables listed above. Leave all values empty - JavaScript will populate them automatically.
 
 ### Google Cloud Authentication & Setup
 ```bash
@@ -192,9 +246,11 @@ docker push GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chat
 gcloud run deploy agentic-insurance-chatbot \
   --image GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest \
   --platform managed \
-  --region us-central1 \
+  --region europe-west1 \
   --set-env-vars OPENAI_API_KEY=your_key \
+  --set-env-vars WORKERS=4 \
   --set-env-vars ENABLE_CONVERSATION_STORAGE=false \
+  --set-env-vars ENABLE_FIRESTORE_STORAGE=true \
   --set-env-vars GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID \
   --allow-unauthenticated
 ```
@@ -204,10 +260,15 @@ gcloud run deploy agentic-insurance-chatbot \
 # CRITICAL - Required for application to function
 OPENAI_API_KEY=your_openai_api_key
 
-# OPTIONAL - Enable conversation logging to Google Cloud Storage
-ENABLE_CONVERSATION_STORAGE=false
+# OPTIONAL - Conversation Storage
+ENABLE_CONVERSATION_STORAGE=false  # Enable GCS logging for analysis
+ENABLE_FIRESTORE_STORAGE=true      # Enable Firestore for session persistence (recommended)
 GOOGLE_CLOUD_PROJECT=your_project_id
-GCS_BUCKET_NAME=your_bucket_name  # defaults to "insurance-chatbot-logs"
+GCS_BUCKET_NAME=your_bucket_name   # defaults to "insurance-chatbot-logs"
+
+# OPTIONAL - Performance Configuration
+WORKERS=1   # Number of uvicorn workers (1 for debugging, 4+ for production)
+PORT=8080   # Application port (default: 8080)
 ```
 
 ---

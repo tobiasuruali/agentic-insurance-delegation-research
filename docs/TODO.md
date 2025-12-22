@@ -37,7 +37,7 @@
 
 <details><summary>💻 Backend</summary>
 
-- [ ] **Agentic Autogen hand‑off:** refactor backend logic for full agentic flow with AutoGen 🧊💻 <!-- prio:low area:logic -->
+- [ ] **Agentic Autogen hand‑off:** refactor backend logic for full agentic flow with LangGraph 🧊💻 <!-- prio:low area:logic -->
 
 </details>
 
@@ -51,6 +51,13 @@
 
 ## ✅ Recently Completed
 
+- [x] **Handoff divider visualization:** implemented animated and static handoff dividers showing agent transitions ✅🎨
+- [x] **Session persistence:** added Firestore-backed conversation storage with three-tier session ID management ✅💻
+- [x] **Agent type tracking:** added explicit `agent_type` field to all assistant messages for proper styling ✅💻
+- [x] **Conversation recovery:** implemented automatic loading and rendering of previous conversations on page refresh ✅🛠️
+- [x] **Worker configuration:** made uvicorn worker count configurable via WORKERS environment variable ✅🛠️
+- [x] **ES5 compatibility:** ensured all Qualtrics JavaScript uses ES5-compatible syntax (indexOf, var, etc.) ✅💻
+- [x] **Documentation overhaul:** updated all documentation files (README, SCALING_GUIDE, WORKFLOW, TECHNICAL_REFERENCE, AGENT_SYSTEM) to reflect recent changes ✅📚
 - [x] **Enhanced carousel navigation buttons:** bigger, branded, fixed overlap ✅🎨
 - [x] **Modal improvements:** added close button & responsive sizing ✅🎨
 - [x] **Simple decline workflow:** alternative UI removing carousel after decline ✅🎨
@@ -58,4 +65,3 @@
 - [x] **JavaScript URL updates:** updated all 5 JS files to use new standardized product image URLs ✅💻
 - [x] **CSV product data conversion:** converted embedded product data to structured CSV with cell_id column ✅🛠️
 - [x] **Water backup feature:** added 10th data collection point for water backup coverage preference ✅💻
-- [x] **Documentation updates:** updated all docs to reflect new features and pricing structure ✅📚
