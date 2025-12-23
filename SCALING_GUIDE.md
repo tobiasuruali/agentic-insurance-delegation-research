@@ -108,14 +108,14 @@ gcloud secrets add-iam-policy-binding openai-api-key \
 ### Step 4: Build and Push Docker Image
 ```bash
 # Build image
-docker build -t agentic-insurance-chatbot .
+docker build -t agentic-insurance-delegation-research .
 
 # Tag for Artifact Registry
-docker tag agentic-insurance-chatbot \
-  REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/agentic-insurance-chatbot:latest
+docker tag agentic-insurance-delegation-research \
+  REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/agentic-insurance-delegation-research:latest
 
 # Push image
-docker push REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/agentic-insurance-chatbot:latest
+docker push REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/agentic-insurance-delegation-research:latest
 ```
 
 ### Step 5: Deploy to Cloud Run
@@ -126,8 +126,8 @@ gcloud run services replace cloudrun.yaml --region=europe-west1
 
 **OR use gcloud command directly:**
 ```bash
-gcloud run deploy agentic-insurance-chatbot \
-  --image=REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/agentic-insurance-chatbot:latest \
+gcloud run deploy agentic-insurance-delegation-research \
+  --image=REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY/agentic-insurance-delegation-research:latest \
   --platform=managed \
   --region=europe-west1 \
   --allow-unauthenticated \
@@ -174,7 +174,7 @@ gcloud run deploy agentic-insurance-chatbot \
 ### Cloud Run Metrics to Watch
 ```bash
 # View metrics in Cloud Console
-https://console.cloud.google.com/run/detail/REGION/agentic-insurance-chatbot/metrics
+https://console.cloud.google.com/run/detail/REGION/agentic-insurance-delegation-research/metrics
 
 # Key metrics:
 - Request count
@@ -188,10 +188,10 @@ https://console.cloud.google.com/run/detail/REGION/agentic-insurance-chatbot/met
 ### Log Analysis
 ```bash
 # View logs
-gcloud run services logs read agentic-insurance-chatbot --region=europe-west1
+gcloud run services logs read agentic-insurance-delegation-research --region=europe-west1
 
 # Filter for errors
-gcloud run services logs read agentic-insurance-chatbot \
+gcloud run services logs read agentic-insurance-delegation-research \
   --region=europe-west1 \
   --filter="severity>=ERROR"
 ```

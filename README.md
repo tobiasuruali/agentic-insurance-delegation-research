@@ -122,7 +122,7 @@ The system supports multiple study configurations:
 ### 1. Setup & Configuration
 ```bash
 git clone <repository-url>
-cd agentic-insurance-chatbot
+cd agentic-insurance-delegation-research
 
 # Configure environment
 cp .env.example .env
@@ -239,17 +239,17 @@ gcloud auth configure-docker GCLOUD_AREA
 ### Google Cloud Run Deployment
 ```bash
 # Build image locally
-docker build -t agentic-insurance-chatbot .
+docker build -t agentic-insurance-delegation-research .
 
 # Tag for Artifact Registry
-docker tag agentic-insurance-chatbot GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest
+docker tag agentic-insurance-delegation-research GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-delegation-research:latest
 
 # Push to Artifact Registry
-docker push GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest
+docker push GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-delegation-research:latest
 
 # Deploy to Cloud Run
-gcloud run deploy agentic-insurance-chatbot \
-  --image GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-chatbot:latest \
+gcloud run deploy agentic-insurance-delegation-research \
+  --image GCLOUD_AREA/YOUR_PROJECT_ID/agentic-insurance/agentic-insurance-delegation-research:latest \
   --platform managed \
   --region europe-west1 \
   --set-env-vars OPENAI_API_KEY=your_key \
