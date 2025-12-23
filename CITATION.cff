@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Hoesli"
+    given-names: "Tobias"
+    orcid: "https://orcid.org/0000-0002-3960-4333"
+title: "agentic-insurance-delegation-research"
+version: "v0.1.0-study02.1"
+doi: 10.5281/zenodo.18026355
+date-released: 2025-12-23
+url: "https://github.com/tobiasuruali/agentic-insurance-delegation-research"
