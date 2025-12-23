@@ -1,4 +1,9 @@
-# 🤖 Agentic Insurance Chatbot
+# 🤖 Agentic Insurance Delegation Research
+
+> Multi-agent insurance recommendation prototype for studying delegation, trust, and override behavior (ST01–ST03).
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18026355.svg)](https://doi.org/10.5281/zenodo.18026355)
+
 
 > **An intelligent 2-agent system that enables insurance recommendations through specialized AI agents and seamless handoff mechanisms.**
 
@@ -288,5 +293,24 @@ Perfect for research, education, and production deployment of multi-agent AI sys
 ---
 
 ## 📄 License
+Licensed under the **Apache License 2.0**. See `LICENSE`.  
+Attribution notices: see `NOTICE`.
 
-MIT License - Feel free to use this project for research, education, or commercial purposes.
+## 📝 Citation
+If you use this software in academic work, please cite the Zenodo release:
+
+- **DOI:** 10.5281/zenodo.18026355
+```
+@software{Hoesli_agentic-insurance-delegation-research_2025,
+author = {Hoesli, Tobias},
+doi = {10.5281/zenodo.18026355},
+month = dec,
+title = {{agentic-insurance-delegation-research}},
+url = {https://github.com/tobiasuruali/agentic-insurance-delegation-research},
+version = {v0.1.0-study02.1},
+year = {2025}
+}
+```
+
+You can also use the repository’s `CITATION.cff` (GitHub shows a “Cite this repository” panel automatically).
+
