@@ -69,16 +69,16 @@ flowchart TB
 
 ## ✨ Features
 
-🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI
-🔄 **Animated Handoff Sequence**: Beautiful step-by-step visualization showing agent transition progress (~10.8 seconds)
-📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation
-🎯 **Personalized Recommendations**: Advanced matching based on deductible, coverage, and water backup preferences
-⚡ **Session Persistence**: Firestore-backed conversation storage that survives page refreshes and instance restarts
-💾 **Smart Session Management**: Three-tier system (Qualtrics → localStorage → generated) for reliable session tracking
-🔗 **Direct Product Links**: Actionable recommendations with immediate purchase options
-🎨 **Responsive UI**: Modern design with smooth animations and mobile-friendly interface
-🔬 **Multiple Study Variants**: ST01 (simple accept/decline), ST02 (gallery with highlight), ST03 (lottery simulation)
-🎛️ **Study Conditions**: Handoff vs no_handoff versions for experimental control
+🎭 **Visual Agent Identity**: Each agent has distinct styling and clear labels in the UI  
+🔄 **Animated Handoff Sequence**: Beautiful step-by-step visualization showing agent transition progress (~10.8 seconds)  
+📊 **Structured Data Collection**: Validates 9 essential customer data points before recommendation  
+🎯 **Personalized Recommendations**: Advanced matching based on deductible, coverage, and water backup preferences  
+⚡ **Session Persistence**: Firestore-backed conversation storage that survives page refreshes and instance restarts  
+💾 **Smart Session Management**: Three-tier system (Qualtrics → localStorage → generated) for reliable session tracking  
+🔗 **Direct Product Links**: Actionable recommendations with immediate purchase options  
+🎨 **Responsive UI**: Modern design with smooth animations and mobile-friendly interface  
+🔬 **Multiple Study Variants**: ST01 (simple accept/decline), ST02 (gallery with highlight), ST03 (lottery simulation)  
+🎛️ **Study Conditions**: Handoff vs no_handoff versions for experimental control  
 
 ---
 
